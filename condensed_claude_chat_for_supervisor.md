@@ -1,6 +1,7 @@
 # Condensed Claude Chat for Supervisor
 
 User questions are preserved verbatim; Claude’s answers are condensed for readability.
+The original claude chat: [Link](https://claude.ai/share/f371f500-7581-4a73-ab5f-658e43c83a2d)
 
 ## Exchange 1
 
