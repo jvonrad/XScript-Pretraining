@@ -13,3 +13,6 @@ scratch/
 logs/
 *.bin
 core
+
+# Neuron compiler stray artifacts (written to cwd)
+*PostSPMDPassesExecutionDuration.txt

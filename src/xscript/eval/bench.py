@@ -100,13 +100,18 @@ class XScriptLM:
         return [BOS_ID] + context + continuation_enc
 
     @torch.no_grad()
-    def _score_batch(self, batch) -> list[tuple[float, bool]]:
+    def _score_batch(self, batch, fixed_width: int | None = None) -> list[tuple[float, bool]]:
         """Score variable-length requests with right padding.
 
         Padding is strictly after each real sequence, so causal attention
         cannot let it affect any scored position.  Passing targets asks our
         Transformer for all-position logits; the returned scalar loss is
         intentionally ignored.
+
+        On XLA/Neuron (``fixed_width`` set) every forward is padded to one
+        constant ``[batch_size, fixed_width]`` shape so the whole task hits a
+        single compiled graph; the graph is weight-independent, so it compiles
+        once on the first model and is reused for every checkpoint after.
         """
         prepared = [(self._prepare(list(c), list(k)), len(k)) for c, k in batch]
         out: list[tuple[float, bool] | None] = [None] * len(prepared)
@@ -115,6 +120,10 @@ class XScriptLM:
             if not n:
                 out[i] = (0.0, True)
         if not active:
+            return out  # type: ignore[return-value]
+
+        if fixed_width is not None:
+            self._score_active_xla(active, out, fixed_width)
             return out  # type: ignore[return-value]
 
         width = max(len(seq) - 1 for _, seq, _ in active)
@@ -143,13 +152,75 @@ class XScriptLM:
             out[out_i] = (float(token_lp.sum().item()), greedy)
         return out  # type: ignore[return-value]
 
+    @torch.no_grad()
+    def _score_active_xla(self, active, out, fixed_width: int) -> None:
+        """Fixed-shape scoring for XLA/Neuron.
+
+        Pads to a constant ``[batch_size, fixed_width]`` graph (rows past the
+        real requests are dummy PAD rows, computed then ignored) and reduces to
+        per-token logprobs / greedy-match ON DEVICE, moving only the small
+        ``[batch_size, fixed_width]`` results back to host -- never the
+        ``[batch, width, vocab]`` logits, which stay on the Neuron core.
+        """
+        import torch_xla.core.xla_model as xm
+        R = self.batch_size
+        # Build the fixed-shape batch on the HOST, then move once. Assembling it
+        # with per-row in-place updates on the XLA tensor emits on-device scatter
+        # ops that trip NRT_EXEC_OOB on Neuron.
+        x = torch.full((R, fixed_width), PAD_ID, dtype=torch.long)
+        y = torch.full((R, fixed_width), -100, dtype=torch.long)
+        lengths = []
+        for row, (_, seq, _) in enumerate(active):
+            m = len(seq) - 1
+            if m > fixed_width:
+                raise ValueError(f"sequence len {m} exceeds fixed_width {fixed_width}")
+            lengths.append(m)
+            x[row, :m] = torch.tensor(seq[:-1])
+            y[row, :m] = torch.tensor(seq[1:])
+        # Clamp the pad target (-100) to a valid id ON THE HOST: an on-device
+        # clamp_min does not materialize before one_hot's scatter, which then
+        # sees -100 and trips NRT_EXEC_OOB.
+        y_idx = y.clamp_min(0)
+        x = x.to(self.device)
+        y = y.to(self.device)
+        y_idx = y_idx.to(self.device)
+        logits, _ = self.model(x, y)
+        logits = logits.float()
+        # NOTE: torch.gather along the vocab dim silently returns zeros on this
+        # Neuron/torch-xla build. Select the target logit with a one-hot
+        # multiply-sum and score as logit - logsumexp instead (both verified
+        # fp32-accurate vs CPU on Neuron; gather is the only broken op here).
+        onehot = F.one_hot(y_idx, logits.size(-1)).to(logits.dtype)
+        target_logit = (logits * onehot).sum(-1)                   # [R, W]
+        token_lp = target_logit - torch.logsumexp(logits, dim=-1)  # [R, W]
+        greedy = (logits.argmax(-1) == y)                          # [R, W]
+        xm.mark_step()
+        token_lp = token_lp.cpu()
+        greedy = greedy.cpu()
+        for row, (out_i, _, n) in enumerate(active):
+            m = lengths[row]
+            lp = float(token_lp[row, m - n:m].sum().item())
+            ok = bool(greedy[row, m - n:m].all().item())
+            out[out_i] = (lp, ok)
+
     def _loglikelihood_tokens(self, requests, disable_tqdm: bool = False):
         from tqdm import tqdm
         out = []
+        fixed_width = None
+        if self.device.type == "xla":
+            # One constant graph shape for the entire task: pad every batch to
+            # the longest prepared sequence in this task (bounded by the model's
+            # max_seq_len via _prepare's left-truncation of context).
+            fixed_width = max(
+                (len(self._prepare(list(c), list(k))) - 1 for _, c, k in requests),
+                default=1,
+            )
+            fixed_width = max(fixed_width, 1)
         batches = range(0, len(requests), self.batch_size)
         for st in tqdm(batches, disable=disable_tqdm, desc="[bench] scoring"):
             chunk = requests[st:st + self.batch_size]
-            out.extend(self._score_batch([(c, k) for _, c, k in chunk]))
+            out.extend(self._score_batch([(c, k) for _, c, k in chunk],
+                                         fixed_width=fixed_width))
         return out
 
     @torch.no_grad()
@@ -227,14 +298,25 @@ def _make_lm(model, tok, device, max_seq_len):
 def run(run_name: str, tok_name: str, tag: str = "final", tasks: list[str] | None = None,
         num_fewshot: int = 0, limit: int | float | None = None,
         out_dir: Path | None = None, log_wandb: bool = True,
-        batch_size: int = 4) -> dict:
-    """Evaluate a checkpoint on its training languages by default."""
+        batch_size: int = 4, device: str | None = None) -> dict:
+    """Evaluate a checkpoint on its training languages by default.
+
+    ``device`` may be ``cuda`` / ``cpu`` / ``xla`` (Neuron). ``None`` auto-picks
+    CUDA if present else CPU (Neuron must be requested explicitly since it needs
+    the fixed-shape scoring path).
+    """
     import lm_eval
     from ..model import ModelConfig, Transformer
     from ..tok.wrapper import Tok
     from ..paths import RUNS, RESULTS, tokenizer_dir, ensure
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if device is None:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+    if device == "xla":
+        import torch_xla.core.xla_model as xm
+        device = xm.xla_device()
+    else:
+        device = torch.device(device)
     ck = torch.load(RUNS / run_name / "checkpoints" / f"{tag}.pt",
                     map_location="cpu", weights_only=False)
     model = Transformer(ModelConfig(**ck["cfg"]["model"])).to(device).eval()

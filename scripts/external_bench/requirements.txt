@@ -4,7 +4,11 @@
 lm_eval==0.4.12
 sentencepiece
 tokenizers
-huggingface_hub
-datasets
+# Pin the HF stack to lm_eval 0.4.12's era: huggingface_hub 1.x's strict HF-URI
+# validator rejects lm_eval's legacy `dataset_path: xnli`, and datasets 5.x /
+# transformers 5.x drift from the 0.4.12 task API. Verified working set:
+huggingface_hub==0.26.5
+datasets==3.2.0
+transformers==4.47.1
 numpy
 tqdm

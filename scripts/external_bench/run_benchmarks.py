@@ -42,6 +42,9 @@ def main() -> None:
                     help="override task list (default: the run's training languages)")
     ap.add_argument("--num-fewshot", type=int, default=0)
     ap.add_argument("--batch-size", type=int, default=8)
+    ap.add_argument("--device", default=None,
+                    help="cuda / cpu / xla (Neuron). Default: auto (cuda else cpu). "
+                         "Use 'xla' on Trainium for the fixed-shape scoring path.")
     ap.add_argument("--keep-checkpoints", action="store_true",
                     help="keep each 4GB checkpoint after eval (default: delete to save disk)")
     args = ap.parse_args()
@@ -94,6 +97,12 @@ def main() -> None:
         if f.startswith("src/xscript/"):
             hf_hub_download(filename=f, **dl)
     sys.path.insert(0, str(src_root / "src"))
+    # When run from inside the XScript-Pretraining repo, prefer its src so local
+    # patches (e.g. the fixed-shape XLA/Neuron scoring path in eval/bench.py)
+    # take precedence over the bundled export. No-op for standalone use.
+    _local_src = Path(__file__).resolve().parents[2] / "src"
+    if (_local_src / "xscript" / "eval" / "bench.py").exists():
+        sys.path.insert(0, str(_local_src))
 
     # 2) tokenizers (small)
     for f in repo_files:
@@ -114,7 +123,9 @@ def main() -> None:
 
     import torch
     from xscript.eval import bench
-    if not torch.cuda.is_available():
+    if args.device == "xla":
+        print("[bench] using XLA/Neuron (fixed-shape scoring).")
+    elif not torch.cuda.is_available() and args.device != "cpu":
         print("[bench] WARNING: no CUDA device -- this will be very slow on CPU.")
 
     summary = {}
@@ -130,7 +141,8 @@ def main() -> None:
         try:
             scores = bench.run(run, tok, tag="final", tasks=args.tasks,
                                num_fewshot=args.num_fewshot, limit=args.limit,
-                               log_wandb=False, batch_size=args.batch_size)
+                               log_wandb=False, batch_size=args.batch_size,
+                               device=args.device)
             summary[run] = scores
         except Exception as exc:
             print(f"[bench] {run} FAILED: {type(exc).__name__}: {exc}")
