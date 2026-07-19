@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xscript"
+version = "0.1.0"
+description = "Cross-script pretraining: is ATLAS's cross-script sample-efficiency penalty a tokenizer allocation artifact?"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "pyyaml",
+    "tqdm",
+    "huggingface_hub>=0.23",
+    "sentencepiece>=0.2.0",
+    "tokenizers>=0.19",
+    "pyarrow>=15",
+    "zstandard",
+]
+
+[project.optional-dependencies]
+train = ["torch>=2.3", "wandb"]
+bench = ["torch>=2.3", "wandb", "lm_eval==0.4.12", "huggingface_hub<1"]
+# byte-level BPE + parity-aware BPE learners (the `bpe` and `pa` flavors).
+# Classical `unigram` needs only sentencepiece (already a core dep).
+tok = ["parity-aware-bpe @ git+https://github.com/swiss-ai/parity-aware-bpe.git"]
+
+[project.scripts]
+xscript = "xscript.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

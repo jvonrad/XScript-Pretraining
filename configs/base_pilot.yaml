@@ -1,0 +1,40 @@
+# Pilot base: ~300M-parameter model, short 2B-token runs to validate the whole
+# pipeline (data -> loader -> model -> schedule -> eval) before committing 1B
+# compute. Same architecture family, smaller width/heads and a short schedule.
+seed: 0
+data_seed: 1234
+compile: false
+
+model:
+  vocab_size: 65536
+  dim: 1024
+  n_layers: 16
+  n_heads: 8
+  n_kv_heads: 8
+  ffn_dim: 2816
+  max_seq_len: 2048
+  rope_theta: 10000.0
+  norm_eps: 1.0e-5
+
+optim:
+  betas: [0.9, 0.95]
+  weight_decay: 0.1
+  eps: 1.0e-8
+  grad_clip: 1.0
+
+train:
+  micro_batch_size: 8
+  global_batch_tokens: 5.0e5
+  log_every: 10
+  eval_docs: 200
+  ckpt_schedule:
+    - [5.0e8, 1.0e8]
+    - [1.0e15, 5.0e8]
+
+schedule:
+  peak_lr: 3.0e-3
+  min_lr: 3.0e-4
+  warmup_tokens: 1.0e8
+  stable_tokens: 1.4e9
+  decay_tokens: 5.0e8
+  decay_shape: 1-sqrt

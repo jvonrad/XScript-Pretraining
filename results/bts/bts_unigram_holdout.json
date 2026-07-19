@@ -1,0 +1,83 @@
+{
+  "flavor": "unigram",
+  "source": "holdout",
+  "by_condition": {
+    "starved": {
+      "de": {
+        "same_script": true,
+        "bpb_mono_final": null,
+        "bpb_bi_final": 0.8794357126269957
+      },
+      "fr": {
+        "same_script": true,
+        "bpb_mono_final": 0.7587869516258335,
+        "bpb_bi_final": 0.769248522947712,
+        "bts_matched_total": -0.013787231448119492,
+        "bpb_mono_at_lang_tokens": 0.836975149324635,
+        "bts_matched_lang": 0.08091832407637486
+      },
+      "ar": {
+        "same_script": false,
+        "bpb_mono_final": 0.6751033828140545,
+        "bpb_bi_final": 0.6959144914317248,
+        "bts_matched_total": -0.03082655064017415,
+        "bpb_mono_at_lang_tokens": 0.7448751329481113,
+        "bts_matched_lang": 0.0657299986946901
+      },
+      "zh": {
+        "same_script": false,
+        "bpb_mono_final": 1.1665775456936902,
+        "bpb_bi_final": 1.084845521851536,
+        "bts_matched_total": 0.07006137238271055,
+        "bpb_mono_at_lang_tokens": 1.1665775456936902,
+        "bts_matched_lang": 0.07006137238271055
+      }
+    },
+    "destarved": {
+      "de": {
+        "same_script": true,
+        "bpb_mono_final": 0.8169923674374343,
+        "bpb_bi_final": 0.8353958991963325,
+        "bts_matched_total": -0.02252595310850018,
+        "bpb_mono_at_lang_tokens": 0.8944801551559262,
+        "bts_matched_lang": 0.06605429490975578
+      },
+      "fr": {
+        "same_script": true,
+        "bpb_mono_final": 0.7360496974336243,
+        "bpb_bi_final": 0.7458465086446281,
+        "bts_matched_total": -0.013309986058227138,
+        "bpb_mono_at_lang_tokens": 0.8069821993969033,
+        "bts_matched_lang": 0.07575841300832269
+      },
+      "ar": {
+        "same_script": false,
+        "bpb_mono_final": 0.6426040944722213,
+        "bpb_bi_final": 0.6620491863548337,
+        "bts_matched_total": -0.0302598319087631,
+        "bpb_mono_at_lang_tokens": 0.7078234159430968,
+        "bts_matched_lang": 0.06466899590666132
+      },
+      "zh": {
+        "same_script": false,
+        "bpb_mono_final": 1.133475659577955,
+        "bpb_bi_final": 1.0610194914035755,
+        "bts_matched_total": 0.06392388540690688,
+        "bpb_mono_at_lang_tokens": 1.133475659577955,
+        "bts_matched_lang": 0.06392388540690688
+      }
+    }
+  },
+  "interaction": {
+    "bts_matched_total": {
+      "penalty_starved": -0.033404642319387695,
+      "penalty_destarved": -0.03474999633243555,
+      "interaction": 0.0013453540130478545
+    },
+    "bts_matched_lang": {
+      "penalty_starved": 0.013022638537674547,
+      "penalty_destarved": 0.006609913302255133,
+      "interaction": 0.006412725235419414
+    }
+  }
+}

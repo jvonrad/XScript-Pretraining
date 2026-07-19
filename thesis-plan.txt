@@ -1,0 +1,58 @@
+**MSc Thesis Context — Distilled**
+
+**Research question:** Is ATLAS's (arXiv 2510.22037, ICLR 2026) reported cross-script pretraining sample-efficiency penalty (EN-AR-ZH vs EN-DE-FR) actually a tokenizer vocabulary-allocation and byte-tax artifact rather than a genuine script-transfer effect? How does cross-script pretraining affect cross-lingual transfer and representation alignment?
+
+**Key facts about ATLAS (verified from paper):**
+- 774 runs, 10M–8B params, 400+ languages, 48 eval languages, 38×38 cross-lingual transfer matrix.
+- Tokenizer: single 64k SentencePiece, trained by Kudugunta et al. (MADLAD-400 authors) with **T=100 sampling (~uniform across 420 languages)**, 99.9995% char coverage. NOT the "EN 5%/AR-ZH 1.4%" figures I originally assumed — verify source if citing that stat elsewhere.
+- Starvation mechanism = (1) 420-way competition for 64k merges (~150 tokens/language avg), (2) aggregate Latin-script dominance since most of 420 langs are Latin-script.
+- They DID check tokenizer effects once: monolingual model + monolingual tokenizer vs. monolingual model + multilingual tokenizer (Fig 1) → found a compute tax from shared vocab.
+- BUT their bilingual Transfer Matrix (Bilingual Transfer Score, BTS) always uses the SAME multilingual 64k tokenizer for both bilingual and monolingual-reference runs — tokenizer held constant within comparisons, but never varied across the matrix. So the same-script-vs-cross-script BTS gap (−0.23 vs −0.39) is confounded with tokenizer allocation. **This interaction (mixture × allocation) is the untested gap = our contribution.**
+- MADLAD-400 corpus itself: public, 3T tokens clean, 419 languages; their own model tokenizer is 256k (different artifact from ATLAS's 64k — don't conflate).
+
+**Experimental design (current, supervisor Yao Lu-approved):**
+- Languages: EN (anchor), DE, FR (same-script/Latin), AR, ZH (cross-script). Keep ZH despite supervisor's romanization pivot — defensible via fertility axis, not romanization.
+- Design: monolingual + bilingual (EN-DE, EN-FR, EN-AR, EN-ZH) models × 2 tokenizer conditions:
+  - **T-starved**: ATLAS-style 64k Unigram trained on MADLAD-400 sampled to replicate ATLAS's ~T=100 mixture over 420 langs.
+  - **T-destarved**: 64k Unigram trained only on EN/DE/FR/AR/ZH (byte-premium content-aligned).
+  - Analysis-only comparators (NOT used to train any model): normal byte-level BPE and Parity-aware BPE (arXiv 2508.04796, moving-window variant for ZH), trained once so the tokenizer gate can quantify how much the Unigram-vs-BPE algorithm choice and parity-balanced merges move fertility/allocation on byte-premium-adjusted data. Models are trained on Unigram only.
+- Algorithm: **Unigram throughout, held constant** — matches MADLAD-400's confirmed algorithm and the (in-text unstated but same-lineage) ATLAS choice. BPE / parity-aware BPE are trained only as tokenizer-analysis comparators for the fertility/allocation gate, never used to pretrain.
+- Scale: primary tier at ~30B tokens/model (supervisor directive, compute-limited). Use **WSD (warmup-stable-decay) LR schedule** so a subset of runs (recommend: EN-DE & EN-AR × 2 tokenizers = 4 runs) can cheaply extend to 100B via cooldown branching — only spend this budget if 30B shows a non-trivial effect first.
+- Metric: adopt **BTS (Bilingual Transfer Score)** as headline metric for direct comparability to ATLAS. Report in bits-per-byte (BPB), not per-token loss (not comparable across tokenizers).
+- Data matching across languages: can't byte-align (UTF-8: Latin=1 byte/char, AR=2, ZH=3) and no document-aligned corpus exists at scale. Solution: **byte-premium calibration** — measure per-language byte inflation ratio on FLORES+ (parallel corpus), scale FineWeb2 per-language training budgets by that ratio so content (not bytes) is matched. FLORES+ also serves as parallel eval set (BPB, retrieval-based alignment).
+- Checkpointing: log-spaced early (e.g. every 250M for first 2B, 500M to 5B, 1-2B after) — dynamics are front-loaded. Skip MMLU-style evals at 1B/30B (no signal); prioritize BPB/BTS curves + retrieval-based cross-lingual alignment (MEXA-style on FLORES+, informative even at small scale).
+- Known confounds to state explicitly in thesis: ATLAS does not state its tokenizer algorithm in-text — we use Unigram (MADLAD-400's confirmed algorithm, same lineage), but that alignment is an inference not a stated fact; parity-aware tokenizers equalize AR fertility better than ZH (byte/character-inventory tax persists for CJK); web-domain composition differs by language (unfixable, shared limitation).
+- Use this dataset: https://huggingface.co/datasets/epfml/FineWeb2-HQ
+
+**Nearest-neighbor papers to differentiate against (novelty = the interaction term, not either main effect alone):**
+- Parity-Aware BPE (2508.04796, Foroutan/Bosselut/Sennrich) — 3B decoder, FineWeb2, 100B tokens, tokenizer-only manipulation, but NO mixture contrast, perplexity-only readout, downstream-neutral finding for fairness-equalization step.
+- Parallel Tokenizers (2510.06128) — encoder-only, 13 low-resource langs, no mixture contrast.
+- Arnett et al. tokenizer inequities (2510.21909, NeurIPS 2025) — ~7000 monolingual tokenizers, finds optimal per-language vocab size fixes fertility, but no LM training.
+- Read ATLAS's limitations section + OpenReview ICLR 2026 reviews to check if tokenizer confound was already flagged.
+
+Yes — found the tool: **`catherinearnett/byte-premium-tool`** on GitHub, from the Arnett, Chang & Bergen (2024) "A Bit of a Problem" paper. It has precomputed byte premiums (relative to English) for high-resource languages, which covers DE, FR, AR, and ZH directly — no need to estimate for those.
+
+**Caveats before you just plug the numbers in:**
+
+1. **Precision/source matters for your thesis.** Their precomputed values were computed on FLORES-200 (or a similar general parallel set), not FLORES+ specifically. Small version mismatches (FLORES-101 vs -200 vs -plus) can shift ratios slightly. Since your design already treats FLORES+ as your primary calibration/eval corpus, **recompute the ratios yourself on the exact FLORES+ split you're using** — it's cheap (a few lines: sum UTF-8 bytes per language over the same parallel sentences), and it keeps your calibration self-consistent and exactly reproducible rather than importing a number computed on a slightly different parallel set.
+2. **Report both**, though: cite the published Arnett et al. values as an external sanity check / for comparability with Goldfish and BabyBabelLM, and use your own FLORES+-derived values as the ones actually driving your budget allocation. If they diverge meaningfully, that's worth a footnote.
+3. Zh is often reported ~2.5–3× vs English-equivalent content in these byte-premium studies (order of magnitude to expect, don't cite as exact without verifying against the tool yourself); AR and DE/FR premiums are smaller. Don't take my recalled numbers as final — pull them straight from the tool/repo.
+
+So: reuse the tool for validation and citation, but compute your own numbers on your own FLORES+ subset for the actual pipeline.
+
+Also for multi-node communication which we will need for large-scale pretraining, pls consider:
+## 5. Multi-Node Jobs (HPE Slingshot)
+
+The interconnect is *HPE Slingshot*, not Mellanox InfiniBand. Default NCCL transports will run but scale terribly — you must load the Slingshot NCCL plugin.
+
+### 5.1 Required steps
+
+1. *Before launching the container* (on the host):
+   bash
+   module load brics/apptainer-multi-node
+   
+   This links the admin-compiled NCCL network plugins into the container.
+
+And for HPC setup questions check again the documentation: https://docs.isambard.ac.uk/
+
+**Next actions:** (1) verify exact ATLAS tokenizer training corpus/sampling if not already confirmed beyond T=100; (2) build both tokenizers, produce fertility table on FLORES+ (gate: proceed only if AR/ZH fertility gap is large between conditions); (3) byte-premium ratios from FLORES+; (4) pilot run (~300M params) end-to-end; (5) write positioning paragraph against the 3 papers above before committing compute.

@@ -1,0 +1,10 @@
+# Install a CUDA-matched torch FIRST, separately, e.g.:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu121
+# (torch is intentionally not pinned here so you can match your GPU/CUDA.)
+lm_eval==0.4.12
+sentencepiece
+tokenizers
+huggingface_hub
+datasets
+numpy
+tqdm
