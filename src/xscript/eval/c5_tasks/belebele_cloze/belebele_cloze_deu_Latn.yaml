@@ -1,0 +1,3 @@
+dataset_name: deu_Latn
+include: _cloze_template.yaml
+task: belebele_cloze_deu_Latn

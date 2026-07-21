@@ -67,6 +67,7 @@ def fetch_checkpoint(rel_dir, repo_files, dl, work):
                 with open(local, "rb") as r:
                     while chunk := r.read(64 * 1024 * 1024):
                         w.write(chunk)
+                Path(local).unlink(missing_ok=True)  # raw shard now folded into `out`
         tmp.rename(out)
     return out
 

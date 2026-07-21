@@ -1,0 +1,25 @@
+# Cloze-format Belebele, matching Appendix D of Messmer et al. 2025
+# (https://arxiv.org/abs/2502.10361): "we use the cloze multiple-choice
+# prompt, which allows the model to directly predict each option instead of
+# using the standard prompt format with A/B/C/D letter prefixes as targets."
+# lm-eval's registered `belebele` task uses the letter-prefix format instead
+# (see belebele/_default_template_yaml) -- this template scores each answer's
+# actual text as the continuation, no letters involved.
+dataset_path: facebook/belebele
+output_type: multiple_choice
+test_split: test
+fewshot_split: test
+should_decontaminate: true
+doc_to_decontamination_query: "{{question}}"
+doc_to_text: "{{flores_passage}}\n{{question.strip()}}"
+doc_to_choice: "{{[mc_answer1, mc_answer2, mc_answer3, mc_answer4]}}"
+doc_to_target: "{{['1', '2', '3', '4'].index(correct_answer_num)}}"
+metric_list:
+  - metric: acc
+    aggregation: mean
+    higher_is_better: true
+  - metric: acc_norm
+    aggregation: mean
+    higher_is_better: true
+metadata:
+  version: 0.0

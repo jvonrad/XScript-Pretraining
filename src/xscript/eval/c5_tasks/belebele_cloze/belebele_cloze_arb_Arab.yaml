@@ -1,0 +1,3 @@
+dataset_name: arb_Arab
+include: _cloze_template.yaml
+task: belebele_cloze_arb_Arab

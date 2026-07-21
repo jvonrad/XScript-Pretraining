@@ -1,0 +1,3 @@
+dataset_name: zho_Hans
+include: _cloze_template.yaml
+task: belebele_cloze_zho_Hans

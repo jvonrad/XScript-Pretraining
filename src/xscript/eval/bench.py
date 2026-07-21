@@ -37,6 +37,69 @@ TASKS_BY_LANG = {
     for i, lang in enumerate(LANG_ORDER)
 }
 
+# lm-eval's stock XNLI is a raw-loglikelihood cloze over three connectives and
+# is not usable as-is for ar/zh at this scale (see CLAUDE.md §6): Arabic's
+# connectives are mistranslated, and Chinese collapses to surface-form
+# competition (Holtzman et al. 2021) even with correct ones. `xnli_ar` /
+# `xnli_zh` are therefore always scored by `_xnli_debiased` below instead of
+# through lm_eval's task registry -- corrected connectives + standard scoring
+# for ar, PMI (prior-normalized) scoring for zh.
+XNLI_CONNECTIVES = {
+    # lang: (question_word, entailment, neutral, contradiction)
+    "en": ("right",   "Yes",  "Also",  "No"),
+    "de": ("richtig", "Ja",   "Auch",  "Nein"),
+    "fr": ("correct", "Oui",  "Aussi", "Non"),
+    "ar": ("صحيح",    "نعم",  "أيضا",  "لا"),      # corrected: was لذا/رقم
+    "zh": ("正确",     "是的", "所以",   "不是的"),
+}
+XNLI_DEBIAS_METHOD = {"ar": "standard", "zh": "pmi"}
+
+
+def _xnli_debiased(lm, lang: str, limit: int | float | None,
+                   disable_tqdm: bool = False, return_correct: bool = False):
+    """Debiased XNLI accuracy for `lang` (must be a key of XNLI_DEBIAS_METHOD).
+
+    Reuses `lm._loglikelihood_tokens` -- the verified fixed-shape/Neuron
+    scoring path -- by framing each candidate string as a bare continuation
+    (empty context), so the returned logprob is the string's total loglik
+    exactly as CLAUDE.md's debiasing recipe requires.
+
+    With `return_correct=True`, returns `(accuracy, per_example_hits)`
+    instead of just `accuracy` -- the 0/1 hit list needed to bootstrap a
+    confidence interval, e.g. for transfer-delta significance testing.
+    """
+    import datasets
+
+    qw, ent, neu, con = XNLI_CONNECTIVES[lang]
+    conns = [ent, neu, con]
+    ds = datasets.load_dataset("xnli", lang, split="validation")
+    n = len(ds) if limit is None else min(int(limit), len(ds))
+    full_strs, null_strs, golds = [], [], []
+    for i in range(n):
+        d = ds[i]
+        golds.append(d["label"])
+        for c in conns:
+            full_strs.append(f"{d['premise']}, {qw}? {c}, {d['hypothesis']}")
+            null_strs.append(f"{qw}? {c}, {d['hypothesis']}")
+
+    requests = [(None, [], lm.tok_encode(s)) for s in full_strs + null_strs]
+    scored = lm._loglikelihood_tokens(requests, disable_tqdm=disable_tqdm)
+    lls = [lp for lp, _ in scored]
+    full_ll, null_ll = lls[:len(full_strs)], lls[len(full_strs):]
+
+    method = XNLI_DEBIAS_METHOD[lang]
+    hits = []
+    for j, g in enumerate(golds):
+        f3 = full_ll[3 * j:3 * j + 3]
+        if method == "pmi":
+            n3 = null_ll[3 * j:3 * j + 3]
+            scores3 = [f3[k] - n3[k] for k in range(3)]
+        else:
+            scores3 = f3
+        hits.append(int(max(range(3), key=lambda k: scores3[k]) == g))
+    accuracy = sum(hits) / n
+    return (accuracy, hits) if return_correct else accuracy
+
 
 def tasks_for_langs(langs: list[str]) -> list[str]:
     """Harness task names for exactly the languages in a run's mixture."""
@@ -216,6 +279,14 @@ class XScriptLM:
                 default=1,
             )
             fixed_width = max(fixed_width, 1)
+            # NCC-5266: neuronx-cc's matmul transpose lowering requires an
+            # even step for non-FP32 dst dims -- an odd fixed_width reliably
+            # fails compilation (confirmed: zh debiased-XNLI fixed_width=85
+            # crashes every time, solo or concurrent; ar's fixed_width=88
+            # never does). Round up to the next even width; the extra column
+            # is inert padding, identical to any other padded position.
+            if fixed_width % 2:
+                fixed_width += 1
         batches = range(0, len(requests), self.batch_size)
         for st in tqdm(batches, disable=disable_tqdm, desc="[bench] scoring"):
             chunk = requests[st:st + self.batch_size]
@@ -329,10 +400,18 @@ def run(run_name: str, tok_name: str, tag: str = "final", tasks: list[str] | Non
     adapter = _make_lm(model, tok, device, model.cfg.max_seq_len)
     adapter.batch_size = batch_size
 
+    # xnli_ar / xnli_zh are scored by the debiased path (see XNLI_DEBIAS_METHOD
+    # above), never by lm_eval's task registry -- pull them out of the harness
+    # task list before calling simple_evaluate.
+    debiased_langs = {lang: name for lang in XNLI_DEBIAS_METHOD
+                      if (name := f"xnli_{lang}") in task_list}
+    harness_tasks = [t for t in task_list if t not in debiased_langs.values()]
+
     results = lm_eval.simple_evaluate(
-        model=adapter, tasks=task_list, num_fewshot=num_fewshot,
+        model=adapter, tasks=harness_tasks, num_fewshot=num_fewshot,
         batch_size=1, limit=limit, log_samples=False, confirm_run_unsafe_code=True,
-    )
+    ) if harness_tasks else {"results": {}, "groups": {}}
+
     def _accuracy(rec):
         # Use ordinary accuracy consistently across all three benchmark
         # families. Belebele additionally reports length-normalized accuracy,
@@ -343,14 +422,19 @@ def run(run_name: str, tok_name: str, tag: str = "final", tasks: list[str] | Non
     groups = results.get("groups", {})
     subtasks = results.get("results", {})
     for name in task_list:
-        rec = groups.get(name, subtasks.get(name, {}))
-        scores[name] = _accuracy(rec)
+        if name in debiased_langs.values():
+            lang = name[len("xnli_"):]
+            scores[name] = _xnli_debiased(adapter, lang, limit)
+        else:
+            rec = groups.get(name, subtasks.get(name, {}))
+            scores[name] = _accuracy(rec)
 
     out_dir = ensure(Path(out_dir) if out_dir else RESULTS / "bench")
     payload = {
         "run": run_name, "checkpoint": tag, "tokenizer": tok_name,
         "lm_eval_version": importlib.metadata.version("lm_eval"),
         "num_fewshot": num_fewshot, "limit": limit, "tasks": task_list,
+        "xnli_debiased": {lang: XNLI_DEBIAS_METHOD[lang] for lang in debiased_langs},
         "scores": scores, "results": results.get("results", {}),
         "groups": groups, "versions": results.get("versions", {}),
         "n-shot": results.get("n-shot", {}),
