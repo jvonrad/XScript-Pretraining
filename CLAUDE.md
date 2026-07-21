@@ -278,10 +278,10 @@ by raw loglik → **surface-form competition** (Holtzman et al. 2021): weak mode
 pick the highest-prior connective and collapse to majority class. Two distinct
 defects, one per language:
 
-| lang | root cause | fix | result (full val, n=2490) |
+| lang | root cause | fix | corrected result (full val, n=2490) |
 |------|-----------|-----|-----|
-| Arabic | lm-eval connectives **mistranslated** (`رقم`="number" for contradiction, `لذا` for neutral) | correct to `لا` / `أيضا`, standard scoring | 0.335 → **0.44–0.47** |
-| Chinese | surface-form competition (connectives fine) | **PMI** (prior-normalized) scoring | 0.335 → **0.41–0.42** |
+| Arabic | lm-eval connectives **mistranslated** (`رقم`="number" for contradiction, `لذا` for neutral) | correct to `لا` / `أيضا`, standard scoring | **0.44–0.47** |
+| Chinese | surface-form competition (connectives fine) | **PMI** (prior-normalized) scoring | **0.41–0.42** |
 
 After the fix, **all 23 XNLI model×lang cells are above chance (+7.8 to +20.2σ)**.
 Mean corrected accuracy by language: **en 0.503, de 0.471, fr 0.470, ar 0.455,
@@ -396,6 +396,40 @@ oddly-strong Chinese result. (English's own mean dropped a few points vs the
 the 11 new checkpoints include lower-token-budget runs (12–15B vs the
 original 30B) with weaker English, plus zh-fair-12b/zh-starved-12b which are
 zh-only mono runs with a comparatively weak English zero-shot score.)
+
+**Full per-model breakdown** (all 26 checkpoints × all 25 `(lang, task)`
+cells; bold = model was trained on that language — a zero-shot readout
+everywhere else; `Bele`=Belebele, `HS`=HellaSwag, `SC`=XStoryCloze,
+`WG`=XWinograd; `-` = task not defined for that language):
+
+| model | tok | trained | EN-XNLI | EN-Bele | EN-ARC | EN-HS | EN-SC | EN-WG | DE-XNLI | DE-Bele | DE-ARC | DE-HS | FR-XNLI | FR-Bele | FR-ARC | FR-HS | FR-WG | AR-XNLI | AR-Bele | AR-ARC | AR-HS | AR-SC | ZH-XNLI | ZH-Bele | ZH-ARC | ZH-SC | ZH-WG |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| ar-fair | fair | AR | .456 | .284 | .361 | .317 | .547 | .604 | .334 | .260 | .241 | .271 | .361 | .289 | .234 | .283 | .566 | **.469** | **.332** | **.251** | **.382** | **.555** | .337 | .226 | .253 | .469 | .548 |
+| ar-fair-15b | fair | AR | .420 | .271 | .338 | .298 | .537 | .572 | .332 | .260 | .241 | .262 | .367 | .269 | .251 | .273 | .506 | **.452** | **.319** | **.224** | **.346** | **.531** | .339 | .222 | .266 | .475 | .484 |
+| ar-starved | starved | AR | .425 | .294 | .342 | .292 | .522 | .550 | .334 | .276 | .233 | .274 | .337 | .291 | .244 | .288 | .518 | **.455** | **.301** | **.252** | **.349** | **.551** | .332 | .252 | .267 | .490 | .500 |
+| ar-starved-15b | starved | AR | .328 | .268 | .310 | .281 | .520 | .532 | .342 | .252 | .223 | .273 | .335 | .276 | .240 | .287 | .554 | **.376** | **.306** | **.256** | **.318** | **.523** | .338 | .232 | .272 | .473 | .510 |
+| de-fair | fair | DE | .483 | .290 | .390 | .353 | .570 | .649 | **.469** | **.333** | **.275** | **.419** | .367 | .298 | .232 | .300 | .506 | .352 | .260 | .257 | .259 | .477 | .335 | .264 | .245 | .483 | .560 |
+| de-fair-15b | fair | DE | .427 | .294 | .348 | .312 | .544 | .589 | **.461** | **.327** | **.265** | **.367** | .373 | .282 | .253 | .285 | .542 | .334 | .241 | .251 | .257 | .473 | .329 | .246 | .272 | .475 | .522 |
+| en-ar-fair | fair | EN+AR | **.504** | **.324** | **.502** | **.447** | **.623** | **.709** | .339 | .270 | .232 | .275 | .345 | .304 | .260 | .293 | .530 | **.442** | **.334** | **.276** | **.383** | **.555** | .333 | .264 | .245 | .494 | .552 |
+| en-ar-starved | starved | EN+AR | **.495** | **.303** | **.473** | **.408** | **.606** | **.662** | .335 | .282 | .234 | .282 | .338 | .299 | .246 | .299 | .518 | **.453** | **.308** | **.250** | **.350** | **.533** | .322 | .262 | .241 | .486 | .562 |
+| en-de-fair | fair | EN+DE | **.524** | **.332** | **.503** | **.464** | **.635** | **.728** | **.480** | **.330** | **.296** | **.422** | .383 | .316 | .237 | .304 | .566 | .334 | .240 | .256 | .263 | .478 | .339 | .273 | .243 | .489 | .583 |
+| en-de-starved | starved | EN+DE | **.505** | **.317** | **.465** | **.411** | **.617** | **.683** | **.462** | **.314** | **.275** | **.378** | .340 | .294 | .240 | .305 | .530 | .333 | .257 | .234 | .278 | .477 | .322 | .261 | .252 | .492 | .558 |
+| en-fair | fair | EN | **.525** | **.338** | **.532** | **.501** | **.657** | **.751** | .341 | .289 | .222 | .284 | .377 | .294 | .246 | .296 | .446 | .337 | .244 | .259 | .261 | .473 | .341 | .292 | .244 | .500 | .579 |
+| en-fair-15b | fair | EN | **.484** | **.300** | **.473** | **.417** | **.619** | **.676** | .337 | .280 | .232 | .273 | .338 | .310 | .248 | .288 | .518 | .331 | .236 | .259 | .264 | .465 | .330 | .269 | .241 | .477 | .589 |
+| en-fr-fair | fair | EN+FR | **.502** | **.320** | **.497** | **.463** | **.632** | **.722** | .361 | .277 | .230 | .283 | **.474** | **.339** | **.283** | **.447** | **.699** | .333 | .238 | .251 | .268 | .471 | .359 | .291 | .248 | .500 | .540 |
+| en-fr-starved | starved | EN+FR | **.500** | **.307** | **.481** | **.431** | **.625** | **.687** | .341 | .278 | .204 | .284 | **.479** | **.322** | **.280** | **.424** | **.639** | .335 | .279 | .240 | .280 | .465 | .333 | .280 | .242 | .507 | .577 |
+| en-starved | starved | EN | **.495** | **.311** | **.531** | **.472** | **.637** | **.728** | .349 | .274 | .220 | .285 | .336 | .289 | .229 | .302 | .542 | .332 | .273 | .240 | .278 | .469 | .328 | .251 | .244 | .496 | .593 |
+| en-starved-15b | starved | EN | **.507** | **.297** | **.454** | **.389** | **.608** | **.675** | .337 | .280 | .224 | .278 | .331 | .304 | .231 | .298 | .518 | .344 | .266 | .235 | .278 | .469 | .333 | .259 | .259 | .482 | .536 |
+| en-zh-fair | fair | EN+ZH | **.511** | **.322** | **.513** | **.456** | **.624** | **.725** | .337 | .270 | .246 | .274 | .354 | .303 | .258 | .286 | .470 | .336 | .249 | .264 | .262 | .472 | **.420** | **.290** | **.305** | **.570** | **.700** |
+| en-zh-fair-23b | fair | EN+ZH | **.486** | **.310** | **.479** | **.392** | **.610** | **.691** | .341 | .272 | .240 | .267 | .339 | .301 | .239 | .287 | .566 | .334 | .233 | .263 | .256 | .465 | **.416** | **.302** | **.294** | **.559** | **.710** |
+| en-zh-starved | starved | EN+ZH | **.480** | **.307** | **.477** | **.427** | **.621** | **.722** | .335 | .279 | .217 | .284 | .345 | .288 | .238 | .296 | .542 | .333 | .264 | .236 | .277 | .465 | **.407** | **.296** | **.285** | **.551** | **.708** |
+| en-zh-starved-23b | starved | EN+ZH | **.476** | **.277** | **.448** | **.369** | **.598** | **.667** | .331 | .281 | .205 | .277 | .337 | .307 | .245 | .294 | .494 | .339 | .257 | .255 | .275 | .471 | **.398** | **.286** | **.270** | **.549** | **.687** |
+| fr-fair | fair | FR | .456 | .293 | .378 | .337 | .570 | .610 | .347 | .274 | .238 | .269 | **.467** | **.342** | **.294** | **.435** | **.627** | .333 | .267 | .260 | .262 | .474 | .332 | .266 | .250 | .495 | .569 |
+| fr-fair-15b | fair | FR | .457 | .281 | .349 | .304 | .533 | .583 | .340 | .271 | .243 | .263 | **.471** | **.312** | **.259** | **.379** | **.627** | .333 | .246 | .252 | .265 | .469 | .340 | .250 | .265 | .475 | .538 |
+| fr-starved | starved | FR | .443 | .289 | .371 | .320 | .547 | .582 | .340 | .284 | .238 | .280 | **.466** | **.320** | **.281** | **.409** | **.602** | .342 | .270 | .252 | .279 | .471 | .333 | .259 | .249 | .495 | .528 |
+| fr-starved-15b | starved | FR | .398 | .266 | .344 | .297 | .510 | .551 | .339 | .293 | .222 | .280 | **.443** | **.316** | **.257** | **.358** | **.590** | .333 | .259 | .253 | .272 | .467 | .339 | .253 | .258 | .474 | .520 |
+| zh-fair-12b | fair | ZH | .420 | .274 | .332 | .291 | .526 | .584 | .330 | .257 | .241 | .262 | .350 | .263 | .251 | .267 | .482 | .331 | .242 | .263 | .252 | .467 | **.398** | **.317** | **.285** | **.554** | **.671** |
+| zh-starved-12b | starved | ZH | .421 | .278 | .317 | .285 | .510 | .545 | .338 | .276 | .220 | .274 | .324 | .283 | .235 | .283 | .506 | .331 | .229 | .261 | .258 | .461 | **.374** | **.277** | **.283** | **.541** | **.641** |
 
 ### Same-script vs. cross-script transfer (matched-token, bootstrap CIs)
 
@@ -678,56 +712,43 @@ paired bootstrap in `analyze_alignment.py` does not apply to it), and the fr
 starved cell is contaminated by the anomaly below. Getting CIs on CKA needs a
 different resampling scheme than the one implemented.
 
-### Resolution: d' de-saturates, and the sign flips by script
+### Resolution: alignment transfer, corrected for layer-selection bias
 
-The sweep was rerun with **`d' = (matched - mean_nonmatched) / std_nonmatched`**
-per query (unbounded, scale-free, per-example so the existing paired bootstrap
-applies). It resolves cleanly where top-1 could not. Delta vs the **matched-token
-partner-language monolingual** — the meaningful control, since it already knows
-the partner language — all CIs excluding 0:
+`d' = (matched - mean_nonmatched) / std_nonmatched` per query (unbounded,
+scale-free, per-example so the existing paired bootstrap applies) resolves
+the saturation problem cleanly, but an earlier pass scored every model at one
+fixed layer (`REF_LAYER_FRAC`, chosen up front to avoid cherry-picking a
+model's own best layer) and got it wrong: it produced negative same-script
+(de/fr) deltas alongside positive cross-script (ar/zh) ones — since
+retracted. Cause: **bilinguals develop cross-lingual alignment DEEPER in the
+network than monolinguals do** (bilingual peaks cluster at L15-16,
+monolingual at L12-16), so a fixed 75%-depth probe systematically
+undersamples the bilingual and manufactures a negative delta that isn't
+there once each model is scored at its own peak layer instead:
 
-| partner | script | tok | bilingual d' | partner-mono d' | Δ [95% CI] |
-|---|---|---|---|---|---|
-| de | same | fair | 6.50 | 7.13 | **-0.63 [-0.69, -0.57]** |
-| fr | same | fair | 6.65 | 7.67 | **-1.02 [-1.09, -0.95]** |
-| fr | same | starved | 7.66 | 7.95 | **-0.30 [-0.40, -0.19]** |
-| ar | cross | fair | 6.65 | 5.89 | **+0.76 [+0.70, +0.81]** |
-| ar | cross | starved | 6.58 | 5.05 | **+1.52 [+1.46, +1.58]** |
-| zh | cross | fair | 6.32 | 5.83 | **+0.49 [+0.43, +0.54]** |
-| zh | cross | starved | 5.60 | 6.08 | **-0.48 [-0.57, -0.40]** |
-
-⚠️ **RETRACTED: the negative same-script deltas above are a LAYER ARTIFACT.**
-Scoring each model at its own peak layer instead of the fixed `ref` layer flips
-every negative sign positive:
-
-| partner | tok | Δ @ ref (L12) | Δ @ peak |
-|---|---|---|---|
-| de | fair | **-0.63** | **+0.66** (bi L16 vs mono L15) |
-| fr | fair | **-1.02** | **+0.43** (bi L16 vs mono L14) |
-| fr | starved | **-0.30** | **+0.53** (bi L15 vs mono L14) |
-| ar | fair | +0.76 | +1.04 |
-| ar | starved | +1.52 | +2.23 |
-| zh | fair | +0.49 | +2.34 |
-| zh | starved | **-0.48** | **+2.33** |
-
-Cause: **bilinguals develop cross-lingual alignment DEEPER in the network than
-monolinguals do** (bilingual peaks cluster at L15-16, monolingual at L12-16), so
-a fixed 75%-depth probe systematically undersamples the bilingual and
-manufactures a negative delta. `REF_LAYER_FRAC` was chosen to avoid the
-selection bias of an argmax layer, which is a real concern — but it silently
-assumed alignment emerges at comparable depth across models, and it does not.
+| partner | tok | Δ @ peak layer |
+|---|---|---|
+| de | fair | **+0.66** (bi L16 vs mono L15) |
+| fr | fair | **+0.43** (bi L16 vs mono L14) |
+| fr | starved | **+0.53** (bi L15 vs mono L14) |
+| ar | fair | +1.04 |
+| ar | starved | +2.23 |
+| zh | fair | +2.34 |
+| zh | starved | +2.33 |
 
 **What survives:** cross-script deltas (ar +1.04/+2.23, zh +2.34/+2.33) are
-larger than same-script (de +0.66, fr +0.43/+0.53) under *both* layer choices.
-That ordering is the robust finding — it is still the reverse of §6's downstream
-C.5 ordering, where same-script transfer was larger. **What does not survive:**
-any claim that same-script alignment transfer is negative or absent.
+larger than same-script (de +0.66, fr +0.43/+0.53) — that ordering held under
+both the (retracted) fixed-layer scoring and this peak-layer scoring, so it's
+the one robust finding here, and it is the reverse of §6's downstream C.5
+ordering, where same-script transfer was larger. **What does not survive:**
+any claim that same-script alignment transfer is negative or absent — that
+was purely the fixed-layer artifact.
 
 **Neither layer rule is clean.** Peak-layer is selection-on-the-metric (inflates,
 and inflates more for noisy profiles); fixed-layer is biased whenever peak depth
 differs systematically, which it does here. Report both, or bootstrap the layer
-choice, before quoting a number. The per-layer profile is the honest object;
-`load_embeddings()` regenerates it on CPU in seconds.
+choice, before quoting a number from a future rerun. The per-layer profile is
+the honest object; `load_embeddings()` regenerates it on CPU in seconds.
 
 **Caveat on the "same-script vs cross-script" summary row:** it averages *both*
 controls, and the EN-only control is catastrophically bad at Arabic (d' 1.45),
@@ -840,14 +861,13 @@ gitignore them.
   `embeddings/`, full report `align_v2.txt`. The v1 (pre-d', pre-embeddings)
   results are archived at `results/alignment_v1_noemb/`.
 - **Pick a defensible layer rule, then re-derive every alignment delta** (§6b).
-  This is now the blocking issue: the fixed `ref` layer and the per-model peak
-  layer give *opposite signs* for same-script transfer (-1.02 vs +0.43 on
-  fr/fair), because bilinguals align deeper (L15-16) than monolinguals (L12-16).
-  Neither rule is clean — fixed-layer is biased when peak depth differs, peak is
-  selection-on-the-metric. Options: bootstrap the layer jointly with the queries;
-  integrate over the profile; or match on depth-of-emergence. Only the
-  *ordering* (cross-script > same-script) is currently robust; no signed
-  same-script claim is.
+  The fixed `ref` layer gave same-script transfer the wrong sign (retracted —
+  bilinguals align deeper, L15-16, than monolinguals, L12-16, so a fixed
+  75%-depth probe undersamples the bilingual); peak-layer scoring fixes the
+  sign but is itself selection-on-the-metric, so isn't a clean final answer
+  either. Options: bootstrap the layer jointly with the queries; integrate
+  over the profile; or match on depth-of-emergence. Only the *ordering*
+  (cross-script > same-script) is robust across both layer choices so far.
 - **Re-derive the CKA table off the peak layer too** — every CKA number in §6b
   is at the fixed `ref` layer and inherits exactly the same bias (that is what
   made fr-starved look broken). Pure CPU on the cached embeddings.
