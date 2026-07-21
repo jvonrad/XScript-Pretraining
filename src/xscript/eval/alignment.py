@@ -204,6 +204,31 @@ def _retrieval(E, F, with_hits=False):
     return r
 
 
+def _discriminability(sim):
+    """Per-query margin and d' from a [n, n] similarity matrix.
+
+    ``d' = (matched - mean_nonmatched) / std_nonmatched`` per query. Unlike
+    top-1 accuracy this is continuous and cannot ceiling -- top-1 saturated
+    above 0.95 even for monolingual CONTROLS on this pool, which is why it is
+    the preferred statistic (see the module docstring). Dividing by the
+    non-match spread also makes it scale-free: models differ in overall cosine
+    scale, so a raw margin is not comparable across them.
+
+    Computed from row sums rather than materialising the off-diagonal (which
+    would be an n x (n-1) copy).
+    """
+    n = sim.shape[0]
+    matched = np.diag(sim).astype(np.float64)
+    s1 = sim.sum(1).astype(np.float64) - matched
+    s2 = (sim.astype(np.float64) ** 2).sum(1) - matched ** 2
+    m = n - 1
+    mean_off = s1 / m
+    var_off = np.maximum(s2 / m - mean_off ** 2, 0.0)
+    margin = matched - mean_off
+    dprime = margin / np.maximum(np.sqrt(var_off), 1e-9)
+    return margin, dprime
+
+
 def _retrieval_sim(sim, with_hits=False):
     """Retrieval metrics from a precomputed [n, n] similarity matrix."""
     n = sim.shape[0]
@@ -221,9 +246,14 @@ def _retrieval_sim(sim, with_hits=False):
            "cosine_nonmatched": nonmatched,
            "cosine_margin": matched - nonmatched,
            "n": n}
+    margin_q, dprime_q = _discriminability(sim)
+    res["dprime"] = float(dprime_q.mean())
     if with_hits:
         res["hits"] = {"a2b": hit_ab.astype(np.uint8).tolist(),
                        "b2a": hit_ba.astype(np.uint8).tolist()}
+        # per-query d' so analyze_alignment.py can paired-bootstrap it exactly
+        # the way it does the 0/1 retrieval hits.
+        res["dprime_q"] = [round(float(x), 4) for x in dprime_q]
     return res
 
 
@@ -259,7 +289,8 @@ def _pair_layers(EA, EB, ref_layer):
 def compute(run_name: str, tok_name: str, split: str = "dev",
             model=None, device=None, seq_len: int = 2048,
             langs: list[str] | None = None, batch: int = 16,
-            max_tokens: int = 256, limit: int | None = None) -> dict:
+            max_tokens: int = 256, limit: int | None = None,
+            emb_dir=None) -> dict:
     """Alignment for every unordered pair among ``langs``.
 
     ``langs=None`` falls back to the checkpoint's own training mixture (the
@@ -300,6 +331,12 @@ def compute(run_name: str, tok_name: str, split: str = "dev",
 
     n_layers = emb[eval_langs[0]].shape[0]
     ref_layer = min(n_layers - 1, max(0, round(REF_LAYER_FRAC * (n_layers - 1))))
+    if emb_dir:
+        p = save_embeddings(emb_dir, run_name,
+                            {**meta, "n_layers": n_layers, "ref_layer": ref_layer,
+                             "n_sentences": len(par[eval_langs[0]]),
+                             "max_tokens": max_tokens, "dtype": "float32"}, emb)
+        print(f"[align] cached embeddings -> {p}")
     pairs = {}
     for a, b in combinations(eval_langs, 2):
         same_script = LANGS[a].script == LANGS[b].script
@@ -311,6 +348,40 @@ def compute(run_name: str, tok_name: str, split: str = "dev",
     return {**meta, "n_layers": n_layers, "ref_layer": ref_layer,
             "n_sentences": len(par[eval_langs[0]]), "fixed_width": width,
             "lexical_baseline": lexical_baseline(encoded), "pairs": pairs}
+
+
+def save_embeddings(emb_dir, run_name, meta: dict, emb: dict) -> Path:
+    """Persist the pooled per-layer embeddings for later metric work.
+
+    ``(n_layers+1, N, dim)`` fp32 per language -- ~280 MB/language/model, so
+    ~1.4 GB per model and ~36 GB for the full 26-model roster. That is cheap
+    against the alternative: every new statistic otherwise costs a full sweep
+    (~100 GB of checkpoint re-download plus 26 forward passes), because the
+    forward pass is 84% of runtime. With these cached, a new metric is a
+    pure-CPU pass over local arrays and needs neither Neuron nor the network.
+
+    fp32 (not fp16) so recomputed metrics reproduce the in-run numbers exactly.
+    Sentence order is `flores.load_parallel(langs, split)`'s -- the sorted
+    intersection of FLORES ids -- and is deterministic, so it can be
+    regenerated from the recorded `split`/`eval_langs`.
+    """
+    emb_dir = ensure(Path(emb_dir))
+    out = emb_dir / f"{run_name}.npz"
+    tmp = out.with_suffix(".npz.tmp")
+    # Write via an open handle: np.savez APPENDS ".npz" to a path-like target
+    # that lacks it, which would silently produce "<name>.npz.tmp.npz".
+    with open(tmp, "wb") as fh:
+        np.savez(fh, __meta__=np.array(json.dumps(meta)),
+                 **{l: v.astype(np.float32) for l, v in emb.items()})
+    tmp.rename(out)                                   # atomic: no partial file
+    return out
+
+
+def load_embeddings(emb_dir, run_name) -> tuple[dict, dict]:
+    """Inverse of `save_embeddings` -> (meta, {lang: (n_layers+1, N, dim)})."""
+    z = np.load(Path(emb_dir) / f"{run_name}.npz")
+    meta = json.loads(str(z["__meta__"]))
+    return meta, {k: z[k] for k in z.files if k != "__meta__"}
 
 
 def _load_model(run_name: str, device, tag: str = "final"):

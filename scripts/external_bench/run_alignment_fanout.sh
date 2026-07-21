@@ -26,7 +26,8 @@ command -v neuron-ls >/dev/null || { echo "ERROR: activate ~/neuron_venv first";
 
 mkdir -p "$WORK"
 RESULTS="$WORK/results/alignment"
-mkdir -p "$RESULTS"
+EMB="${EMB_DIR:-$WORK/embeddings}"
+mkdir -p "$RESULTS" "$EMB"
 
 # --- free devices -> logical core-pairs ------------------------------------
 # neuron-ls columns: | device | cores | ... | core-ids | ... | PID | ...
@@ -61,12 +62,12 @@ MODELS=(ar-fair ar-fair-15b ar-starved ar-starved-15b de-fair de-fair-15b
 # resume-skip below then treats as done. Their output is a normal result and is
 # reused, so this costs nothing beyond running those two models first.
 for warm in en-fair en-starved; do
-  if [ ! -f "$RESULTS/$warm.json" ]; then
+  if [ ! -f "$RESULTS/$warm.json" ] || [ ! -f "$EMB/$warm.npz" ]; then
     echo "[fanout] warming compile cache with $warm (full run) ..."
     NEURON_RT_VISIBLE_CORES="${FREE_PAIRS[0]}" OMP_NUM_THREADS=$THREADS \
     OPENBLAS_NUM_THREADS=$THREADS MKL_NUM_THREADS=$THREADS \
       python run_alignment.py --repo "$REPO" --runs "$warm" --device xla \
-        --workdir "$WORK" > "$WORK/warm_$warm.log" 2>&1 \
+        --workdir "$WORK" --emb-dir "$EMB" > "$WORK/warm_$warm.log" 2>&1 \
       || echo "[fanout] WARN: warm-up $warm failed, see $WORK/warm_$warm.log"
   fi
 done
@@ -74,14 +75,14 @@ done
 # --- fan out ----------------------------------------------------------------
 i=0
 for m in "${MODELS[@]}"; do
-  [ -f "$RESULTS/$m.json" ] && { echo "[fanout] skip $m (already done)"; continue; }
+  [ -f "$RESULTS/$m.json" ] && [ -f "$EMB/$m.npz" ] && { echo "[fanout] skip $m (already done)"; continue; }
   while [ "$(jobs -rp | wc -l)" -ge "$MAX_JOBS" ]; do sleep 10; done
   pair="${FREE_PAIRS[$(( i % ${#FREE_PAIRS[@]} ))]}"
   echo "[fanout] $m -> cores $pair"
   NEURON_RT_VISIBLE_CORES="$pair" OMP_NUM_THREADS=$THREADS \
   OPENBLAS_NUM_THREADS=$THREADS MKL_NUM_THREADS=$THREADS \
     setsid nohup python run_alignment.py --repo "$REPO" --runs "$m" \
-      --device xla --workdir "$WORK" > "$WORK/$m.log" 2>&1 < /dev/null &
+      --device xla --workdir "$WORK" --emb-dir "$EMB" > "$WORK/$m.log" 2>&1 < /dev/null &
   i=$(( i + 1 ))
   sleep 3   # stagger checkpoint downloads
 done

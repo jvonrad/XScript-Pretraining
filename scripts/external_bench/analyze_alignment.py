@@ -16,9 +16,16 @@ real signal. This mirrors bootstrap_transfer.py's estimator for the downstream
 benchmarks, on the same matched-token checkpoints, so the representation-side
 and behaviour-side numbers are directly comparable.
 
-Metric bootstrapped: bidirectional top-1 retrieval accuracy (a2b and b2a hits
-pooled) at the fixed `ref` layer, in the `centered` variant by default.
+Metric bootstrapped: **d'** by default -- per query,
+`(matched - mean_nonmatched) / std_nonmatched` -- at the fixed `ref` layer, in
+the `centered` variant.
 
+  - `dprime`, not `top1`: bidirectional top-1 retrieval SATURATES on this pool
+    (>0.95 for monolingual *controls*, 0.966-0.995 for every bilingual), so its
+    bilingual-minus-monolingual deltas collapse into noise against the ceiling
+    and must not be quoted. d' is unbounded, and dividing by the non-match
+    spread makes it scale-free, which matters because models differ in overall
+    cosine scale. `--metric top1` reproduces the old behaviour.
   - `ref` layer, not each model's argmax layer: the argmax is selected ON the
     metric, which inflates it and differs per model, so cross-model deltas
     would carry a selection bias. `--layer best` is available for the
@@ -28,10 +35,10 @@ pooled) at the fixed `ref` layer, in the `centered` variant by default.
     that made XNLI ar/zh look like chance before debiasing). `--variant raw`
     for the uncorrected numbers.
 
-Bootstrap caveat: resampling is over QUERIES, holding the 997-sentence
-candidate pool fixed. The CI covers "which sentences did we ask about", not
-"how hard was the pool" -- the pool is identical across every model compared,
-so paired deltas are unaffected, but an absolute accuracy's CI is mildly
+Bootstrap caveat: resampling is over QUERIES, holding the candidate pool
+(n=2009, FLORES+ dev+devtest) fixed. The CI covers "which sentences did we ask
+about", not "how hard was the pool" -- the pool is identical across every model
+compared, so paired deltas are unaffected, but an absolute score's CI is mildly
 optimistic.
 
     python analyze_alignment.py $WORK/results/alignment/
@@ -114,18 +121,34 @@ def cell(data: dict, a: str, b: str, variant: str, layer: str) -> dict | None:
     return p[variant][layer] if p and variant in p else None
 
 
-def hits(data: dict, a: str, b: str, variant: str, layer: str) -> list[int] | None:
-    """Per-query 0/1 hits, both directions concatenated per query index."""
+def hits(data: dict, a: str, b: str, variant: str, layer: str,
+         metric: str = "top1") -> list[list[float]] | None:
+    """Per-query values as one or more parallel series, indexed by query.
+
+    ``top1``   -> two 0/1 series (a->b and b->a retrieval), averaged together.
+    ``dprime`` -> one continuous series, (matched - mean_nonmatched) /
+                  std_nonmatched per query. Preferred: top-1 saturates above
+                  0.95 even for monolingual controls, so its deltas collapse
+                  into noise at the ceiling, while d' is unbounded and
+                  scale-free across models.
+
+    Either way the shape is "a list of series of length n", so the paired
+    bootstrap below is identical for both.
+    """
     c = cell(data, a, b, variant, layer)
-    if not c or "hits" not in c:
+    if not c:
+        return None
+    if metric == "dprime":
+        return [c["dprime_q"]] if c.get("dprime_q") else None
+    if "hits" not in c:
         return None
     h = c["hits"]
     return [h["a2b"], h["b2a"]]
 
 
-def _acc(pair_hits: list[list[int]], idx: list[int]) -> float:
-    a2b, b2a = pair_hits
-    return sum(a2b[i] + b2a[i] for i in idx) / (2 * len(idx))
+def _acc(series: list[list[float]], idx: list[int]) -> float:
+    """Mean of every series over the resampled query indices."""
+    return sum(sum(s[i] for i in idx) for s in series) / (len(series) * len(idx))
 
 
 def paired_delta(bi: list[list[int]], mono: list[list[int]], rng: random.Random):
@@ -225,17 +248,23 @@ def table_cka(models: dict, variant: str, layer: str) -> None:
 
 
 def table_deltas(models: dict, variant: str, layer: str, seed: int,
-                 allow_unmatched: bool = False) -> None:
+                 allow_unmatched: bool = False, metric: str = "top1") -> None:
     print(f"\n## Bilingual - monolingual alignment on the EN-partner pair "
-          f"({variant} / {layer} layer)\n")
+          f"({metric}, {variant} / {layer} layer)\n")
     print("Both monolingual controls are shown. `**bold**` = 95% CI excludes 0. "
           "`~` = the EN control's token budget only approximately matches "
           "(see EN_APPROX). `!` = token budgets NOT matched at all "
           "(--allow-unmatched fallback; delta is confounded by dilution).\n")
-    print("`SAT` = a monolingual CONTROL already scores >0.90 on this pair, so "
-          "the metric is saturated and the delta measures headroom, not "
-          "transfer -- read those rows as 'no room left', never as 'no "
-          "transfer'. `lex` is the model-free TF-IDF floor.\n")
+    if metric == "top1":
+        print("`SAT` = a monolingual CONTROL already scores >0.90 on this pair, "
+              "so the metric is saturated and the delta measures headroom, not "
+              "transfer -- read those rows as 'no room left', never as 'no "
+              "transfer'.\n")
+    else:
+        print("d' is unbounded, so there is no saturation caveat here (unlike "
+              "`--metric top1`). `bilingual` is the absolute d', not a delta.\n")
+    print("`lex` is the model-free TF-IDF floor (a top-1 accuracy, shown for "
+          "reference only -- not comparable to a d' column).\n")
     print("| partner | script | tok | bilingual | lex | vs EN-only mono | vs partner-only mono |")
     print("|---|---|---|---|---|---|---|")
     for partner, script in PARTNERS:
@@ -245,21 +274,22 @@ def table_deltas(models: dict, variant: str, layer: str, seed: int,
             bi = models.get(bi_name)
             if not bi:
                 continue
-            bh = hits(bi, "en", partner, variant, layer)
+            bh = hits(bi, "en", partner, variant, layer, metric)
             if not bh:
                 continue
             base_acc = _acc(bh, list(range(len(bh[0]))))
             cols, ctrl_accs = [], []
             for ctrl, approx in ((mono_en, partner in EN_APPROX), (mono_p, False)):
                 cd = models.get(ctrl) if ctrl else None
-                ch = hits(cd, "en", partner, variant, layer) if cd else None
+                ch = hits(cd, "en", partner, variant, layer, metric) if cd else None
                 if not ch:
                     cols.append("n/a")
                     continue
                 ctrl_accs.append(_acc(ch, list(range(len(ch[0])))))
                 pt, reps = paired_delta(bh, ch, random.Random(seed))
                 cols.append(fmt(pt, *ci95(reps), approx=approx) + flag)
-            sat = " `SAT`" if max(ctrl_accs, default=0) > 0.9 else ""
+            sat = (" `SAT`" if metric == "top1" and max(ctrl_accs, default=0) > 0.9
+                   else "")
             lex = (bi.get("lexical_baseline") or {}).get(pair_key("en", partner))
             lex_s = (f"{(lex['top1_a2b'] + lex['top1_b2a']) / 2:.3f}"
                      if lex else "-")
@@ -267,7 +297,8 @@ def table_deltas(models: dict, variant: str, layer: str, seed: int,
                   f"{cols[0]} | {cols[1]} |")
 
 
-def table_script_contrast(models: dict, variant: str, layer: str) -> None:
+def table_script_contrast(models: dict, variant: str, layer: str,
+                          metric: str = "top1") -> None:
     """Same-script vs cross-script, averaged over the trained bilinguals."""
     print(f"\n## Same-script vs cross-script ({variant} / {layer} layer)\n")
     print("| script class | partners | mean bilingual acc | mean control acc | mean gap |")
@@ -278,11 +309,11 @@ def table_script_contrast(models: dict, variant: str, layer: str) -> None:
             bi = models.get(BI_MATCHED[partner][tok])
             if not bi:
                 continue
-            bh = hits(bi, "en", partner, variant, layer)
+            bh = hits(bi, "en", partner, variant, layer, metric)
             if not bh:
                 continue
             ctrls = [models.get(n) for n in (EN_MATCHED[tok], MONO_MATCHED[partner][tok]) if n]
-            ch = [hits(c, "en", partner, variant, layer) for c in ctrls if c]
+            ch = [hits(c, "en", partner, variant, layer, metric) for c in ctrls if c]
             ch = [h for h in ch if h]
             if not ch:
                 continue
@@ -322,6 +353,9 @@ def main() -> None:
     ap.add_argument("results_dir", type=Path)
     ap.add_argument("--variant", default="centered", choices=["centered", "raw"])
     ap.add_argument("--layer", default="ref", choices=["ref", "best"])
+    ap.add_argument("--metric", default="dprime", choices=["dprime", "top1"],
+                    help="dprime (default) is unbounded and scale-free; top1 "
+                         "saturates above 0.95 even for controls on this pool")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--allow-unmatched", action="store_true",
                     help="fall back to the original 30B checkpoints where no "
@@ -335,10 +369,11 @@ def main() -> None:
     n = next((d.get("n_sentences") for d in models.values() if d.get("n_sentences")), "?")
     print(f"# Cross-lingual representation alignment\n")
     print(f"{len(models)} models, FLORES+ n={n}, variant={args.variant}, "
-          f"layer={args.layer}, B={B} bootstrap replicates.")
+          f"layer={args.layer}, metric={args.metric}, B={B} bootstrap replicates.")
 
-    table_deltas(models, args.variant, args.layer, args.seed, args.allow_unmatched)
-    table_script_contrast(models, args.variant, args.layer)
+    table_deltas(models, args.variant, args.layer, args.seed,
+                 args.allow_unmatched, args.metric)
+    table_script_contrast(models, args.variant, args.layer, args.metric)
     table_raw(models, args.variant, args.layer)
     table_cka(models, args.variant, args.layer)
     table_layers(models, args.variant)

@@ -678,6 +678,59 @@ paired bootstrap in `analyze_alignment.py` does not apply to it), and the fr
 starved cell is contaminated by the anomaly below. Getting CIs on CKA needs a
 different resampling scheme than the one implemented.
 
+### Resolution: d' de-saturates, and the sign flips by script
+
+The sweep was rerun with **`d' = (matched - mean_nonmatched) / std_nonmatched`**
+per query (unbounded, scale-free, per-example so the existing paired bootstrap
+applies). It resolves cleanly where top-1 could not. Delta vs the **matched-token
+partner-language monolingual** — the meaningful control, since it already knows
+the partner language — all CIs excluding 0:
+
+| partner | script | tok | bilingual d' | partner-mono d' | Δ [95% CI] |
+|---|---|---|---|---|---|
+| de | same | fair | 6.50 | 7.13 | **-0.63 [-0.69, -0.57]** |
+| fr | same | fair | 6.65 | 7.67 | **-1.02 [-1.09, -0.95]** |
+| fr | same | starved | 7.66 | 7.95 | **-0.30 [-0.40, -0.19]** |
+| ar | cross | fair | 6.65 | 5.89 | **+0.76 [+0.70, +0.81]** |
+| ar | cross | starved | 6.58 | 5.05 | **+1.52 [+1.46, +1.58]** |
+| zh | cross | fair | 6.32 | 5.83 | **+0.49 [+0.43, +0.54]** |
+| zh | cross | starved | 5.60 | 6.08 | **-0.48 [-0.57, -0.40]** |
+
+**Same-script deltas are negative; Arabic's are clearly positive.** A German- or
+French-only model *already* aligns its language with English better than the
+corresponding bilingual does — shared script, cognates and shared subword
+vocabulary give same-script alignment away for free, and adding English training
+does not improve it (plausibly the bilingual spends capacity keeping the two
+languages separable). Arabic is the opposite: the monolingual starts low (5.89 /
+5.05) and joint training lifts it substantially. Chinese splits by tokenizer
+(+0.49 fair, -0.48 starved) and its EN anchor is the `~`-flagged approximate
+one, so treat zh as unresolved.
+
+Read against §6's downstream result — where same-script transfer was the
+*larger* effect — the representation side says the reverse. The two are not
+contradictory (behavioural transfer and representational alignment are
+different quantities) but the tension is the interesting finding, not a bug to
+reconcile away.
+
+**Caveat on the "same-script vs cross-script" summary row:** it averages *both*
+controls, and the EN-only control is catastrophically bad at Arabic (d' 1.45),
+which inflates the cross-script mean exactly as it did under top-1. Read the
+per-row **partner-mono** column above, never that summary.
+
+### Cached embeddings — do metric work from these, not from a rerun
+
+`run_alignment.py --emb-dir` (used by the fan-out) persists the pooled per-layer
+embeddings: `(n_layers+1, 2009, 2048)` fp32 per language, one `.npz` per model,
+**34 GB for all 26** at `/mnt/scratch/xscript_align/embeddings/`. Verified to
+reproduce the in-run top-1, d' and per-example hit lists **bit-for-bit** (hence
+fp32, not fp16). Load with `alignment.load_embeddings(emb_dir, run_name)`.
+
+This matters because the forward pass is 84% of runtime and a rerun otherwise
+costs ~100 GB of checkpoint re-download. Any *new* statistic — CKA CIs via
+Gram-matrix resampling, anisotropy/effective-rank probes, a different pooling or
+layer — is now a pure-CPU pass over local arrays needing neither Neuron nor the
+network. Do not rerun the sweep to try a new metric.
+
 **Open anomaly — `fr-starved` / `fr-starved-15b`:** every pair *involving
 French* has anomalously low CKA (EN-FR 0.226/0.383, DE-FR 0.164/0.229, FR-AR
 0.130/0.169) while non-French pairs in the same models are normal (EN-DE 0.641,
@@ -748,17 +801,26 @@ gitignore them.
 
 ## 8. Open / next steps
 
-- **Run the alignment sweep over all 26 checkpoints** (§6b). Only 3 are done
-  (`ar-fair`, `zh-fair-12b`, `zh-starved-12b`) — the only checkpoints present
-  on the box; the other 23 need a download and the repo is private, so
-  `export HF_TOKEN=...` then `bash run_alignment_fanout.sh`. Those 3 establish
-  the controls and the saturation problem but contain **no bilingual model**,
-  so `analyze_alignment.py`'s delta tables — where the actual answer lives —
-  are still empty.
-- Alignment saturates even at n=2009 (§6b). If the bilingual deltas come back
-  `SAT` across the board, switch the reported statistic to `cka` /
-  `cosine_margin` (already recorded per layer, and they don't ceiling), or
-  enlarge the pool beyond FLORES+ dev+devtest.
+- ~~Run the alignment sweep~~ **DONE** — all 26 checkpoints, n=2009, with d'
+  and cached embeddings (§6b). Results in
+  `/mnt/scratch/xscript_align/results/alignment/`, embeddings alongside in
+  `embeddings/`, full report `align_v2.txt`. The v1 (pre-d', pre-embeddings)
+  results are archived at `results/alignment_v1_noemb/`.
+- **Decide what the same-script/cross-script sign flip means** (§6b): d' deltas
+  vs the partner-language monolingual are *negative* for de/fr and clearly
+  *positive* for ar — the reverse of §6's downstream C.5 ordering. Both are
+  well-powered; reconciling them (or arguing they measure different things) is
+  the write-up's job, not a bug to fix. zh is unresolved (splits by tokenizer,
+  approximate EN anchor).
+- **Resolve the `fr-starved` CKA anomaly** (§6b) — fertility is ruled out
+  (fr's starved/destarved ratio is 1.30 vs ar's 1.48, and ar-starved's CKA is
+  healthy), so probe representation anisotropy / effective rank instead. Pure
+  CPU on the cached embeddings; no rerun needed. The fr/starved delta row is
+  not trustworthy until this is settled.
+- **CKA confidence intervals** via Gram-matrix resampling (resample a
+  precomputed [n,n] Gram, ~4M ops/replicate — recomputing X^T Y per replicate is
+  not tractable). CKA is currently the only quotable-looking number with no
+  error bars.
 - Confirm the Belebele cloze+PMI 0.34 at larger n (≥400) — is there real reading
   signal or is it noise?
 - Optionally run the full standard `external_bench` suite (all examples) for the

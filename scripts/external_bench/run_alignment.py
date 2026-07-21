@@ -52,6 +52,11 @@ def main() -> None:
                          "fixed graph width on XLA")
     ap.add_argument("--limit", type=int, default=None,
                     help="use only the first N parallel sentences (smoke tests)")
+    ap.add_argument("--emb-dir", default=None,
+                    help="cache the pooled per-layer embeddings here (~1.4 GB "
+                         "per model). Lets any new metric be recomputed on CPU "
+                         "without re-downloading checkpoints or re-running the "
+                         "forward pass (84%% of runtime).")
     ap.add_argument("--keep-checkpoints", action="store_true")
     args = ap.parse_args()
 
@@ -156,7 +161,8 @@ def main() -> None:
         try:
             alignment.run(run, tok, split=args.split, out_dir=out_dir,
                           device=dev, langs=args.langs, batch=args.batch_size,
-                          max_tokens=args.max_tokens, limit=args.limit)
+                          max_tokens=args.max_tokens, limit=args.limit,
+                          emb_dir=args.emb_dir)
         except Exception as exc:
             import traceback
             print(f"[align] {run} FAILED: {type(exc).__name__}: {exc}")
