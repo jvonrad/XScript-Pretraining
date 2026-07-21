@@ -696,21 +696,38 @@ the partner language — all CIs excluding 0:
 | zh | cross | fair | 6.32 | 5.83 | **+0.49 [+0.43, +0.54]** |
 | zh | cross | starved | 5.60 | 6.08 | **-0.48 [-0.57, -0.40]** |
 
-**Same-script deltas are negative; Arabic's are clearly positive.** A German- or
-French-only model *already* aligns its language with English better than the
-corresponding bilingual does — shared script, cognates and shared subword
-vocabulary give same-script alignment away for free, and adding English training
-does not improve it (plausibly the bilingual spends capacity keeping the two
-languages separable). Arabic is the opposite: the monolingual starts low (5.89 /
-5.05) and joint training lifts it substantially. Chinese splits by tokenizer
-(+0.49 fair, -0.48 starved) and its EN anchor is the `~`-flagged approximate
-one, so treat zh as unresolved.
+⚠️ **RETRACTED: the negative same-script deltas above are a LAYER ARTIFACT.**
+Scoring each model at its own peak layer instead of the fixed `ref` layer flips
+every negative sign positive:
 
-Read against §6's downstream result — where same-script transfer was the
-*larger* effect — the representation side says the reverse. The two are not
-contradictory (behavioural transfer and representational alignment are
-different quantities) but the tension is the interesting finding, not a bug to
-reconcile away.
+| partner | tok | Δ @ ref (L12) | Δ @ peak |
+|---|---|---|---|
+| de | fair | **-0.63** | **+0.66** (bi L16 vs mono L15) |
+| fr | fair | **-1.02** | **+0.43** (bi L16 vs mono L14) |
+| fr | starved | **-0.30** | **+0.53** (bi L15 vs mono L14) |
+| ar | fair | +0.76 | +1.04 |
+| ar | starved | +1.52 | +2.23 |
+| zh | fair | +0.49 | +2.34 |
+| zh | starved | **-0.48** | **+2.33** |
+
+Cause: **bilinguals develop cross-lingual alignment DEEPER in the network than
+monolinguals do** (bilingual peaks cluster at L15-16, monolingual at L12-16), so
+a fixed 75%-depth probe systematically undersamples the bilingual and
+manufactures a negative delta. `REF_LAYER_FRAC` was chosen to avoid the
+selection bias of an argmax layer, which is a real concern — but it silently
+assumed alignment emerges at comparable depth across models, and it does not.
+
+**What survives:** cross-script deltas (ar +1.04/+2.23, zh +2.34/+2.33) are
+larger than same-script (de +0.66, fr +0.43/+0.53) under *both* layer choices.
+That ordering is the robust finding — it is still the reverse of §6's downstream
+C.5 ordering, where same-script transfer was larger. **What does not survive:**
+any claim that same-script alignment transfer is negative or absent.
+
+**Neither layer rule is clean.** Peak-layer is selection-on-the-metric (inflates,
+and inflates more for noisy profiles); fixed-layer is biased whenever peak depth
+differs systematically, which it does here. Report both, or bootstrap the layer
+choice, before quoting a number. The per-layer profile is the honest object;
+`load_embeddings()` regenerates it on CPU in seconds.
 
 **Caveat on the "same-script vs cross-script" summary row:** it averages *both*
 controls, and the EN-only control is catastrophically bad at Arabic (d' 1.45),
@@ -731,15 +748,31 @@ Gram-matrix resampling, anisotropy/effective-rank probes, a different pooling or
 layer — is now a pure-CPU pass over local arrays needing neither Neuron nor the
 network. Do not rerun the sweep to try a new metric.
 
-**Open anomaly — `fr-starved` / `fr-starved-15b`:** every pair *involving
-French* has anomalously low CKA (EN-FR 0.226/0.383, DE-FR 0.164/0.229, FR-AR
-0.130/0.169) while non-French pairs in the same models are normal (EN-DE 0.641,
-EN-ZH 0.695). The checkpoints are not broken — retrieval on EN-FR is 0.916/0.969
-— so CKA and retrieval genuinely disagree here. Plausibly real (the starved
-tokenizer's poor French coverage raising fertility and changing representation
-geometry, which is exactly the starvation effect the thesis predicts) but
-equally plausibly a length/anisotropy confound from the same fertility change.
-Resolve before using the fr/starved row for anything.
+### RESOLVED — the `fr-starved` "anomaly" is the same layer artifact
+
+The low CKA on French pairs in `fr-starved`/`fr-starved-15b` is **not** a broken
+checkpoint, and CKA and retrieval do **not** disagree (an earlier note here
+claimed they did — that was drawn from a single layer). Per-layer EN-FR profiles
+show both metrics collapsing and recovering together:
+
+```
+layer      0    2    4    6    8   10   12*  14   15   16
+fr-fair   .25  .38  .40  .53  .77  .80  .82  .84  .82  .79   CKA
+fr-starv  .24  .24  .03  .09  .10  .13  .23  .54  .73  .80   CKA
+fr-starv  3.5  6.8  2.7  2.0  3.1  5.1  7.5  8.1  8.5  7.5   d'
+                    ^^^^^^^^^^ both metrics dip together
+```
+(* = the fixed `ref` layer.)
+
+**Peak CKA is 0.797 (fr-starved) vs 0.840 (fr-fair)** — a modest gap, not the
+0.23-vs-0.82 the fixed layer implied. What differs is *depth*: the layer at
+which CKA first reaches ~0.75 is L6 (ar-fair), L7 (fr-fair), L9 (ar-starved),
+**L15 (fr-starved)**. So **starved tokenizers delay the depth at which
+cross-lingual alignment emerges**, with French the extreme case — a real and
+thesis-relevant effect, and the same mechanism behind the retracted deltas
+above. Fertility does not explain *which* models are affected (fr's
+starved/destarved ratio is 1.30, below ar's 1.48), so depth-of-emergence is the
+better description than "starvation degrades French".
 
 **Read this as a warning, not a result.** It is the same failure mode as §6's
 XNLI (an evaluation artifact masquerading as a training finding) and the
@@ -806,17 +839,22 @@ gitignore them.
   `/mnt/scratch/xscript_align/results/alignment/`, embeddings alongside in
   `embeddings/`, full report `align_v2.txt`. The v1 (pre-d', pre-embeddings)
   results are archived at `results/alignment_v1_noemb/`.
-- **Decide what the same-script/cross-script sign flip means** (§6b): d' deltas
-  vs the partner-language monolingual are *negative* for de/fr and clearly
-  *positive* for ar — the reverse of §6's downstream C.5 ordering. Both are
-  well-powered; reconciling them (or arguing they measure different things) is
-  the write-up's job, not a bug to fix. zh is unresolved (splits by tokenizer,
-  approximate EN anchor).
-- **Resolve the `fr-starved` CKA anomaly** (§6b) — fertility is ruled out
-  (fr's starved/destarved ratio is 1.30 vs ar's 1.48, and ar-starved's CKA is
-  healthy), so probe representation anisotropy / effective rank instead. Pure
-  CPU on the cached embeddings; no rerun needed. The fr/starved delta row is
-  not trustworthy until this is settled.
+- **Pick a defensible layer rule, then re-derive every alignment delta** (§6b).
+  This is now the blocking issue: the fixed `ref` layer and the per-model peak
+  layer give *opposite signs* for same-script transfer (-1.02 vs +0.43 on
+  fr/fair), because bilinguals align deeper (L15-16) than monolinguals (L12-16).
+  Neither rule is clean — fixed-layer is biased when peak depth differs, peak is
+  selection-on-the-metric. Options: bootstrap the layer jointly with the queries;
+  integrate over the profile; or match on depth-of-emergence. Only the
+  *ordering* (cross-script > same-script) is currently robust; no signed
+  same-script claim is.
+- **Re-derive the CKA table off the peak layer too** — every CKA number in §6b
+  is at the fixed `ref` layer and inherits exactly the same bias (that is what
+  made fr-starved look broken). Pure CPU on the cached embeddings.
+- ~~Resolve the `fr-starved` CKA anomaly~~ **DONE** (§6b): it is the fixed-layer
+  artifact above, not a broken checkpoint and not a CKA-vs-retrieval
+  disagreement. Peak CKA 0.797 vs fr-fair's 0.840; starved tokenizers delay the
+  depth at which alignment emerges (fr-starved L15 vs fr-fair L7).
 - **CKA confidence intervals** via Gram-matrix resampling (resample a
   precomputed [n,n] Gram, ~4M ops/replicate — recomputing X^T Y per replicate is
   not tractable). CKA is currently the only quotable-looking number with no
