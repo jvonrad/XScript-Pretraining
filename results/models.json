@@ -1,0 +1,813 @@
+{
+  "ar-fair": {
+    "orig_run": "ar__unigram_destarved",
+    "tok": "unigram_destarved",
+    "langs": [
+      "ar"
+    ]
+  },
+  "ar-starved": {
+    "orig_run": "ar__unigram_starved",
+    "tok": "unigram_starved",
+    "langs": [
+      "ar"
+    ]
+  },
+  "de-fair": {
+    "orig_run": "de__unigram_destarved",
+    "tok": "unigram_destarved",
+    "langs": [
+      "de"
+    ]
+  },
+  "en-ar-fair": {
+    "orig_run": "en-ar__unigram_destarved",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "ar"
+    ]
+  },
+  "en-ar-starved": {
+    "orig_run": "en-ar__unigram_starved",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "ar"
+    ]
+  },
+  "en-de-fair": {
+    "orig_run": "en-de__unigram_destarved",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "de"
+    ]
+  },
+  "en-de-starved": {
+    "orig_run": "en-de__unigram_starved",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "de"
+    ]
+  },
+  "en-fr-fair": {
+    "orig_run": "en-fr__unigram_destarved",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "fr"
+    ]
+  },
+  "en-fr-starved": {
+    "orig_run": "en-fr__unigram_starved",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "fr"
+    ]
+  },
+  "en-zh-fair": {
+    "orig_run": "en-zh__unigram_destarved",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "zh"
+    ]
+  },
+  "en-zh-starved": {
+    "orig_run": "en-zh__unigram_starved",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "zh"
+    ]
+  },
+  "en-fair": {
+    "orig_run": "en__unigram_destarved",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en"
+    ]
+  },
+  "en-starved": {
+    "orig_run": "en__unigram_starved",
+    "tok": "unigram_starved",
+    "langs": [
+      "en"
+    ]
+  },
+  "fr-fair": {
+    "orig_run": "fr__unigram_destarved",
+    "tok": "unigram_destarved",
+    "langs": [
+      "fr"
+    ]
+  },
+  "fr-starved": {
+    "orig_run": "fr__unigram_starved",
+    "tok": "unigram_starved",
+    "langs": [
+      "fr"
+    ]
+  },
+  "en-starved-15b": {
+    "orig_run": "en__unigram_starved__step15793_14757M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en"
+    ]
+  },
+  "en-fair-15b": {
+    "orig_run": "en__unigram_destarved__step15937_14755M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en"
+    ]
+  },
+  "ar-starved-15b": {
+    "orig_run": "ar__unigram_starved__step16081_14754M",
+    "tok": "unigram_starved",
+    "langs": [
+      "ar"
+    ]
+  },
+  "ar-fair-15b": {
+    "orig_run": "ar__unigram_destarved__step16081_14754M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "ar"
+    ]
+  },
+  "fr-starved-15b": {
+    "orig_run": "fr__unigram_starved__step16009_14755M",
+    "tok": "unigram_starved",
+    "langs": [
+      "fr"
+    ]
+  },
+  "fr-fair-15b": {
+    "orig_run": "fr__unigram_destarved__step16009_14755M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "fr"
+    ]
+  },
+  "de-fair-15b": {
+    "orig_run": "de__unigram_destarved__step16009_14755M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "de"
+    ]
+  },
+  "zh-starved-12b": {
+    "orig_run": "zh__unigram_starved__step12811_11754M",
+    "tok": "unigram_starved",
+    "langs": [
+      "zh"
+    ]
+  },
+  "zh-fair-12b": {
+    "orig_run": "zh__unigram_destarved__step12811_11754M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "zh"
+    ]
+  },
+  "en-zh-starved-23b": {
+    "orig_run": "en-zh__unigram_starved__step24005_22758M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "zh"
+    ]
+  },
+  "en-zh-fair-23b": {
+    "orig_run": "en-zh__unigram_destarved__step24077_22757M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "zh"
+    ]
+  },
+  "en-starved-1b": {
+    "orig_run": "en__unigram_starved__step1092_1001M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en"
+    ]
+  },
+  "en-starved-2b": {
+    "orig_run": "en__unigram_starved__step2456_2253M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en"
+    ]
+  },
+  "en-starved-5b": {
+    "orig_run": "en__unigram_starved__step5181_4753M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en"
+    ]
+  },
+  "en-starved-8b": {
+    "orig_run": "en__unigram_starved__step8451_7753M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en"
+    ]
+  },
+  "en-starved-12b": {
+    "orig_run": "en__unigram_starved__step12739_11754M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en"
+    ]
+  },
+  "en-fair-1b": {
+    "orig_run": "en__unigram_destarved__step1092_1001M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en"
+    ]
+  },
+  "en-fair-2b": {
+    "orig_run": "en__unigram_destarved__step2456_2253M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en"
+    ]
+  },
+  "en-fair-5b": {
+    "orig_run": "en__unigram_destarved__step5181_4753M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en"
+    ]
+  },
+  "en-fair-8b": {
+    "orig_run": "en__unigram_destarved__step8451_7753M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en"
+    ]
+  },
+  "en-fair-12b": {
+    "orig_run": "en__unigram_destarved__step12811_11754M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en"
+    ]
+  },
+  "ar-starved-1b": {
+    "orig_run": "ar__unigram_starved__step1092_1001M",
+    "tok": "unigram_starved",
+    "langs": [
+      "ar"
+    ]
+  },
+  "ar-starved-2b": {
+    "orig_run": "ar__unigram_starved__step2456_2253M",
+    "tok": "unigram_starved",
+    "langs": [
+      "ar"
+    ]
+  },
+  "ar-starved-5b": {
+    "orig_run": "ar__unigram_starved__step5181_4753M",
+    "tok": "unigram_starved",
+    "langs": [
+      "ar"
+    ]
+  },
+  "ar-starved-8b": {
+    "orig_run": "ar__unigram_starved__step8451_7753M",
+    "tok": "unigram_starved",
+    "langs": [
+      "ar"
+    ]
+  },
+  "ar-starved-12b": {
+    "orig_run": "ar__unigram_starved__step12811_11754M",
+    "tok": "unigram_starved",
+    "langs": [
+      "ar"
+    ]
+  },
+  "ar-fair-1b": {
+    "orig_run": "ar__unigram_destarved__step1092_1001M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "ar"
+    ]
+  },
+  "ar-fair-2b": {
+    "orig_run": "ar__unigram_destarved__step2456_2253M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "ar"
+    ]
+  },
+  "ar-fair-5b": {
+    "orig_run": "ar__unigram_destarved__step5181_4753M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "ar"
+    ]
+  },
+  "ar-fair-8b": {
+    "orig_run": "ar__unigram_destarved__step8451_7753M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "ar"
+    ]
+  },
+  "ar-fair-12b": {
+    "orig_run": "ar__unigram_destarved__step12811_11754M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "ar"
+    ]
+  },
+  "fr-starved-1b": {
+    "orig_run": "fr__unigram_starved__step1092_1001M",
+    "tok": "unigram_starved",
+    "langs": [
+      "fr"
+    ]
+  },
+  "fr-starved-2b": {
+    "orig_run": "fr__unigram_starved__step2456_2253M",
+    "tok": "unigram_starved",
+    "langs": [
+      "fr"
+    ]
+  },
+  "fr-starved-5b": {
+    "orig_run": "fr__unigram_starved__step5181_4753M",
+    "tok": "unigram_starved",
+    "langs": [
+      "fr"
+    ]
+  },
+  "fr-starved-8b": {
+    "orig_run": "fr__unigram_starved__step8451_7753M",
+    "tok": "unigram_starved",
+    "langs": [
+      "fr"
+    ]
+  },
+  "fr-starved-12b": {
+    "orig_run": "fr__unigram_starved__step12811_11754M",
+    "tok": "unigram_starved",
+    "langs": [
+      "fr"
+    ]
+  },
+  "fr-fair-1b": {
+    "orig_run": "fr__unigram_destarved__step1092_1001M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "fr"
+    ]
+  },
+  "fr-fair-2b": {
+    "orig_run": "fr__unigram_destarved__step2456_2253M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "fr"
+    ]
+  },
+  "fr-fair-5b": {
+    "orig_run": "fr__unigram_destarved__step5181_4753M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "fr"
+    ]
+  },
+  "fr-fair-8b": {
+    "orig_run": "fr__unigram_destarved__step8451_7753M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "fr"
+    ]
+  },
+  "fr-fair-12b": {
+    "orig_run": "fr__unigram_destarved__step12811_11754M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "fr"
+    ]
+  },
+  "de-fair-1b": {
+    "orig_run": "de__unigram_destarved__step1092_1001M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "de"
+    ]
+  },
+  "de-fair-2b": {
+    "orig_run": "de__unigram_destarved__step2456_2253M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "de"
+    ]
+  },
+  "de-fair-5b": {
+    "orig_run": "de__unigram_destarved__step5181_4753M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "de"
+    ]
+  },
+  "de-fair-8b": {
+    "orig_run": "de__unigram_destarved__step8451_7753M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "de"
+    ]
+  },
+  "de-fair-12b": {
+    "orig_run": "de__unigram_destarved__step12811_11754M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "de"
+    ]
+  },
+  "zh-starved-1b": {
+    "orig_run": "zh__unigram_starved__step1092_1001M",
+    "tok": "unigram_starved",
+    "langs": [
+      "zh"
+    ]
+  },
+  "zh-starved-2b": {
+    "orig_run": "zh__unigram_starved__step2456_2253M",
+    "tok": "unigram_starved",
+    "langs": [
+      "zh"
+    ]
+  },
+  "zh-starved-5b": {
+    "orig_run": "zh__unigram_starved__step5181_4753M",
+    "tok": "unigram_starved",
+    "langs": [
+      "zh"
+    ]
+  },
+  "zh-starved-8b": {
+    "orig_run": "zh__unigram_starved__step8451_7753M",
+    "tok": "unigram_starved",
+    "langs": [
+      "zh"
+    ]
+  },
+  "zh-fair-1b": {
+    "orig_run": "zh__unigram_destarved__step1092_1001M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "zh"
+    ]
+  },
+  "zh-fair-2b": {
+    "orig_run": "zh__unigram_destarved__step2456_2253M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "zh"
+    ]
+  },
+  "zh-fair-5b": {
+    "orig_run": "zh__unigram_destarved__step5181_4753M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "zh"
+    ]
+  },
+  "zh-fair-8b": {
+    "orig_run": "zh__unigram_destarved__step8451_7753M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "zh"
+    ]
+  },
+  "en-de-starved-2b": {
+    "orig_run": "en-de__unigram_starved__step1911_1753M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "de"
+    ]
+  },
+  "en-de-starved-5b": {
+    "orig_run": "en-de__unigram_starved__step5181_4753M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "de"
+    ]
+  },
+  "en-de-starved-10b": {
+    "orig_run": "en-de__unigram_starved__step10631_9753M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "de"
+    ]
+  },
+  "en-de-starved-15b": {
+    "orig_run": "en-de__unigram_starved__step15865_14756M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "de"
+    ]
+  },
+  "en-de-starved-23b": {
+    "orig_run": "en-de__unigram_starved__step24005_22758M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "de"
+    ]
+  },
+  "en-de-fair-2b": {
+    "orig_run": "en-de__unigram_destarved__step1911_1753M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "de"
+    ]
+  },
+  "en-de-fair-5b": {
+    "orig_run": "en-de__unigram_destarved__step5181_4753M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "de"
+    ]
+  },
+  "en-de-fair-10b": {
+    "orig_run": "en-de__unigram_destarved__step10631_9753M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "de"
+    ]
+  },
+  "en-de-fair-15b": {
+    "orig_run": "en-de__unigram_destarved__step15937_14755M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "de"
+    ]
+  },
+  "en-de-fair-23b": {
+    "orig_run": "en-de__unigram_destarved__step24077_22757M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "de"
+    ]
+  },
+  "en-fr-starved-2b": {
+    "orig_run": "en-fr__unigram_starved__step1911_1753M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "fr"
+    ]
+  },
+  "en-fr-starved-5b": {
+    "orig_run": "en-fr__unigram_starved__step5181_4753M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "fr"
+    ]
+  },
+  "en-fr-starved-10b": {
+    "orig_run": "en-fr__unigram_starved__step10631_9753M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "fr"
+    ]
+  },
+  "en-fr-starved-15b": {
+    "orig_run": "en-fr__unigram_starved__step15865_14756M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "fr"
+    ]
+  },
+  "en-fr-starved-23b": {
+    "orig_run": "en-fr__unigram_starved__step24005_22758M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "fr"
+    ]
+  },
+  "en-fr-fair-2b": {
+    "orig_run": "en-fr__unigram_destarved__step1911_1753M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "fr"
+    ]
+  },
+  "en-fr-fair-5b": {
+    "orig_run": "en-fr__unigram_destarved__step5181_4753M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "fr"
+    ]
+  },
+  "en-fr-fair-10b": {
+    "orig_run": "en-fr__unigram_destarved__step10631_9753M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "fr"
+    ]
+  },
+  "en-fr-fair-15b": {
+    "orig_run": "en-fr__unigram_destarved__step15865_14756M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "fr"
+    ]
+  },
+  "en-fr-fair-23b": {
+    "orig_run": "en-fr__unigram_destarved__step24005_22758M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "fr"
+    ]
+  },
+  "en-ar-starved-2b": {
+    "orig_run": "en-ar__unigram_starved__step1911_1753M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "ar"
+    ]
+  },
+  "en-ar-starved-5b": {
+    "orig_run": "en-ar__unigram_starved__step5181_4753M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "ar"
+    ]
+  },
+  "en-ar-starved-10b": {
+    "orig_run": "en-ar__unigram_starved__step10631_9753M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "ar"
+    ]
+  },
+  "en-ar-starved-15b": {
+    "orig_run": "en-ar__unigram_starved__step15793_14757M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "ar"
+    ]
+  },
+  "en-ar-starved-23b": {
+    "orig_run": "en-ar__unigram_starved__step23933_22758M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "ar"
+    ]
+  },
+  "en-ar-fair-2b": {
+    "orig_run": "en-ar__unigram_destarved__step1911_1753M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "ar"
+    ]
+  },
+  "en-ar-fair-5b": {
+    "orig_run": "en-ar__unigram_destarved__step5181_4753M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "ar"
+    ]
+  },
+  "en-ar-fair-10b": {
+    "orig_run": "en-ar__unigram_destarved__step10631_9753M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "ar"
+    ]
+  },
+  "en-ar-fair-15b": {
+    "orig_run": "en-ar__unigram_destarved__step15937_14755M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "ar"
+    ]
+  },
+  "en-ar-fair-23b": {
+    "orig_run": "en-ar__unigram_destarved__step24077_22757M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "ar"
+    ]
+  },
+  "en-zh-starved-2b": {
+    "orig_run": "en-zh__unigram_starved__step1911_1753M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "zh"
+    ]
+  },
+  "en-zh-starved-5b": {
+    "orig_run": "en-zh__unigram_starved__step5181_4753M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "zh"
+    ]
+  },
+  "en-zh-starved-10b": {
+    "orig_run": "en-zh__unigram_starved__step10631_9753M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "zh"
+    ]
+  },
+  "en-zh-starved-15b": {
+    "orig_run": "en-zh__unigram_starved__step15865_14756M",
+    "tok": "unigram_starved",
+    "langs": [
+      "en",
+      "zh"
+    ]
+  },
+  "en-zh-fair-2b": {
+    "orig_run": "en-zh__unigram_destarved__step1911_1753M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "zh"
+    ]
+  },
+  "en-zh-fair-5b": {
+    "orig_run": "en-zh__unigram_destarved__step5181_4753M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "zh"
+    ]
+  },
+  "en-zh-fair-10b": {
+    "orig_run": "en-zh__unigram_destarved__step10631_9753M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "zh"
+    ]
+  },
+  "en-zh-fair-15b": {
+    "orig_run": "en-zh__unigram_destarved__step15937_14755M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "en",
+      "zh"
+    ]
+  },
+  "zh-fair-15b": {
+    "orig_run": "zh__unigram_destarved__step15865_14756M",
+    "tok": "unigram_destarved",
+    "langs": [
+      "zh"
+    ]
+  },
+  "zh-starved-15b": {
+    "orig_run": "zh__unigram_starved__step15865_14756M",
+    "tok": "unigram_starved",
+    "langs": [
+      "zh"
+    ]
+  }
+}
