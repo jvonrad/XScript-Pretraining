@@ -826,7 +826,11 @@ Verified to reproduce the in-run top-1, d' and per-example hit lists
 **bit-for-bit** (hence fp32, not fp16). Load with
 `alignment.load_embeddings(emb_dir, run_name)`.
 
-**They now live on HF: `jvonrad/xscript-embeddings` (private dataset).** The
+**They now live on HF: `jvonrad/xscript-embeddings` (public dataset, 107
+files, 139.4 GB).** Public rather than private because HF's private-repo
+storage quota rejected the upload at ~109 GB with
+`403 Forbidden: Private repository storage limit`; public repos have no such
+cap and ingest far faster (570 MiB/s vs 55). The
 eval box they were computed on was ephemeral and has been torn down —
 `/mnt/scratch/xscript_align/embeddings/` no longer exists. Fetch with
 `huggingface_hub.snapshot_download(repo_id="jvonrad/xscript-embeddings",
