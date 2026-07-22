@@ -44,6 +44,27 @@ TASKS_BY_LANG = {
 # `xnli_zh` are therefore always scored by `_xnli_debiased` below instead of
 # through lm_eval's task registry -- corrected connectives + standard scoring
 # for ar, PMI (prior-normalized) scoring for zh.
+# fr/de/en entries below are NOT used for scoring -- XNLI_DEBIAS_METHOD has no
+# "fr"/"de"/"en" key, so those languages are never routed through
+# _xnli_debiased() and always score via lm_eval's own registered xnli_{lang}
+# task instead (see run()'s harness_tasks split below). Kept here only because
+# they happen to match lm-eval's own connective words (fr: "Oui"/"Aussi"/"Non",
+# copied from lm_eval/tasks/xnli/utils.py) -- do not assume changing them here
+# changes fr/de/en scoring; it only would if those languages were added to
+# XNLI_DEBIAS_METHOD.
+#
+# NOTE on a confirmed confound in lm-eval's OWN xnli_fr (not this dict, but the
+# same words): "Oui"/"Aussi" cost 1 more token than "Non" under unigram_starved
+# in the full "{premise}, correct? {c}, {hypothesis}" template (0 extra under
+# unigram_destarved -- verified in-template, not just standalone). lm-eval's
+# xnli_common_yaml scores via unnormalized `acc` (raw summed loglikelihood, no
+# length normalization), so this token-count asymmetry is a real, tokenizer-
+# dependent scoring bias toward "Non" specifically under starved -- plausibly
+# contributing to fr's significant fair-vs-starved delta on XNLI (CLAUDE.md
+# section 6, "does the tokenizer change the transfer delta"). Checked and ruled
+# out for ar (0 marginal tokens per connective under both tokenizers, in-
+# template) and for zh (2/1/2 marginal tokens, but IDENTICAL under both
+# tokenizers, so it can't produce a fair-vs-starved difference there).
 XNLI_CONNECTIVES = {
     # lang: (question_word, entailment, neutral, contradiction)
     "en": ("right",   "Yes",  "Also",  "No"),

@@ -5,7 +5,7 @@
 #   export HF_TOKEN=hf_...
 #   bash run_alignment_fanout.sh [WORKDIR]
 #
-# Unlike CLAUDE.md section 5's benchmark fan-out this discovers free devices at
+# Unlike NEURON.md section 5's benchmark fan-out this discovers free devices at
 # runtime instead of assuming the box is idle: it reads neuron-ls for devices
 # with no PID, so a concurrent training run (which pins itself via
 # NEURON_RT_VISIBLE_CORES) is never scheduled over. Re-running skips models that
@@ -87,7 +87,7 @@ for m in "${MODELS[@]}"; do
   sleep 3   # stagger checkpoint downloads
 done
 
-# `wait` on setsid children is unreliable (CLAUDE.md section 5) -- poll instead.
+# `wait` on setsid children is unreliable (NEURON.md section 5) -- poll instead.
 until ! pgrep -f "run_alignment.py --repo $REPO" > /dev/null; do sleep 15; done
 
 echo "[fanout] done. $(ls "$RESULTS"/*.json 2>/dev/null | wc -l)/${#MODELS[@]} results in $RESULTS"

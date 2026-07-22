@@ -113,6 +113,30 @@ def ci95(reps: list[float]) -> tuple[float, float]:
     return lo, hi
 
 
+def diff_of_diffs(bi_f: list[int], mo_f: list[int], bi_s: list[int], mo_s: list[int],
+                  rng: random.Random) -> tuple[float, list[float]]:
+    """(Delta_fair - Delta_starved) where Delta_tok = bilingual(tok) - mono(tok).
+
+    All four hit-lists share the same fixed doc order (the benchmark's own
+    example order, independent of tokenizer -- only the tokenization of each
+    doc differs), so one resample of doc indices applied to all four at once
+    is a valid paired bootstrap of the difference-of-differences -- the direct
+    test of "does fair vs. starved change the transfer delta itself", rather
+    than eyeballing two separate (Delta_fair, Delta_starved) CIs for overlap.
+    """
+    n = min(len(bi_f), len(mo_f), len(bi_s), len(mo_s))
+
+    def delta_of_deltas(idx: list[int]) -> float:
+        df = sum(bi_f[i] for i in idx) / n - sum(mo_f[i] for i in idx) / n
+        ds = sum(bi_s[i] for i in idx) / n - sum(mo_s[i] for i in idx) / n
+        return df - ds
+
+    base = list(range(n))
+    point = delta_of_deltas(base)
+    reps = [delta_of_deltas([rng.randrange(n) for _ in range(n)]) for _ in range(B)]
+    return point, reps
+
+
 def main() -> None:
     if len(sys.argv) != 2:
         sys.exit(__doc__)
@@ -176,6 +200,48 @@ def main() -> None:
                 print(f"| {lang} | {script} | {tok} | **mean ({len(agg_en_point)} benchmarks)** "
                      f"| | **{en_flag}{pt:+.3f} [{lo:+.3f}, {hi:+.3f}]** |")
             print("|   |   |   |   |   |   |")
+
+    print("\n## Does the tokenizer change the transfer delta itself? "
+         f"(Delta_fair - Delta_starved, paired bootstrap, B={B}, 95% CI)\n")
+    print("Direct test, not two separate CIs eyeballed for overlap: resamples "
+         "doc indices once, jointly, across bi-fair/mono-fair/bi-starved/"
+         "mono-starved. `**` = CI excludes 0, i.e. the tokenizer significantly "
+         "changes the transfer delta for that (partner, target) cell.\n")
+    print("Per-benchmark rows are shown too: the aggregate mean can hide "
+         "opposite-signed, individually-significant effects that cancel each "
+         "other out rather than there being no effect at all.\n")
+    print("| partner | script | target | benchmark | Delta_fair - Delta_starved [95% CI] |")
+    print("|---|---|---|---|---|")
+    for lang, script in PAIRS:
+        for target, target_lang, matched in (
+                ("partner-lang", lang, MONO_MATCHED), ("English", "en", EN_MATCHED)):
+            name_f, name_s = matched[lang]["fair"], matched[lang]["starved"]
+            bi_f_name, bi_s_name = BI_MATCHED[lang]["fair"], BI_MATCHED[lang]["starved"]
+            agg_pts, agg_reps = [], []
+            if name_f is None or name_s is None:
+                continue   # e.g. no de-starved-15b was uploaded
+            for fam in TASK_KEY:
+                if target_lang not in TASK_KEY[fam]:
+                    continue
+                bi_f, bi_s = hits(data.get(bi_f_name), target_lang, fam), hits(data.get(bi_s_name), target_lang, fam)
+                mo_f, mo_s = hits(data.get(name_f), target_lang, fam), hits(data.get(name_s), target_lang, fam)
+                if not all([bi_f, bi_s, mo_f, mo_s]):
+                    continue
+                pt, reps = diff_of_diffs(bi_f, mo_f, bi_s, mo_s, rng)
+                lo, hi = ci95(reps)
+                sig = "**" if (lo > 0) == (hi > 0) else ""
+                print(f"| {lang} | {script} | {target} | {fam} | "
+                     f"{sig}{pt:+.3f} [{lo:+.3f}, {hi:+.3f}]{sig} |")
+                agg_pts.append(pt); agg_reps.append(reps)
+            if not agg_pts:
+                continue
+            m = sum(agg_pts) / len(agg_pts)
+            mean_reps = [sum(r[b] for r in agg_reps) / len(agg_reps) for b in range(B)]
+            lo, hi = ci95(mean_reps)
+            sig = "**" if (lo > 0) == (hi > 0) else ""
+            flag = "~" if lang in EN_APPROX and target == "English" else ""
+            print(f"| {lang} | {script} | {target} | **mean** | "
+                 f"{sig}{flag}{m:+.3f} [{lo:+.3f}, {hi:+.3f}]{sig} |")
 
 
 if __name__ == "__main__":

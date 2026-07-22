@@ -81,16 +81,20 @@ an XLA device, not CUDA:
                          from shared disk. The loader is already world-size-
                          independent by construction.
 
-Launch with `scripts/neuron_train/run_train.py` under `torchrun` (see
-`scripts/neuron_train/README.md`). Cooldown branching, WSD schedule, resume,
-log-spaced checkpoints and the run-name matrix all behave exactly as on CUDA.
+Launch with **`xmp.spawn`, NOT `torchrun`** -- torchrun cannot pin a job to a
+subset of cores (torch_neuronx overwrites `NEURON_RT_VISIBLE_CORES` with
+`LOCAL_RANK`), and concurrent jobs must each get a distinct `MASTER_PORT` or the
+second one hangs forever at process-group init. See NEURON.md 9 for the full
+recipe and `/home/ubuntu/xscript_prod/` for a working launcher. Cooldown
+branching, WSD schedule, resume, log-spaced checkpoints and the run-name matrix
+all behave exactly as on CUDA.
 
 The one behavioural knob added here: in-loop BPB eval is OFF by default on
 Neuron (`train.eval_in_loop: false`) because it feeds variable-length docs to
 the model and would trigger endless XLA recompiles mid-training. BPB/BTS are
 computed post-hoc from checkpoints with the existing fixed-shape eval path
 (`src/xscript/eval/bench.py`, `--device xla`) exactly as documented in
-CLAUDE.md. Set `train.eval_in_loop: true` to force it back on.
+NEURON.md 5. Set `train.eval_in_loop: true` to force it back on.
 """
 import json
 import os
@@ -165,7 +169,7 @@ class _ChunkedLMHeadCE(torch.autograd.Function):
     non-chunked `F.cross_entropy(..., ignore_index=-100)` (mean). Uses
     F.cross_entropy per chunk -- the same op the non-chunked path uses, already
     verified correct on this Neuron build -- so it introduces no new gather/one_hot
-    Neuron gotchas (CLAUDE.md 4). `chunk` divides `mb*seq` evenly and both are
+    Neuron gotchas (NEURON.md 4). `chunk` divides `mb*seq` evenly and both are
     static, so the loop unrolls to a fixed XLA graph.
     """
 
@@ -178,7 +182,7 @@ class _ChunkedLMHeadCE(torch.autograd.Function):
         # mis-lowers on this Neuron build (returns -1 instead of the count),
         # which negates and un-normalizes the loss (verified: n_valid=-1 ->
         # loss=-sum). Casting to float32 BEFORE the reduction avoids the bad
-        # bool-reduction lowering. (CPU never sees this; another CLAUDE.md-4-class
+        # bool-reduction lowering. (CPU never sees this; another NEURON.md-4-class
         # silent Neuron numeric bug.)
         n_valid = (targets != -100).to(torch.float32).sum().clamp(min=1.0)
         ctx.n_valid = n_valid
@@ -213,7 +217,7 @@ class _ChunkedLMHeadCE(torch.autograd.Function):
                 grad_x_parts.append(gx)
                 grad_w = grad_w + gw.float()
         # Build grad_x by cat (never per-row in-place scatter on an XLA tensor --
-        # that trips NRT_EXEC_OOB, CLAUDE.md 4).
+        # that trips NRT_EXEC_OOB, NEURON.md 4).
         grad_x = torch.cat(grad_x_parts, dim=0)
         return (grad_x * grad_out).to(x.dtype), (grad_w * grad_out).to(weight.dtype), None, None
 
@@ -523,7 +527,7 @@ class NeuronTrainer:
 
         Build the whole rank batch on the host and move to device ONCE (a
         Neuron requirement: per-row in-place scatter on an XLA tensor trips
-        NRT_EXEC_OOB -- see CLAUDE.md §4).
+        NRT_EXEC_OOB -- see NEURON.md §4).
         """
         arr, counts = self.mixer.rank_batch(self.global_windows, self.rank, self.world)
         t = torch.from_numpy(arr.astype(np.int64))

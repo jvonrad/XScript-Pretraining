@@ -18,7 +18,7 @@ with ``--langs`` if you only want the trained cells.
 
 Writes ``$WORK/results/alignment/<model>.json`` (+ ``.md``). Like
 run_appendix_c5.py it deliberately writes **no shared summary.json**, so a
-fan-out over logical core-pairs can't clobber itself (CLAUDE.md section 5);
+fan-out over logical core-pairs can't clobber itself (NEURON.md section 5);
 aggregate with analyze_alignment.py.
 """
 import argparse

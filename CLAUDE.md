@@ -1,103 +1,45 @@
 # CLAUDE.md
 
-Operational manual for **evaluating the XScript-Pretraining checkpoints on AWS
-Trainium (Neuron)**. The models live on the private HF repo `jvonrad/xscript-eval`
-(15 checkpoints: 5 mono + bilingual, ~1B params, 30B tokens each). This file is
-the context another Claude Code session needs to reproduce the setup, run the
-benchmarks fast on a multi-core `trn2.48xlarge`, and interpret the numbers.
+**Scientific findings** for XScript-Pretraining (cross-script pretraining penalty
+× tokenizer starvation): what the checkpoints actually show on the intrinsic
+(BPB→BTS), downstream (XNLI, Appendix-C.5 suite) and representational
+(MEXA-style alignment) metrics — including, importantly, **which headline
+numbers did not survive scrutiny**.
 
-See [README.md](README.md) for the experiment design (cross-script pretraining
-penalty × tokenizer starvation). This file is about **running the evals**.
+See [README.md](README.md) for the experiment design, and
+**[NEURON.md](NEURON.md)** for everything about *running* this on AWS Trainium:
+environment setup, dependency pins, the XLA scoring adaptation and its silent
+traps, the eval fan-out, and the training port. Section numbers are preserved
+across both files, so cross-references still resolve — **§3, §6, §6b, §8 are
+here; §1, §2, §4, §5, §7, §9 are in NEURON.md**.
 
 ---
 
 ## TL;DR
 
-- The downstream harness (`src/xscript/eval/bench.py` + lm-eval) was CUDA/CPU-only.
-  It has been adapted to run on **Neuron/XLA** with a fixed-shape scoring path
-  (`--device xla`). CPU==XLA verified exact (`xnli_en=0.40` on both).
-- **Two silent Neuron bugs** were found and worked around (see §4). If you touch
-  the scoring code, read that section first — they fail *silently* (wrong numbers,
-  not crashes).
-- **Headline science:** of the three benchmarks, only **XNLI** carries signal at
-  this scale. The apparent "Arabic/Chinese are at chance" result was an
-  **evaluation artifact, not a training failure** — `xnli_ar`/`xnli_zh` are now
-  debiased automatically inside `bench.py` (no separate script needed; see §6).
-  Global-MMLU is genuinely at chance; Belebele has only a faint recoverable
-  signal. See §6.
-
----
-
-## 1. Hardware / environment
-
-Verified on `trn2.3xlarge`, Ubuntu 26.04, kernel `7.0.0-1006-aws`.
-
-- `trn2.3xlarge`: 1 Neuron device, 4 cores, 96 GB, `logical-neuroncore-config 2`
-  → **2 logical cores** (pin with `NEURON_RT_VISIBLE_CORES=0-1` / `2-3`).
-- `trn2.48xlarge`: 16 devices × 4 cores → **32 logical cores** (`0-1`,`2-3`,…,`62-63`).
-  This is the box to use for fast/large-sample runs (§5).
-
-### Setup (once per fresh instance)
-
-```bash
-bash setup_trainium.sh          # copied here from ../Lost-in-Mistranslation; idempotent
-```
-
-It installs the Neuron driver (DKMS — patches the kernel-7.0
-`mm_get_unmapped_area` signature change), compat libs, and a Python-3.11
-`~/neuron_venv` with `torch-neuronx`.
-
-**Known gotcha:** the script ends by `source`-ing the new venv under `set -u`,
-which trips on an unbound `LD_LIBRARY_PATH` and exits non-zero **after the driver
-and venv are already built** but **before the `uv pip install`**. If that
-happens, the driver/venv are fine — just finish the install manually:
-
-```bash
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-}; export PATH="$HOME/.local/bin:$PATH"
-source ~/neuron_venv/bin/activate      # sets PJRT_DEVICE=NEURON, adds neuron-ls to PATH
-uv pip install --index-strategy unsafe-best-match \
-  --extra-index-url=https://pip.repos.neuron.amazonaws.com \
-  torch-neuronx neuronx-cc transformers datasets sentence-transformers accelerate
-```
-
-### Activating in later shells
-
-Always prefix with the `LD_LIBRARY_PATH` guard (the activate script appends to it
-under `set -u` assumptions):
-
-```bash
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-}; export PATH="$HOME/.local/bin:$PATH"
-source ~/neuron_venv/bin/activate
-```
-
-Sanity check the device:
-```bash
-python -c "import torch, torch_neuronx, torch_xla.core.xla_model as xm; \
-d=xm.xla_device(); print((torch.ones(2,2,device=d)+1).sum().item())"   # -> 8.0, 'Compiler status PASS'
-```
-The `libfabric.so.1 / libnccom-net.so` warning at startup is the multi-node
-collectives plugin and is **irrelevant** for single-device inference — ignore it.
-
----
-
-## 2. Dependency pinning (CRITICAL — do not skip)
-
-Installing `torch-neuronx` pulls in **`datasets 5.x`, `huggingface_hub 1.x`,
-`transformers 5.x`**, which are far newer than `lm_eval 0.4.12` and **break it**:
-hub 1.x's strict HF-URI validator rejects lm-eval's legacy `dataset_path: xnli`
-with `HfUriError: ... must be 'namespace/name'`. Pin the eval stack back to the
-0.4.12 era (this does **not** touch `torch==2.9.1`):
-
-```bash
-uv pip install "lm_eval==0.4.12" sentencepiece \
-  "huggingface_hub==0.26.5" "datasets==3.2.0" "transformers==4.47.1" numpy tqdm
-```
-
-These pins are also recorded in [scripts/external_bench/requirements.txt](scripts/external_bench/requirements.txt).
-Verified working set: `torch 2.9.1`, `torch-xla 2.9.0`, `torch-neuronx 2.9.0.2`,
-`datasets 3.2.0`, `huggingface_hub 0.26.5`, `transformers 4.47.1`, `lm_eval 0.4.12`.
-
-`export HF_TOKEN=hf_...` — the repo is **private**; nothing downloads without it.
+- **Only XNLI carries downstream signal at this scale.** The apparent
+  "Arabic/Chinese are at chance" result was an **evaluation artifact, not a
+  training failure** — `xnli_ar`/`xnli_zh` are now debiased automatically inside
+  `bench.py`. Global-MMLU is genuinely at chance; Belebele has only a faint
+  recoverable signal (§6).
+- **The BPB→BTS headline numbers did not survive recomputation.** They are
+  confounded by LR state (cooled finals vs mid-stable intermediates) and swamped
+  by checkpoint noise; the interaction is **not established** at any LR-matched
+  budget (§6). The cooldown-clean W&B-curve version *does* put same-script above
+  the 0.5 dilution null and cross-script below it — but the separation shrinks
+  with scale, so quote the curve, not a single number.
+- **Content-matched (fertility-corrected) BTS is what makes the interaction
+  reproducible**: +0.0058 (FLORES) / +0.0056 (holdout), vs a sign-flipping
+  token-matched version (§6).
+- **Matched-token downstream transfer deltas are the best-powered evidence** —
+  but ⚠️ 5 of 7 cells carry the same LR-state confound; only the `zh` cells are
+  clean (§6).
+- **Representation alignment: only the *ordering* is robust** (cross-script >
+  same-script, the reverse of the downstream ordering). The absolute deltas
+  depend on an unresolved layer-selection rule (§6b).
+- Three times now, an uncontrolled evaluation number turned out to be measuring
+  the benchmark rather than the training (XNLI connectives, Belebele letter
+  format, the alignment fixed-layer probe). Control before quoting.
 
 ---
 
@@ -118,147 +60,209 @@ validates the count against `n_parts.txt`. No manual reassembly needed.
 
 ---
 
-## 4. Neuron/XLA scoring — the adaptation and the silent traps
-
-`bench.py` wraps our Transformer into lm-eval. lm-eval hands it variable-length
-requests; the original code scored them with **dynamic per-batch tensor shapes**,
-which is catastrophic on Neuron (recompiles constantly / silent corruption). The
-adaptation (`XScriptLM._score_active_xla`, `_loglikelihood_tokens`) pads every
-batch in a task to **one fixed `[batch_size, fixed_width]` shape**, so each task
-compiles a single graph. The graph is **weight-independent**, so it compiles once
-on the first model and is cached for all 15. `--device xla` selects this path;
-CPU/CUDA paths are unchanged.
-
-**Three Neuron bugs on this `torch-xla 2.9` / Neuron build** — the first two give
-*wrong numbers, not errors*; the third is a hard compile failure. Guard all
-three if you extend the scoring:
-
-1. **`torch.gather` over the vocab dim silently returns ZEROS.** Do not use it to
-   pick target-token logprobs. Instead select via one-hot multiply and score as
-   `logit − logsumexp` (verified fp32-exact vs CPU). See `_score_active_xla`.
-2. **`F.one_hot(idx, V)` trips `NRT_EXEC_OOB`** if `idx` was clamped on-device
-   (the `-100` pad targets). **Clamp on the host** before `.to(device)`.
-   Likewise, **build input tensors on the host and `.to(device)` once** — per-row
-   in-place scatter on an XLA tensor also trips `NRT_EXEC_OOB`.
-3. **An odd `fixed_width` reliably fails compilation**: `NCC-5266:
-   non-trivial dst dims must have even step for non-FP32 transpose`, on a
-   `Matmult` op inside the model's forward pass. Confirmed deterministic, not
-   a race — reproduced solo, in isolation, twice (e.g. debiased XNLI-zh's
-   `fixed_width=85`, odd, fails every time; ar's `fixed_width=88`, even,
-   never does). `_loglikelihood_tokens` now rounds `fixed_width` up to the
-   next even number unconditionally (the extra column is inert padding,
-   scored the same as any other pad position) — this was the actual cause of
-   the "compile race" originally suspected when two `run_appendix_c5.py`
-   processes crashed simultaneously on the same odd-width graph; isolating
-   them onto separate devices didn't fix it, only the even-width rounding did.
-
-Other notes:
-- Belebele's long passages compile fine at `--batch_size 8` (peak < the 24 GB
-  per-graph HBM ceiling). Keep `--batch_size ≤ 8`.
-- `run_benchmarks.py` prefers the **local repo `src/`** over the bundled HF export
-  when run from inside this repo, so local patches to `bench.py` take effect. If
-  you want the fixes in the portable export, re-upload `src/xscript/**` to the HF
-  repo.
-- Never `kill` a process mid-compile — a truncated entry in
-  `/var/tmp/neuron-compile-cache` is loaded as garbage later. Recover with
-  `rm -rf /var/tmp/neuron-compile-cache`.
-
----
-
-## 5. Running the evals
-
-Workdir holds downloads + results; keep it on a big disk. On `trn2.48xlarge` the
-**root volume is small (~7 GB)** — mount an instance-store NVMe and point
-`HF_HOME`, `TMPDIR`, `UV_CACHE_DIR`, and `NEURON_CC_FLAGS=--cache_dir=...` at it.
-(On `trn2.3xlarge` root was 190 GB — check `df -h /` first.)
-
-```bash
-export HF_TOKEN=hf_...
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-}; source ~/neuron_venv/bin/activate
-cd scripts/external_bench
-WORK=/home/ubuntu/xscript_bench      # or an NVMe path on 48xlarge
-
-# quick sanity matrix over all 15 (≈45 min single-core on 3xlarge):
-python run_benchmarks.py --repo jvonrad/xscript-eval --device xla \
-  --limit 200 --batch-size 8 --workdir $WORK
-```
-
-`xnli_ar`/`xnli_zh` in the output are already debiased (corrected connectives +
-standard scoring for ar, PMI scoring for zh, see §6) — `bench.py`'s `run()`
-routes those two tasks through `_xnli_debiased()` instead of lm-eval's task
-registry automatically, for every `run_benchmarks.py` call. No separate script
-or flag needed. `scripts/external_bench/run_xnli_debiased.py` still exists as a
-standalone diagnostic that reports **both** `standard` and `pmi` per language
-(useful for re-checking which method wins), but is no longer required for
-normal runs.
-
-Results: `run_benchmarks.py` → `$WORK/results/bench/<run>_final.json` +
-`summary.json` (each per-run JSON has an `"xnli_debiased": {"ar": "standard",
-"zh": "pmi"}` field recording which languages were debiased).
-
-### Scaling to 16× TRN (`trn2.48xlarge`, 32 logical cores)
-
-15 models ≤ 32 cores, so **run every model fully in parallel**, one per logical
-core-pair. **Warm the compile cache first** so the parallel jobs all hit cache and
-don't race on first-compile writes:
-
-```bash
-# 1) warm: compile every task-graph shape once, sequentially. One en+partner
-#    model per language family covers all graphs (mono reuse the same shapes).
-for m in en-de-fair en-ar-fair en-fr-fair en-zh-fair; do
-  NEURON_RT_VISIBLE_CORES=0-1 python run_benchmarks.py --repo jvonrad/xscript-eval \
-    --runs $m --limit 8 --device xla --batch-size 8 --workdir $WORK
-done
-
-# 2) fan out: one process per model, pinned to its own logical core-pair.
-models=(ar-fair ar-starved de-fair fr-fair fr-starved en-fair en-starved \
-        en-ar-fair en-ar-starved en-de-fair en-de-starved en-fr-fair \
-        en-fr-starved en-zh-fair en-zh-starved)
-core=0
-for m in "${models[@]}"; do
-  NEURON_RT_VISIBLE_CORES=$core-$((core+1)) setsid nohup \
-    python run_benchmarks.py --repo jvonrad/xscript-eval --runs $m \
-      --device xla --batch-size 8 --workdir $WORK \
-      > $WORK/$m.log 2>&1 < /dev/null &
-  core=$((core+2))
-done
-wait   # all 15 finish in ~the time of the single slowest model
-```
-
-**`wait` on `setsid nohup ... &` children is unreliable** — when the fan-out
-loop itself runs inside another backgrounded/detached shell, `wait` can return
-immediately while the 15 jobs are still running (observed in practice: `wait`
-returned in seconds, but `ps aux | grep run_benchmarks` showed all 15 still
-active minutes later). Don't trust `wait` finishing as proof the fleet is done
-— poll for it instead: `until ! pgrep -f "run_benchmarks.py --repo jvonrad"; do sleep 15; done`,
-or check that all 15 `results/bench/<run>_final.json` files exist.
-
-**`summary.json` is not safe for concurrent writers.** Every parallel process
-writes the *same* `$WORK/results/summary.json`, so with 15 running at once only
-the last one to finish survives in it — don't trust that file after a fan-out
-run. The per-run `results/bench/<run>_final.json` files are each written by
-their own process and are safe; aggregate from those instead, e.g.:
-```bash
-python3 -c "
-import json, glob
-for f in sorted(glob.glob('$WORK/results/bench/*_final.json')):
-    d = json.load(open(f))
-    print(f.split('/')[-1].removesuffix('_final.json'), '->', d['scores'])
-"
-```
-
-Same fan-out pattern still works for the standalone `run_xnli_debiased.py`
-diagnostic (drop `--limit` for the full validation set, or raise it for larger
-MMLU/Belebele samples) — but for normal runs `run_benchmarks.py` alone is
-enough now that debiasing is automatic. `neuron-ls` shows which PID owns which
-core; `neuron-top` is the live util/mem monitor.
-
-**Bigger sample size:** XNLI validation is 2490/lang (already the default full
-run). For Global-MMLU-Lite / Belebele use the full test splits (drop `--limit`).
-
----
-
 ## 6. Scientific findings
+
+### BPB → BTS: recomputed, and the headline numbers do not survive
+
+`results/bts/*` (committed in the first commit, never revisited) is **not
+usable**. It was computed on the training cluster from each run's
+`train.jsonl`, which is unreproducible here (`RUNS` points at a cluster path),
+and it contradicts itself: its two variants disagree in *sign* on the headline
+penalty in all four (source × tokenizer) cells — `matched_total` says
+−0.023..−0.035 (cross-script transfers *better*, i.e. no penalty),
+`matched_lang` says +0.001..+0.013 (penalty exists). Four separate defects:
+
+1. **Token dilution** — `matched_total` compares a 30B mono against a 30B
+   bilingual whose per-language share is only 15B.
+2. **Silent degeneration** — `matched_lang` picks the mono checkpoint *nearest*
+   `total*mix_prob`; for zh that returned the final checkpoint, so zh's
+   "matched_lang" equals its "matched_total" exactly (shift 0.0000) while every
+   other partner shifted +0.04..+0.10. zh is also the only partner with a
+   positive `matched_total`, which is what drives the negative penalty there.
+3. **Non-like-for-like partner sets** — `de-starved` mono does not exist, so
+   `penalty(starved)` averaged same-script over `{fr}` while
+   `penalty(destarved)` used `{de,fr}`; recomputing like-for-like removes
+   65–76% of the reported interaction (and flips its sign in one cell).
+4. **LR-state mismatch** — the decisive one, below.
+
+**Recompute** (`scripts/external_bench/run_bpb.py` + `bts_matched.py`,
+FLORES+ dev+devtest n=2009, per-sentence NLL/bytes, paired bootstrap over
+sentences). The scoring path is `bench.py`'s verified fixed-shape Neuron
+scorer; it reproduces `eval/bpb.py`'s `score_texts` to ~1e-8.
+
+**The LR-state confound.** `base_main.yaml` is WSD (warmup 1B, stable 23B,
+decay 6B): decay starts at **24B**. So every `*-8b`/`*-12b`/`*-15b`/`*-23b`
+checkpoint is a mid-**stable** snapshot at **peak LR 3.0e-3**, while an
+unsuffixed model is the **cooled** 30B final at 3.0e-4. Pairing a mono
+intermediate against a cooled bilingual final hands the bilingual the entire
+decay phase for free. That is exactly what the old `matched_lang` did, and
+what a naive "mono-15b vs en-X-fair" pairing does:
+
+| budget | LR-matched? | BTS range observed |
+|---|---|---|
+| 7.5B (`*-8b` vs `*-15b`) | yes, both @3e-3 | −0.006 .. +0.003 |
+| 11.4B (`*-12b` vs `*-23b`) | yes, both @3e-3 | −0.013 .. +0.001 |
+| 15B (`*-15b` vs cooled final) | **no** (3e-3 vs 3e-4) | **+0.027 .. +0.047** |
+
+The large positive BTS values — old and new — are **substantially a cooldown
+artifact**. At LR-matched budgets transfer to the partner language is
+approximately nil, slightly negative.
+
+**Checkpoint noise dominates what is left.** Between adjacent mono
+checkpoints at peak LR, BPB moves erratically (`ar-fair`: −0.0009 for +52%
+tokens, then −0.0081 for +26%; `ar-starved`: −0.0187 then −0.0044). That
+±0.008–0.019 is 2–4x every LR-matched BTS effect measured, and ~5x the
+bootstrap CIs — which capture only eval-sentence sampling, **not** which
+mid-stable checkpoint was grabbed. So the tight-looking CIs on the LR-matched
+rows understate the real uncertainty, and those BTS values are within
+training noise of zero.
+
+**Status of the headline interaction: not established.** The only
+computable interaction (+0.0091 [+0.0052, +0.0128], same={fr} vs cross={ar})
+comes from the LR-mismatched 15B budget and is not quotable. At LR-matched
+budgets the interaction is not computable at all — `de` has **no starved
+monolingual at any budget**, and the `fr`/`zh` cells at 7.5B/11.4B are not
+uploaded. The one clean same-vs-cross penalty available (7.5B, destarved,
+de vs ar) is **+0.0015 [−0.0017, +0.0047]** — indistinguishable from zero.
+
+**To settle it properly** from checkpoints, the WSD design has the right
+tool: branch `cooldown_run()` from the *stable* checkpoints at a matched
+per-language budget for both mono and bilingual, then compare
+cooled-vs-cooled. But there is a cheaper route that needs no compute at all —
+see below.
+
+### BTS from the W&B training curves (no compute, cooldown-clean)
+
+The trainer already logs `eval/{flores,holdout}_{lang}_bpb` against `tokens_b`
+at every checkpoint interval, so the full loss-vs-tokens curve exists for
+every run in W&B (`jonathan-von-rad/XScript-Pretraining`, 25 runs with usable
+history). `scripts/external_bench/bts_from_wandb.py` pulls them and restricts
+to the **stable-LR window (1B–24B)**, which makes the comparison
+cooldown-clean *by construction* — mono and bilingual are read at an
+identical LR state. It is also denser than any checkpoint grid and recovers
+**holdout** BPB, whose shards are not on the eval box at all.
+
+Two estimators, because the repo and ATLAS do not define BTS the same way:
+
+| | definition | null |
+|---|---|---|
+| repo (`eval/bts.py`) | `(BPB_mono − BPB_bi)/BPB_mono` at matched **per-language** tokens | 0 |
+| ATLAS (2510.22037) | `D_mono(L)/D_bi(L)`, **total** tokens to reach loss L | **0.5** (pure 50/50 dilution); 1.0 = second language free |
+
+**ATLAS BTS, stable window, both eval sets:**
+
+| cell | script | FLORES | holdout | anchor-sensitivity (FLORES) |
+|---|---|---|---|---|
+| de/destarved | same | **0.639** | **0.729** | 0.51–0.72 |
+| fr/starved | same | **0.969** | **0.873** | 0.80–0.97 |
+| ar/destarved | cross | **0.373** | **0.380** | 0.37–0.51 |
+| ar/starved | cross | **0.211** | **0.466** | 0.21–0.68 |
+| zh/destarved | cross | – | **0.420** | 0.38–0.47 |
+| zh/starved | cross | **0.301** | **0.434** | 0.30–0.53 |
+
+**Same-script sits above the 0.5 dilution null, cross-script below it, on
+both eval sets independently.** Adding a same-script partner costs *less*
+total compute than dilution predicts; adding a cross-script partner costs
+*more* — i.e. genuine interference, not merely dilution. This is the first
+result in the project that supports the cross-script penalty on the intrinsic
+metric with the confounds controlled.
+
+**But it is scale-dependent, and that matters.** The repo-style BTS at
+matched per-language tokens is ≈0 in every cell (−0.021..+0.016 on both
+sources) — i.e. by the largest matched budget available the bilingual has
+converged to dilution-parity (ATLAS BTS → 0.5). The anchor-sensitivity column
+shows the same thing: each cell's ATLAS BTS drifts toward 0.5 as the anchor
+moves later. So the separation is real but **shrinks with scale**, and
+quoting a single BTS number (as both `bts.py` and the ATLAS framing invite)
+misrepresents it. Report the curve, or at least the anchor range.
+
+**Extraction gotcha (cost us the interaction once — do not repeat).** The
+trainer logs `tokens_b` and the `eval/*_bpb` metrics in *separate*
+`wandb.log()` calls, so they usually land on different steps. Any pull that
+requires both on the same row silently drops most eval points — it made
+`en-fr__unigram_destarved` look like a 2-point run when it has **29 points
+across full training**. Always pull eval rows on their own and reconstruct
+tokens as `step x tokens_per_step` (the relation is exactly linear; take the
+median ratio over rows that do have both). `bts_from_wandb.py`'s puller
+asserts recovered-records == eval-rows for every run.
+
+The only genuinely missing monolingual is `de` starved, which collapsed
+mid-run (confirmed by live monitoring; visible as anchor BPB ~1.72 vs the
+destarved twin's ~1.06 — it is in `EXCLUDE_RUNS`) and is being retrained. `fr`
+has both conditions, so **the interaction is computable** — see below.
+
+Also note the non-English-anchor bilinguals (`de-ar`, `de-fr`, `de-zh`,
+`fr-*`, `ar-zh`) appear in W&B with ~20 eval points each up to ~11.75B but
+**never actually ran** — excluded in `load()`; do not use them.
+
+### Repo-style BTS at a fixed budget, token- vs content-matched
+
+`bts_content_matched.py` computes the repo's own BTS at a fixed per-language
+budget, in two flavours. The requested "bilingual 24B vs mono 12B" is only
+reachable for **ar** (11.91B/lang); de/fr monolingual curves stop at 7.75B and
+zh's bilingual at 11.75B, so those are reported at the largest budget both
+tokenizer conditions support.
+
+| cell | X/lang | BTS (FLORES) | BTS (holdout) |
+|---|---|---|---|
+| de/destarved (same) | 7.75B | −0.0042 | +0.0014 |
+| fr/starved (same) | 7.75B | +0.0088 | +0.0155 |
+| **ar/destarved (cross)** | **11.91B** | **+0.0028** | **+0.0070** |
+| **ar/starved (cross)** | **11.91B** | **−0.0033** | **+0.0130** |
+| zh/destarved (cross) | 5.88B | −0.0210 | −0.0147 |
+| zh/starved (cross) | 5.88B | −0.0080 | −0.0149 |
+
+Every value is |BTS| ≤ 0.026 — at matched per-language tokens the bilingual is
+indistinguishable from the monolingual, corroborating both the checkpoint-based
+result and the ATLAS-BTS-→0.5 drift above.
+
+**Content matching.** Within one tokenizer condition mono and bilingual share
+a tokenizer, so content-matching cannot change BTS — it only matters for
+comparing the *conditions*, i.e. for the fair-vs-starved gap and hence the
+interaction. The starved tokenizer needs more tokens for the same text
+(fertility ratios starved/fair on FLORES: **ar 1.476, de 1.371, zh 1.304,
+fr 1.301, en 1.200**), so at equal tokens a starved run has seen strictly less
+content — and the distortion is largest for exactly the cross-script language
+the thesis is about. `bts_content_matched.py` evaluates each condition at
+`tokens = bytes x fertility(cond, lang)` for a shared byte target:
+
+### The headline numbers (same=fr, cross={ar,zh}; de/starved absent)
+
+| quantity | FLORES | holdout |
+|---|---|---|
+| penalty(starved) | +0.0212 | +0.0311 |
+| penalty(destarved) | +0.0155 | +0.0255 |
+| **interaction, content-matched** | **+0.0058** | **+0.0056** |
+| interaction, token-matched | −0.0054 | +0.0062 |
+
+**Two results survive every variant tried:**
+
+1. **The cross-script penalty is real and positive** — `penalty > 0` in all
+   8 measurements (both eval sets × both estimators × token/content matching).
+   On the ATLAS estimator it is large (+0.40: fr ≈0.86 vs ar/zh ≈0.44); on the
+   repo estimator small (+0.02..+0.03). Same sign, very different magnitude —
+   the estimators are not interchangeable.
+2. **The interaction is positive, i.e. de-starving the tokenizer shrinks the
+   penalty** — the thesis's predicted direction. ~18–27% of the starved
+   penalty is attributable to tokenizer starvation on the repo estimator
+   (0.0056/0.0311 to 0.0058/0.0212).
+
+**Content-matching is what makes (2) reproducible.** Token-matched, the
+interaction flips sign between eval sets (−0.0054 FLORES vs +0.0062 holdout);
+content-matched, the two agree to three decimals (+0.0058 / +0.0056). This is
+the fertility correction doing real work: at equal *tokens* the starved runs
+have seen ~30–48% less text, and that deficit is confounded with the tokenizer
+quality being measured. **Quote the content-matched interaction, not the
+token-matched one.**
+
+Caveats, none small: the same-script group is **one language** (`fr`) because
+de/starved collapsed, so the penalty is really "fr vs {ar,zh}"; there are **no
+confidence intervals** (one training run per cell, and unlike the downstream
+deltas there is no per-example data to bootstrap); fertility is measured on
+FLORES as a proxy for the training pools; and cells are compared at the
+largest budget each supports (fr 7.75B, ar/zh ~11.2B), so the penalty mixes
+budgets. Landing `de-starved` fixes the first and is the single highest-value
+run remaining.
 
 ### Only XNLI discriminates; MMLU & Belebele are at chance
 From the `--limit 200` matrix over all 15 models (chance: MMLU/Belebele 0.25,
@@ -291,9 +295,14 @@ zh 0.414**.
 (AR, ZH) learn XNLI *comparably* to the same-script ones (EN/DE/FR) at 30B tokens
 — i.e. the apparent cross-script downstream penalty in the raw numbers was largely
 a **measurement artifact**, consistent with the repo's argument about ATLAS's
-penalty. (Intrinsic **BPB→BTS** remains the primary discriminator; downstream
-`acc` can't carry the cross-script question because MMLU/Belebele are at chance and
-XNLI needs the debiasing above.)
+penalty. (This section previously called intrinsic **BPB→BTS** "the primary
+discriminator". That no longer holds: as of the recompute at the top of §6,
+BTS is confounded by LR state and swamped by checkpoint noise, and the
+interaction is not established at any LR-matched budget. Downstream `acc`
+can't carry the cross-script question either — MMLU/Belebele are at chance
+and XNLI needs the debiasing above. Right now **no** single metric in this
+repo cleanly answers it; the matched-token downstream deltas in §6's transfer
+section are the best-powered evidence available.)
 
 `bench.py`'s `XNLI_CONNECTIVES` / `XNLI_DEBIAS_METHOD` / `_xnli_debiased()`
 implement the fix and are wired into `run()`: `xnli_ar` and `xnli_zh` are
@@ -330,7 +339,7 @@ which is NOT the paper's methodology.** Appendix D is explicit: 0-shot, cloze
 multiple-choice (the answer's own text as the scored continuation, not a
 letter token) — "shown to serve as a more reliable performance indicator
 earlier in training" (Kydlíček et al., 2024). This also matches what
-CLAUDE.md §6 already suspected from an earlier ad-hoc probe ("Belebele: at
+§6 already suspected from an earlier ad-hoc probe ("Belebele: at
 chance under lm-eval's letter format. cloze+PMI on en gives a faint lift").
 `src/xscript/eval/c5_tasks/belebele_cloze/` defines a proper cloze variant
 (`belebele_cloze_{eng_Latn,deu_Latn,fra_Latn,arb_Arab,zho_Hans}`), loaded via
@@ -348,7 +357,7 @@ python run_appendix_c5.py --repo jvonrad/xscript-eval --device xla \
 Results: `$WORK/results/appendix_c5/<run>_final.json`, scores nested
 `{lang: {task: accuracy}}`. Deliberately writes **no shared summary.json**
 (unlike the other two scripts) to sidestep the concurrent-writer clobbering
-noted in §5 — aggregate from the per-run files.
+noted in NEURON.md §5 — aggregate from the per-run files.
 
 Only runs from inside this repo (needs the local `c5_tasks/` dir); not
 bundled into the portable HF export.
@@ -478,6 +487,35 @@ plus XStoryCloze/XWinograd where the pair has coverage), with 95% CIs:
 (Bold = CI excludes 0, i.e. a statistically supported effect at this sample
 size, not just a point-estimate sign.)
 
+> ⚠️ **THE SAME LR-STATE CONFOUND AS §6's BPB→BTS APPLIES TO 5 OF THESE 7
+> CELLS.** The `*-15b` monolinguals are mid-stable snapshots at peak LR
+> 3.0e-3; the unsuffixed 30B bilinguals they are paired against are **cooled**
+> finals at 3.0e-4 (decay starts at 24B). So de/fair, fr/{fair,starved} and
+> ar/{fair,starved} hand the bilingual an entire decay phase for free, which
+> inflates Δ positive. Only the **zh** cells are LR-matched
+> (`zh-*-12b` vs `en-zh-*-23b`, both mid-stable @3e-3). The English anchors
+> (`en-*-15b`) are mid-stable, so Δ-on-English is confounded for exactly the
+> same five cells and clean only for zh.
+>
+> The pattern is the tell: every confounded cell lands at +0.023..+0.039,
+> while the two clean cells are the smallest in the table (+0.011 n.s.,
+> +0.015). Consequently **these three claims below are NOT established**:
+> (a) same-script > cross-script — every same-script cell is confounded and
+> every clean cell is cross-script; (b) bilingual training helps English —
+> the clean English deltas are ~+0.005 (n.s.) and **−0.015**, possibly the
+> opposite sign; (c) cross-script positive in 3 of 4 cells — only
+> zh/starved (+0.015) is clean *and* significant.
+>
+> Unaffected: the raw per-model C.5 accuracy tables (no cross-checkpoint
+> pairing). Also unresolved: for zh/fair the clean downstream Δ is +0.011
+> (bilingual better) while the clean BPB→BTS at the same budget is −0.0129
+> (bilingual worse) — they disagree in sign.
+>
+> Fix is the same as §6's: `cooldown_run()` branches at a matched
+> per-language budget so mono and bilingual are both cooled, then re-derive.
+> §6b's alignment deltas use the same checkpoint families and need the same
+> audit before being quoted.
+
 **Full per-benchmark breakdown** (every individual benchmark behind the
 means above, not just the aggregate row; bold = CI excludes 0):
 
@@ -563,13 +601,79 @@ This revises the earlier read materially:
   (confound-driven) uniformly-negative reading. zh's English deltas are the
   exception (one negative, one near-zero) but both use the `~`-flagged
   approximate baseline, so are the least trustworthy numbers in this table.
-- **Fair vs. starved still shows no clear, consistent effect on the transfer
-  delta itself** — ar's two tokenizers are within noise of each other
-  (+0.024 vs +0.023), fr similarly (+0.039 vs +0.036); zh is the only pair
-  where fair/starved cross the significance threshold differently
-  (fair not significant, starved is), but the point estimates themselves
-  (+0.011 vs +0.015) are close enough that this may just reflect zh/fair
-  sitting nearer the boundary, not a real tokenizer effect.
+- **Fair vs. starved has NO consistent effect on Δ-on-partner-lang, but a
+  clear, significant one on Δ-on-English.** Direct paired bootstrap of
+  `(Δ_fair − Δ_starved)`, resampling doc indices jointly across all four
+  models per cell (bi-fair, mono-fair, bi-starved, mono-starved — a
+  straightforward extension of the same paired-doc-order logic
+  `paired_bootstrap_delta` already relies on), rather than eyeballing two
+  separate CIs:
+
+  | partner | Δ-on-English (fair − starved) | Δ-on-partner-lang (fair − starved) |
+  |---|---|---|
+  | de | **+0.025 [+0.015, +0.035]** | n/a (no de-starved-15b) |
+  | fr | **+0.011 [+0.000, +0.020]** | +0.003 [−0.024, +0.032] |
+  | ar | **+0.020 [+0.011, +0.030]** | +0.001 [−0.011, +0.012] |
+  | zh | **+0.015 [+0.005, +0.026]** | −0.003 [−0.021, +0.013] |
+
+  On the English side, fair is significantly larger than starved for **all
+  four** partners, and broadly so: 20 of 22 (partner x benchmark) cells are
+  positive, 9 significantly. On the partner-language side the AGGREGATE is
+  ~0 for every pair, but that mean **hides real, opposite-signed,
+  individually-significant effects, not an absence of effect**:
+
+  | partner | benchmark | Δ_fair - Δ_starved on partner-lang |
+  |---|---|---|
+  | ar | xnli | **-0.087 [-0.116, -0.059]** |
+  | ar | arc | **+0.058 [+0.030, +0.086]** |
+  | fr | xnli | **-0.034 [-0.056, -0.012]** |
+
+  XNLI and ARC point opposite directions for Arabic, similar enough in
+  magnitude to nearly cancel in the mean (+0.001) — "no consistent effect"
+  described the average, not the underlying reality.
+
+  **One confound is confirmed, and it only covers part of this.** Correction:
+  this is NOT about `bench.py`'s debiasing path -- `XNLI_DEBIAS_METHOD` has no
+  "fr" key, so `xnli_fr` is never routed through `_xnli_debiased()`; it always
+  scores via lm-eval's own registered `xnli_fr` task. That task independently
+  uses the same connective words ("Oui"/"Aussi"/"Non", confirmed against
+  `lm_eval/tasks/xnli/utils.py`), and in the real
+  `"{premise}, correct? {c}, {hypothesis}"` template, "Oui"/"Aussi" cost 1 MORE
+  token than "Non" under `unigram_starved` (0 extra under `unigram_destarved`,
+  verified in-template, not just standalone). lm-eval's XNLI scores via
+  unnormalized `acc` (raw summed loglikelihood, no length normalization), so
+  that token-count asymmetry is a real, tokenizer-dependent scoring bias
+  toward "Non" specifically under starved -- plausibly contributing to fr's
+  -0.034. Checked and **ruled out** for the other two languages: ar has 0
+  marginal tokens per connective under BOTH tokenizers (no asymmetry at all,
+  in-template), and zh has a real length asymmetry (2/1/2 tokens) but it's
+  IDENTICAL under both tokenizers, so it can't produce a fair-vs-starved
+  difference there. Neither explains ar/xnli's larger -0.087 effect.
+
+  **The cross-partner check came back the wrong sign.** If content-dilution
+  were the general mechanism, partners with worse fertility at a FIXED
+  tokenizer should show smaller Δ-on-English (less content reaching English
+  regardless of starvation). Across the four partners at fair: r = -0.77
+  (n=4, not statistically meaningful, but the wrong direction to trust the
+  mechanism as a general law rather than a within-partner story). FLORES
+  fertility itself was checked against actual training-pool text for de/zh
+  (1.34/1.27 measured vs FLORES's 1.37/1.30) and holds up fine — the gap is
+  in extrapolating the mechanism across languages, not in the fertility
+  numbers.
+
+  **Speculative cross-link to §6b:** ar's XNLI (entailment/reasoning) favors
+  STARVED, its ARC (factual/surface) favors FAIR. This loosely echoes §6b's
+  finding that cross-script REPRESENTATION alignment gains exceed same-script
+  ones (opposite of the downstream ordering) — consistent with, but not
+  proof of, a story where forced vocabulary-sharing across ~419 languages
+  under starvation pushes toward more abstract shared representations that
+  help reasoning-style transfer while fertility degradation still hurts
+  factual/surface tasks. Not verified mechanistically.
+
+  Plausible (unconfirmed) high-level mechanism for the English-side effect:
+  a starved tokenizer spends more of English's token budget subsidizing ~419
+  other languages, leaving less capacity for a second training language to
+  improve English specifically.
 
 Full per-benchmark breakdown (not just the aggregate row) is in
 `bootstrap_transfer.py`'s output — rerun it against a results directory to
@@ -586,47 +690,6 @@ the matched-token models above.
 The representation-side counterpart to the downstream story: embed FLORES+
 parallel sentences by mean-pooling each layer's hidden states, then measure how
 well one language's sentences retrieve their translations in another.
-
-```bash
-python run_alignment.py --repo jvonrad/xscript-eval --device xla --workdir $WORK
-python analyze_alignment.py $WORK/results/alignment/
-
-# or fan out over whatever cores are free, safe alongside a running trainer:
-export HF_TOKEN=hf_...
-bash run_alignment_fanout.sh /mnt/scratch/xscript_align
-```
-
-~100 s/model for all 5 languages × 10 pairs × 17 layers (dev+devtest, n=2009),
-so the full 26 fan out over logical core-pairs exactly like §5. Per-run
-`results/alignment/<model>.json` + `.md`; no shared summary file.
-
-**Resource profile** (measured, `ar-fair`, one core-pair, unbounded threads):
-
-| phase | time | where |
-|---|---|---|
-| tokenize | 0.1 s | host |
-| `lexical_baseline()` | 0.9 s | host (scipy sparse) |
-| **embedding forward** | **83.2 s** | **Neuron — 84% of total** |
-| retrieval / CKA / centering | 14.4 s | host numpy |
-
-So the sweep **is accelerator-bound** and does need cores; only
-`analyze_alignment.py` is pure-CPU (stdlib, no device at all — safe to run any
-time). The host phase is numpy-multithreaded and will grab all cores by
-default: when fanning out alongside a training job, bound it
-(`OMP_NUM_THREADS`/`OPENBLAS_NUM_THREADS`/`MKL_NUM_THREADS` ≈ 8, so
-jobs × threads ≲ `nproc`) or the analysis phase starves the trainer's
-dataloaders even though the Neuron cores are disjoint. Bounding threads
-lengthens the host phase roughly proportionally (~14 s → ~50 s at 8 threads),
-which is usually the right trade.
-
-Check occupancy before launching — training jobs pin themselves via
-`NEURON_RT_VISIBLE_CORES`, whose entries are **physical** core ids 0-63 (see
-the `neuron-core-pinning-torchrun-vs-xmp` note; each device = 4 consecutive
-ids):
-```bash
-neuron-ls | grep -E "^\| [0-9]+ "            # device -> PID
-tr '\0' '\n' < /proc/<training-pid>/environ | grep NEURON_RT_VISIBLE_CORES
-```
 
 ### Every model is scored on every language pair — and here that is essential
 
@@ -802,54 +865,6 @@ uncontrolled downstream number was mostly measuring the benchmark. Alignment
 deltas from `analyze_alignment.py` (paired bootstrap, matched-token
 checkpoints, same estimator as `bootstrap_transfer.py`) are the numbers to
 quote; raw per-model alignment scores are not.
-
----
-
-## 7. Files (what changed vs the training-cluster export)
-
-- `setup_trainium.sh` — copied from ../Lost-in-Mistranslation; Neuron env setup.
-- `scripts/external_bench/requirements.txt` — pinned HF stack (§2).
-- `scripts/external_bench/run_benchmarks.py` — `--device xla`; prefer local `src/`.
-- `src/xscript/eval/bench.py` — fixed-shape XLA scoring path + the three Neuron
-  workarounds (§4, including the odd-`fixed_width` NCC-5266 fix); `xnli_ar`/
-  `xnli_zh` debiasing folded in as first-class task routing (`XNLI_CONNECTIVES`,
-  `XNLI_DEBIAS_METHOD`, `_xnli_debiased()`, wired into `run()`) — automatic for
-  every caller, including `run_benchmarks.py`. CPU/CUDA paths unchanged.
-- `scripts/external_bench/run_xnli_debiased.py` — standalone diagnostic
-  reporting both `standard` and `pmi` per language (§6); superseded for normal
-  runs by the automatic debiasing in `bench.py` above.
-- `scripts/external_bench/run_appendix_c5.py` — **new**; replicates Messmer et
-  al. 2025 Appendix C.5 across en/de/fr/ar/zh and all checkpoints (§6). Now
-  runs with `log_samples=True` and per-task batch sizing (`--batch-size` for
-  Belebele, `--batch-size-short` for everything else) so it also produces the
-  per-example correctness data `bootstrap_transfer.py` needs.
-- `src/xscript/eval/c5_tasks/belebele_cloze/` — **new**; custom cloze-format
-  Belebele task configs (lm-eval's registered task uses A/B/C/D letters
-  instead, which isn't what that paper's methodology calls for).
-- `scripts/external_bench/bootstrap_transfer.py` — **new**; paired bootstrap
-  95% CIs on the same-script vs. cross-script transfer deltas from matched-
-  token checkpoints (§6's "Same-script vs. cross-script transfer" section).
-  Pure stdlib, ~1 min for the full model set.
-- `src/xscript/eval/alignment.py` — **rewritten** (§9): Neuron/XLA fixed-shape
-  embedding path, all-pairs instead of EN-anchored-only, every model on every
-  language, `centered` variant, CKA, per-example hit lists, and the model-free
-  `lexical_baseline()` TF-IDF floor. CPU/CUDA paths and the `xscript
-  eval-align` CLI signature unchanged.
-- `scripts/external_bench/run_alignment.py` — **rewritten**; `--device xla`,
-  all 26 models, `--langs`, `--split both`, prefers local `src/`, per-run
-  output only (no shared summary to clobber under fan-out).
-- `scripts/external_bench/analyze_alignment.py` — **new**; aggregates the
-  per-run alignment JSONs into baseline-relative tables with paired bootstrap
-  CIs, mirroring `bootstrap_transfer.py`'s estimator. Pure stdlib.
-- `scripts/external_bench/run_alignment_fanout.sh` — **new**; fans the sweep
-  out over **free** core-pairs only, discovered from `neuron-ls` at runtime
-  (devices with PID `NA`), so a concurrent training job is never scheduled
-  over. Warms the compile cache per tokenizer first, bounds host threads,
-  skips models that already have a result JSON (resumable), and polls for
-  completion rather than trusting `wait` (§5).
-
-Neuron writes stray `*PostSPMDPassesExecutionDuration.txt` files into the cwd —
-gitignore them.
 
 ---
 
