@@ -43,7 +43,7 @@ Usage:
 
 Results: `$WORK/results/appendix_c5/<run>_final.json`, one per model, with
 scores nested as `{lang: {task: accuracy}}`. No shared summary.json -- see
-CLAUDE.md's note on concurrent writers clobbering a shared results file when
+NEURON.md 5's note on concurrent writers clobbering a shared results file when
 fanned out across cores; aggregate from the per-run files instead.
 """
 import argparse
@@ -96,35 +96,75 @@ def main() -> None:
 
     from huggingface_hub import hf_hub_download, list_repo_files
 
+    def _dl_retry(filename: str, tries: int = 8) -> Path:
+        """hf_hub_download with backoff -- the hub 429s ('maximum queue size
+        reached') when the fan-out starts N processes at once, and EVERY startup
+        below touches the network. Without this a 24-way fan-out loses most of
+        its jobs in the first seconds, before any Neuron work begins."""
+        import random
+        import time
+        for attempt in range(tries):
+            try:
+                return Path(hf_hub_download(filename=filename, **dl))
+            except Exception as exc:
+                if attempt == tries - 1:
+                    raise
+                wait = min(60, 2 ** attempt) + random.uniform(0, 3)
+                print(f"[c5] {type(exc).__name__} on {filename}; "
+                      f"retry {attempt + 1}/{tries - 1} in {wait:.0f}s", flush=True)
+                time.sleep(wait)
+        raise RuntimeError("unreachable")
+
     def fetch_checkpoint(rel_dir: str) -> Path:
         """Download final.pt, transparently reassembling `final.pt.partNNN`
         chunks if the checkpoint was uploaded split (see upload_chunked.py)."""
-        whole = f"{rel_dir}/final.pt"
-        if whole in repo_files:
-            return Path(hf_hub_download(filename=whole, **dl))
         parts = sorted(f for f in repo_files
                        if f.startswith(f"{rel_dir}/final.pt.part"))
+        # Already assembled (e.g. by prefetch_checkpoints.py)? Then do NOT touch
+        # the network -- not even for n_parts.txt. Under fan-out that lookup is
+        # pure 429 bait for a file we do not need, and under HF_HUB_OFFLINE it
+        # raises outright. Validate size ONLY when the manifest gives one:
+        #   want > 0  -> known size; return on match, refetch on mismatch
+        #   want == 0 -> size unknown (offline repo_info yields size=None), so
+        #                trust the assembly -- the prefetcher already verified it
+        #                byte-exact, and a network refetch is impossible anyway.
+        out = work / "_assembled" / rel_dir / "final.pt"
+        if parts and out.exists():
+            want = sum(sizes.get(p, 0) for p in parts)
+            if not want or out.stat().st_size == want:
+                return out
+            print(f"[c5] {rel_dir}: assembled size {out.stat().st_size} != "
+                  f"{want}, refetching", flush=True)
+            out.unlink(missing_ok=True)
+
+        whole = f"{rel_dir}/final.pt"
+        if whole in repo_files:
+            return _dl_retry(whole)
         if not parts:
             sys.exit(f"no checkpoint found under {rel_dir} (neither final.pt nor parts)")
         n_parts_f = f"{rel_dir}/n_parts.txt"
         if n_parts_f in repo_files:
-            expected = int(Path(hf_hub_download(filename=n_parts_f, **dl)).read_text())
+            expected = int(_dl_retry(n_parts_f).read_text())
             if len(parts) != expected:
                 sys.exit(f"{rel_dir}: expected {expected} parts, found {len(parts)} "
                         f"(upload still in progress?)")
-        assembled_dir = work / "_assembled" / rel_dir
-        assembled_dir.mkdir(parents=True, exist_ok=True)
-        out = assembled_dir / "final.pt"
+        out.parent.mkdir(parents=True, exist_ok=True)
         if not out.exists():
-            tmp = out.with_suffix(".tmp")
-            with open(tmp, "wb") as w:
-                for p in parts:
-                    local = hf_hub_download(filename=p, **dl)
-                    with open(local, "rb") as r:
-                        while chunk := r.read(64 * 1024 * 1024):
-                            w.write(chunk)
-                    Path(local).unlink(missing_ok=True)  # raw shard now folded into `out`
-            tmp.rename(out)
+            # unique tmp + atomic replace: a shared "final.tmp" races if two
+            # processes ever assemble the same checkpoint.
+            tmp = out.with_suffix(f".tmp.{os.getpid()}")
+            try:
+                with open(tmp, "wb") as w:
+                    for p in parts:
+                        local = _dl_retry(p)
+                        with open(local, "rb") as r:
+                            while chunk := r.read(64 * 1024 * 1024):
+                                w.write(chunk)
+                        local.unlink(missing_ok=True)  # shard folded into `out`
+                os.replace(tmp, out)
+            except BaseException:
+                Path(tmp).unlink(missing_ok=True)
+                raise
         return out
 
     work = Path(args.workdir).resolve()
@@ -135,13 +175,34 @@ def main() -> None:
     os.environ["XSCRIPT_RESULTS"] = str(work / "results")
 
     dl = dict(repo_id=args.repo, repo_type=args.repo_type, local_dir=str(scratch.parent / "_repo"))
-    repo_files = list_repo_files(args.repo, repo_type=args.repo_type)
+
+    # Repo file listing + sizes, cached on disk. N parallel `list_repo_files`
+    # calls 429 before a single checkpoint transfers (same reason run_bpb.py
+    # caches it); the sizes let fetch_checkpoint validate an already-assembled
+    # checkpoint without any network call. Delete _repo_files.json after new
+    # uploads to refresh.
+    _listing = work / "_repo_files.json"
+    sizes = {}
+    if _listing.exists():
+        try:
+            sizes = json.loads(_listing.read_text())
+        except json.JSONDecodeError:
+            sizes = {}
+    if not sizes:
+        from huggingface_hub import HfApi
+        _info = HfApi().repo_info(args.repo, repo_type=args.repo_type,
+                                  files_metadata=True)
+        sizes = {s.rfilename: (s.size or 0) for s in _info.siblings}
+        tmp_l = _listing.with_suffix(f".tmp.{os.getpid()}")
+        tmp_l.write_text(json.dumps(sizes))
+        os.replace(tmp_l, _listing)     # atomic: many processes race to write it
+    repo_files = list(sizes)
 
     # 1) bundled xscript source -> importable
     src_root = scratch.parent / "_repo"
     for f in repo_files:
         if f.startswith("src/xscript/"):
-            hf_hub_download(filename=f, **dl)
+            _dl_retry(f)
     sys.path.insert(0, str(src_root / "src"))
     # Prefer this repo's local src (this script's own C.5 task suite, the
     # debiased-XNLI routing, and the Neuron scoring fixes all live there).
@@ -156,14 +217,14 @@ def main() -> None:
     # 2) tokenizers (small)
     for f in repo_files:
         if f.startswith("tokenizers/"):
-            local = hf_hub_download(filename=f, **dl)
+            local = _dl_retry(f)
             dest = scratch / f
             dest.parent.mkdir(parents=True, exist_ok=True)
             if not dest.exists():
                 dest.symlink_to(local)
 
     # 3) model manifest (friendly name -> real tokenizer)
-    models = json.loads(Path(hf_hub_download(filename="models.json", **dl)).read_text())
+    models = json.loads(_dl_retry("models.json").read_text())
     runs = args.runs or sorted(models)
     missing = [r for r in runs if r not in models]
     if missing:
@@ -228,7 +289,7 @@ def main() -> None:
             all_tasks = [t for lang in langs for t in C5_TASKS[lang]]
             harness_tasks = [t for t in all_tasks if t not in debiased_tasks]
             # Belebele's long passages set the per-graph HBM ceiling on
-            # --device xla (see CLAUDE.md sec 4/5); every other task's
+            # --device xla (see NEURON.md sec 4/5); every other task's
             # fixed_width is much shorter and clears the same ceiling at a
             # larger batch size, so score them in a separate, wider-batched
             # simple_evaluate() call rather than paying Belebele's cap
