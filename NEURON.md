@@ -474,8 +474,54 @@ A single job at **world=16 fails** at the first ZeRO collective:
 invalid send/recv targets`. **world=8 works.** This caps one model to 8 of 64
 cores (2 of 16 devices) at **~47k tok/s**, i.e. ~7 days for a 30B-token run.
 EFA/libfabric is *not* the fix (that is inter-node; single-node collectives use
-on-chip NeuronLink). Resolving this — or adopting NxDT — is the highest-value
-remaining throughput work.
+on-chip NeuronLink).
+
+**RESOLVED — the limit was ours, not the platform's.** `scripts/neuron_train/
+nxd_test.py` runs **world=32 to completion** using `neuronx-distributed`'s
+ZeRO-1, with **no** `invalid send/recv targets`. So the wall is a defect in the
+hand-rolled `torch_xla` ZeRO path in `train_neuron.py`, not a Trainium or
+collective-library limit.
+
+The key correction to §9's opening: **NxD (`neuronx-distributed`) is not NxDT**.
+NxDT ships its own Llama (split-half RoPE) and needs NeMo — that is what was
+correctly rejected. NxD is a bring-your-own-model library that wraps an
+*arbitrary* `nn.Module`, needs no NeMo, and preserves our interleaved RoPE:
+
+```python
+nxd_config = neuronx_distributed_config(
+    tensor_parallel_size=1,          # our model uses plain nn.Linear; TP would need edits
+    optimizer_config={"zero_one_enabled": True, "grad_clipping": True, "max_grad_norm": 1.0},
+    activation_checkpoint_config=Block,   # a module CLASS is the supported path
+)
+model = initialize_parallel_model(nxd_config, model_fn)          # model_fn() -> our Transformer
+optim = initialize_parallel_optimizer(nxd_config, torch.optim.AdamW, model.parameters(), lr=...)
+```
+Launch with **torchrun** here: its rank-i→core-i pinning is *correct* when you
+take the whole box; the pinning problem above only bites for a core subset.
+
+Still open: the **1B** model at world=32 fails to *compile* — 36.75GB peak,
+**27.63GB scratchpad**, because NxD fuses fwd+bwd+optimizer into one graph
+where our own trainer's `mark_step` boundaries kept the full-vocab CE at ~8GB.
+That is memory tuning (mb=1, added `mark_step`s, or the existing
+`fused_ce_chunk`), not a wall. Note NxD's ZeRO also sets `use_fp32_grad_acc`,
+adding a full fp32 grad buffer our implementation did not have.
+
+### Measured throughput vs GH200 (for MFU comparisons)
+
+Model FLOPs/token = **6.54 GF** (fwd+bwd over body+head+attention); activation
+checkpointing adds **1.91 GF** of recompute on Neuron that the CUDA trainer does
+not pay (it has no checkpointing), hence MFU vs HFU below.
+
+| | tok/s per accelerator | model TF/s | MFU |
+|---|---|---|---|
+| GH200 (Isambard, 4/node, W&B `tok_per_s` 247k) | 61,750 | 404 | **40.9%** |
+| Trn2 (world=8 = 2 chips, 47k) | 23,500 | 154 | **23.1%** (HFU 29.8%) |
+
+Peak bf16 dense assumed: GH200 989 TF/s, Trn2 667 TF/s. The per-accelerator gap
+is **2.63x**, of which **1.48x is raw peak** and **1.77x is efficiency** — so
+per-chip efficiency was never the main problem. At 23.5k tok/s/chip all 16 chips
+would give **376k tok/s, ~1.5x a 4xGH200 node**; the world=8 cap is what made it
+0.19x instead.
 
 ### Resuming from a foreign checkpoint (`warm_start`)
 
