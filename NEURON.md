@@ -372,6 +372,34 @@ checkpoints architecturally different from the 15 already trained on Isambard �
 exactly the comparability the cross-script comparison cannot afford. It also
 depends on NVIDIA **NeMo**, which is not installed here.
 
+**That reasoning is correct for NxDT and was wrongly generalised to everything
+else AWS ships.** It is not a reason to hand-roll a trainer. Three lighter
+options existed, and all three were missed:
+
+| option | what it would have given us | status |
+|---|---|---|
+| **NxD** (`neuronx-distributed`) | ZeRO-1 + TP + activation ckpt around our **unmodified** `model.py`; no NeMo | **available and installed**; verified working at world=32 |
+| **XLA FSDP** (`torch_xla.distributed.fsdp.XlaFullyShardedDataParallel`) | sharding without writing our own | **importable in this very venv** |
+| **TorchNeuron Native** | eager execution, `torch.compile`, standard `DDP`/`FSDP`/`DTensor`/TP — i.e. our CUDA trainer nearly as-is | **not in this build** (torch_neuronx 2.9.0.2.15 exposes only the `xla` path); AWS now lists it as the *recommended* PyTorch path in newer SDKs — **unverified here** |
+
+The distinction that was missed for weeks: **NxD is a model-agnostic parallelism
+library, NxDT is a framework that replaces your model.** Only the latter has the
+RoPE/init problem. NxD contains no Megatron code at all — the Megatron-derived
+model implementation lives in NxDT (ported from `neuronx-nemo-megatron`).
+
+AWS also supports JAX (`jax-neuronx`), **AXLearn**, **TorchTitan**, HF **Optimum
+Neuron** and PyTorch Lightning — see
+<https://awsdocs-neuron.readthedocs-hosted.com/en/latest/frameworks/index.html>.
+
+**Cost of the miss:** the hand-rolled ZeRO-1 crashed at world=16
+(`NRT_INVALID ... invalid send/recv targets`), capping every run to 8 of 64
+cores. NxD has no such limit. See "The world>8 collective limit" below.
+
+**If you touch this again, evaluate TorchNeuron Native first** — if it really
+offers eager + DDP, the entire XLA hand-port (fixed shapes, `mark_step`
+placement, the silent `bool.sum()` and `gather` bugs below) becomes unnecessary,
+and `xscript.train` may run nearly unchanged.
+
 So `src/xscript/train_neuron.py` is a hand-port that keeps `model.py`, the data
 pipeline, tokenizers, schedule and checkpoint format **byte-identical** to the
 CUDA trainer (`xscript.train`, which is untouched and still runs on GH200). Only
