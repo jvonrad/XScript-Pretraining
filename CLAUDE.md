@@ -821,10 +821,21 @@ per-row **partner-mono** column above, never that summary.
 ### Cached embeddings — do metric work from these, not from a rerun
 
 `run_alignment.py --emb-dir` (used by the fan-out) persists the pooled per-layer
-embeddings: `(n_layers+1, 2009, 2048)` fp32 per language, one `.npz` per model,
-**34 GB for all 26** at `/mnt/scratch/xscript_align/embeddings/`. Verified to
-reproduce the in-run top-1, d' and per-example hit lists **bit-for-bit** (hence
-fp32, not fp16). Load with `alignment.load_embeddings(emb_dir, run_name)`.
+embeddings: `(n_layers+1, 2009, 2048)` fp32 per language, one `.npz` per model.
+Verified to reproduce the in-run top-1, d' and per-example hit lists
+**bit-for-bit** (hence fp32, not fp16). Load with
+`alignment.load_embeddings(emb_dir, run_name)`.
+
+**They now live on HF: `jvonrad/xscript-embeddings` (private dataset).** The
+eval box they were computed on was ephemeral and has been torn down —
+`/mnt/scratch/xscript_align/embeddings/` no longer exists. Fetch with
+`huggingface_hub.snapshot_download(repo_id="jvonrad/xscript-embeddings",
+repo_type="dataset")`, or pull single models with `hf_hub_download`, which is
+what you usually want (1.3 GiB each).
+
+Size note: an earlier version of this section said "34 GB for all 26". That is
+stale — the sweep was extended to **107 checkpoints**, so it is **~140 GB**;
+34 GB is just the 26-checkpoint subset that §6b's deltas are computed on.
 
 This matters because the forward pass is 84% of runtime and a rerun otherwise
 costs ~100 GB of checkpoint re-download. Any *new* statistic — CKA CIs via
