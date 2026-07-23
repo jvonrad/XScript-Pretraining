@@ -1,0 +1,330 @@
+{
+  "by_condition": {
+    "starved": {
+      "vocab_size": 65536,
+      "per_script": {
+        "Latin": {
+          "n_pieces": 29038,
+          "pct_of_vocab": 44.3084716796875,
+          "n_single_char": 716,
+          "pct_single_char": 2.4657345547213994,
+          "n_multi_char": 28322,
+          "mean_len": 4.313038088022591,
+          "median_len": 4.0,
+          "len_hist_1to8plus": {
+            "1": 716,
+            "2": 3097,
+            "3": 6811,
+            "4": 7277,
+            "5": 4669,
+            "6": 2934,
+            "7": 1794,
+            "8": 1740
+          }
+        },
+        "Arabic": {
+          "n_pieces": 3718,
+          "pct_of_vocab": 5.6732177734375,
+          "n_single_char": 194,
+          "pct_single_char": 5.21785906401291,
+          "n_multi_char": 3524,
+          "mean_len": 2.9410973641742872,
+          "median_len": 3.0,
+          "len_hist_1to8plus": {
+            "1": 194,
+            "2": 1224,
+            "3": 1401,
+            "4": 571,
+            "5": 230,
+            "6": 62,
+            "7": 22,
+            "8": 14
+          }
+        },
+        "Han": {
+          "n_pieces": 9093,
+          "pct_of_vocab": 13.87481689453125,
+          "n_single_char": 8890,
+          "pct_single_char": 97.76751347190147,
+          "n_multi_char": 203,
+          "mean_len": 1.023094688221709,
+          "median_len": 1,
+          "len_hist_1to8plus": {
+            "1": 8890,
+            "2": 197,
+            "3": 5,
+            "4": 1,
+            "5": 0,
+            "6": 0,
+            "7": 0,
+            "8": 0
+          }
+        }
+      },
+      "per_lang": {
+        "en": {
+          "n_tokens": 70581,
+          "pct_single_char_emitted": 17.914169535710744,
+          "pct_byte_atom_emitted": 0.0,
+          "pct_multi_char_emitted": 81.5686941244811,
+          "mean_emitted_piece_len_chars": 3.0647766396055593,
+          "unique_pieces_used": 5767,
+          "unique_own_script_used": 5426,
+          "unique_own_script_multichar_used": 5321,
+          "pct_tokens_own_script_multichar": 80.35306952295943
+        },
+        "de": {
+          "n_tokens": 91130,
+          "pct_single_char_emitted": 16.44463952595194,
+          "pct_byte_atom_emitted": 0.006584000877866784,
+          "pct_multi_char_emitted": 83.02973773729836,
+          "mean_emitted_piece_len_chars": 2.84998463631974,
+          "unique_pieces_used": 5274,
+          "unique_own_script_used": 4928,
+          "unique_own_script_multichar_used": 4812,
+          "pct_tokens_own_script_multichar": 82.06847360912981
+        },
+        "fr": {
+          "n_tokens": 94426,
+          "pct_single_char_emitted": 22.35401266600301,
+          "pct_byte_atom_emitted": 0.0,
+          "pct_multi_char_emitted": 76.97032596954229,
+          "mean_emitted_piece_len_chars": 2.7394573528477326,
+          "unique_pieces_used": 5285,
+          "unique_own_script_used": 4997,
+          "unique_own_script_multichar_used": 4870,
+          "pct_tokens_own_script_multichar": 76.16334484146316
+        },
+        "ar": {
+          "n_tokens": 89757,
+          "pct_single_char_emitted": 25.370723174794165,
+          "pct_byte_atom_emitted": 0.0,
+          "pct_multi_char_emitted": 72.20161101641098,
+          "mean_emitted_piece_len_chars": 2.1223748565571485,
+          "unique_pieces_used": 2431,
+          "unique_own_script_used": 1906,
+          "unique_own_script_multichar_used": 1836,
+          "pct_tokens_own_script_multichar": 71.16102365275131
+        },
+        "zh": {
+          "n_tokens": 77645,
+          "pct_single_char_emitted": 87.21746409942688,
+          "pct_byte_atom_emitted": 0.06181982098010175,
+          "pct_multi_char_emitted": 9.043724644214052,
+          "mean_emitted_piece_len_chars": 1.074036367385337,
+          "unique_pieces_used": 3912,
+          "unique_own_script_used": 2594,
+          "unique_own_script_multichar_used": 154,
+          "pct_tokens_own_script_multichar": 6.172966707450576
+        }
+      }
+    },
+    "destarved": {
+      "vocab_size": 65536,
+      "per_script": {
+        "Latin": {
+          "n_pieces": 30561,
+          "pct_of_vocab": 46.63238525390625,
+          "n_single_char": 400,
+          "pct_single_char": 1.3088576944471713,
+          "n_multi_char": 30161,
+          "mean_len": 6.219560878243513,
+          "median_len": 6,
+          "len_hist_1to8plus": {
+            "1": 400,
+            "2": 1455,
+            "3": 3131,
+            "4": 4026,
+            "5": 4233,
+            "6": 4389,
+            "7": 3842,
+            "8": 9085
+          }
+        },
+        "Arabic": {
+          "n_pieces": 13132,
+          "pct_of_vocab": 20.037841796875,
+          "n_single_char": 131,
+          "pct_single_char": 0.9975632043862321,
+          "n_multi_char": 13001,
+          "mean_len": 4.689232409381663,
+          "median_len": 5.0,
+          "len_hist_1to8plus": {
+            "1": 131,
+            "2": 924,
+            "3": 2626,
+            "4": 2860,
+            "5": 2607,
+            "6": 1867,
+            "7": 1308,
+            "8": 809
+          }
+        },
+        "Han": {
+          "n_pieces": 17625,
+          "pct_of_vocab": 26.89361572265625,
+          "n_single_char": 9747,
+          "pct_single_char": 55.30212765957447,
+          "n_multi_char": 7878,
+          "mean_len": 1.5670354609929078,
+          "median_len": 1,
+          "len_hist_1to8plus": {
+            "1": 9747,
+            "2": 6377,
+            "3": 1044,
+            "4": 387,
+            "5": 34,
+            "6": 20,
+            "7": 5,
+            "8": 11
+          }
+        }
+      },
+      "per_lang": {
+        "en": {
+          "n_tokens": 58809,
+          "pct_single_char_emitted": 17.799996599159993,
+          "pct_byte_atom_emitted": 0.0,
+          "pct_multi_char_emitted": 81.5759492594671,
+          "mean_emitted_piece_len_chars": 3.67826353109218,
+          "unique_pieces_used": 8119,
+          "unique_own_script_used": 7740,
+          "unique_own_script_multichar_used": 7628,
+          "pct_tokens_own_script_multichar": 80.15269771633594
+        },
+        "de": {
+          "n_tokens": 66451,
+          "pct_single_char_emitted": 16.79733939293615,
+          "pct_byte_atom_emitted": 0.009029209492708913,
+          "pct_multi_char_emitted": 82.46377029691051,
+          "mean_emitted_piece_len_chars": 3.908525848446083,
+          "unique_pieces_used": 9282,
+          "unique_own_script_used": 8902,
+          "unique_own_script_multichar_used": 8784,
+          "pct_tokens_own_script_multichar": 81.18162254894584
+        },
+        "fr": {
+          "n_tokens": 72564,
+          "pct_single_char_emitted": 23.860316410341216,
+          "pct_byte_atom_emitted": 0.0,
+          "pct_multi_char_emitted": 75.15572460173088,
+          "mean_emitted_piece_len_chars": 3.564797971445896,
+          "unique_pieces_used": 8685,
+          "unique_own_script_used": 8371,
+          "unique_own_script_multichar_used": 8247,
+          "pct_tokens_own_script_multichar": 74.05876192051154
+        },
+        "ar": {
+          "n_tokens": 60825,
+          "pct_single_char_emitted": 17.397451705713113,
+          "pct_byte_atom_emitted": 0.0,
+          "pct_multi_char_emitted": 80.6937936703658,
+          "mean_emitted_piece_len_chars": 3.131903000411015,
+          "unique_pieces_used": 8943,
+          "unique_own_script_used": 8394,
+          "unique_own_script_multichar_used": 8327,
+          "pct_tokens_own_script_multichar": 79.07768187422934
+        },
+        "zh": {
+          "n_tokens": 59527,
+          "pct_single_char_emitted": 58.63221731315201,
+          "pct_byte_atom_emitted": 0.0,
+          "pct_multi_char_emitted": 37.11089085625011,
+          "mean_emitted_piece_len_chars": 1.4003393418112788,
+          "unique_pieces_used": 7311,
+          "unique_own_script_used": 5998,
+          "unique_own_script_multichar_used": 3762,
+          "pct_tokens_own_script_multichar": 33.19334083693114
+        }
+      }
+    }
+  },
+  "destarved_over_starved": {
+    "per_script": {
+      "Latin": {
+        "n_pieces": 1.0524485157379986,
+        "pct_of_vocab": 1.0524485157379986,
+        "n_single_char": 0.5586592178770949,
+        "pct_single_char": 0.5308185716669966,
+        "n_multi_char": 1.0649318550949791,
+        "mean_len": 1.4420370864600944,
+        "median_len": 1.5
+      },
+      "Arabic": {
+        "n_pieces": 3.532006455083378,
+        "pct_of_vocab": 3.532006455083378,
+        "n_single_char": 0.6752577319587629,
+        "pct_single_char": 0.19118247391278406,
+        "n_multi_char": 3.689273552780931,
+        "mean_len": 1.5943819019735732,
+        "median_len": 1.6666666666666667
+      },
+      "Han": {
+        "n_pieces": 1.9383041900362916,
+        "pct_of_vocab": 1.9383041900362916,
+        "n_single_char": 1.096400449943757,
+        "pct_single_char": 0.5656493214943876,
+        "n_multi_char": 38.80788177339902,
+        "mean_len": 1.5316622000224134,
+        "median_len": 1.0
+      }
+    },
+    "per_lang": {
+      "en": {
+        "n_tokens": 0.8332129043226931,
+        "pct_single_char_emitted": 0.9936266687482691,
+        "pct_byte_atom_emitted": null,
+        "pct_multi_char_emitted": 1.000088945091789,
+        "mean_emitted_piece_len_chars": 1.2001734428403816,
+        "unique_pieces_used": 1.4078376972429338,
+        "unique_own_script_used": 1.426465167711021,
+        "unique_own_script_multichar_used": 1.4335651193384702,
+        "pct_tokens_own_script_multichar": 0.997506357780567
+      },
+      "de": {
+        "n_tokens": 0.7291890705585428,
+        "pct_single_char_emitted": 1.0214477104485995,
+        "pct_byte_atom_emitted": 1.3713864351176055,
+        "pct_multi_char_emitted": 0.9931835574119414,
+        "mean_emitted_piece_len_chars": 1.3714199714049213,
+        "unique_pieces_used": 1.7599544937428897,
+        "unique_own_script_used": 1.8064123376623376,
+        "unique_own_script_multichar_used": 1.825436408977556,
+        "pct_tokens_own_script_multichar": 0.9891937668487926
+      },
+      "fr": {
+        "n_tokens": 0.7684747844873234,
+        "pct_single_char_emitted": 1.0673840427150274,
+        "pct_byte_atom_emitted": null,
+        "pct_multi_char_emitted": 0.976424663076918,
+        "mean_emitted_piece_len_chars": 1.3012788710655423,
+        "unique_pieces_used": 1.6433301797540207,
+        "unique_own_script_used": 1.6752051230738443,
+        "unique_own_script_multichar_used": 1.693429158110883,
+        "pct_tokens_own_script_multichar": 0.972367509261412
+      },
+      "ar": {
+        "n_tokens": 0.6776630234967747,
+        "pct_single_char_emitted": 0.6857294364788741,
+        "pct_byte_atom_emitted": null,
+        "pct_multi_char_emitted": 1.1176176339337442,
+        "mean_emitted_piece_len_chars": 1.4756596794081382,
+        "unique_pieces_used": 3.678733031674208,
+        "unique_own_script_used": 4.40398740818468,
+        "unique_own_script_multichar_used": 4.535403050108933,
+        "pct_tokens_own_script_multichar": 1.1112499204636153
+      },
+      "zh": {
+        "n_tokens": 0.7666559340588576,
+        "pct_single_char_emitted": 0.6722531767985364,
+        "pct_byte_atom_emitted": 0.0,
+        "pct_multi_char_emitted": 4.103496326592907,
+        "mean_emitted_piece_len_chars": 1.3038099866397472,
+        "unique_pieces_used": 1.8688650306748467,
+        "unique_own_script_used": 2.3122590593677717,
+        "unique_own_script_multichar_used": 24.428571428571427,
+        "pct_tokens_own_script_multichar": 5.377210409521216
+      }
+    }
+  }
+}

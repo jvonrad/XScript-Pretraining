@@ -1,0 +1,183 @@
+{
+  "metrics": {
+    "unigram_starved": {
+      "en": {
+        "n_sentences": 2009,
+        "tokens": 70581,
+        "bytes_per_token": 3.646675450900384,
+        "tokens_per_char": 0.2744633691087261,
+        "tokens_per_word": 1.6469723486174308,
+        "tokens_per_sentence": 35.13240418118467,
+        "pct_byte_tokens": 0.0,
+        "pct_single_char_tokens": 17.914169535710744,
+        "unique_tokens_used": 5767,
+        "parity_vs_en": 1.0
+      },
+      "de": {
+        "n_sentences": 2009,
+        "tokens": 91130,
+        "bytes_per_token": 3.35009327334577,
+        "tokens_per_char": 0.303395512822647,
+        "tokens_per_word": 2.1360429411902584,
+        "tokens_per_sentence": 45.36087605774017,
+        "pct_byte_tokens": 0.006584000877866784,
+        "pct_single_char_tokens": 16.44463952595194,
+        "unique_tokens_used": 5274,
+        "parity_vs_en": 1.2911406752525467
+      },
+      "fr": {
+        "n_sentences": 2009,
+        "tokens": 94426,
+        "bytes_per_token": 3.3741024717768413,
+        "tokens_per_char": 0.3080994130103531,
+        "tokens_per_word": 1.8974760871312595,
+        "tokens_per_sentence": 47.001493280238925,
+        "pct_byte_tokens": 0.0,
+        "pct_single_char_tokens": 22.35401266600301,
+        "unique_tokens_used": 5285,
+        "parity_vs_en": 1.337838795143169
+      },
+      "ar": {
+        "n_sentences": 2009,
+        "tokens": 89757,
+        "bytes_per_token": 4.588734026315496,
+        "tokens_per_char": 0.3955568874414423,
+        "tokens_per_word": 2.3376653818106052,
+        "tokens_per_sentence": 44.677451468392235,
+        "pct_byte_tokens": 0.0,
+        "pct_single_char_tokens": 25.370723174794165,
+        "unique_tokens_used": 2431,
+        "parity_vs_en": 1.2716878480044205
+      },
+      "zh": {
+        "n_sentences": 2009,
+        "tokens": 77645,
+        "bytes_per_token": 3.066069933672484,
+        "tokens_per_char": 0.908819570433663,
+        "tokens_per_word": 18.891727493917276,
+        "tokens_per_sentence": 38.64858138377302,
+        "pct_byte_tokens": 0.06181982098010175,
+        "pct_single_char_tokens": 87.21746409942688,
+        "unique_tokens_used": 3912,
+        "parity_vs_en": 1.1000835919015033
+      }
+    },
+    "unigram_destarved": {
+      "en": {
+        "n_sentences": 2009,
+        "tokens": 58809,
+        "bytes_per_token": 4.376643030828615,
+        "tokens_per_char": 0.22868642090527297,
+        "tokens_per_word": 1.3722786139306966,
+        "tokens_per_sentence": 29.272772523643603,
+        "pct_byte_tokens": 0.0,
+        "pct_single_char_tokens": 17.799996599159993,
+        "unique_tokens_used": 8119,
+        "parity_vs_en": 1.0
+      },
+      "de": {
+        "n_sentences": 2009,
+        "tokens": 66451,
+        "bytes_per_token": 4.594272471445125,
+        "tokens_per_char": 0.22123269200677836,
+        "tokens_per_word": 1.5575791669596606,
+        "tokens_per_sentence": 33.07665505226481,
+        "pct_byte_tokens": 0.009029209492708913,
+        "pct_single_char_tokens": 16.79733939293615,
+        "unique_tokens_used": 9282,
+        "parity_vs_en": 1.1299460966858816
+      },
+      "fr": {
+        "n_sentences": 2009,
+        "tokens": 72564,
+        "bytes_per_token": 4.390648255333223,
+        "tokens_per_char": 0.23676663001380194,
+        "tokens_per_word": 1.4581625271280443,
+        "tokens_per_sentence": 36.11946241911399,
+        "pct_byte_tokens": 0.0,
+        "pct_single_char_tokens": 23.860316410341216,
+        "unique_tokens_used": 8685,
+        "parity_vs_en": 1.2338927715145642
+      },
+      "ar": {
+        "n_sentences": 2009,
+        "tokens": 60825,
+        "bytes_per_token": 6.77140978216194,
+        "tokens_per_char": 0.2680542763085412,
+        "tokens_per_word": 1.584149390561517,
+        "tokens_per_sentence": 30.276256844201097,
+        "pct_byte_tokens": 0.0,
+        "pct_single_char_tokens": 17.397451705713113,
+        "unique_tokens_used": 8943,
+        "parity_vs_en": 1.0342804672754171
+      },
+      "zh": {
+        "n_sentences": 2009,
+        "tokens": 59527,
+        "bytes_per_token": 3.999277638718565,
+        "tokens_per_char": 0.6967519166617897,
+        "tokens_per_word": 14.48345498783455,
+        "tokens_per_sentence": 29.63016426082628,
+        "pct_byte_tokens": 0.0,
+        "pct_single_char_tokens": 58.63221731315201,
+        "unique_tokens_used": 7311,
+        "parity_vs_en": 1.0122090156268597
+      }
+    }
+  },
+  "vocab_allocation": {
+    "unigram_starved": {
+      "Latin": 29038,
+      "Han": 9093,
+      "Cyrillic": 6544,
+      "Arabic": 3718,
+      "sym_num_space": 2948,
+      "OtherIndic": 2648,
+      "OtherScript": 2640,
+      "Devanagari": 1717,
+      "Hangul": 1571,
+      "OtherSEA": 1247,
+      "mixed": 823,
+      "Hebrew": 746,
+      "Greek": 621,
+      "Ethiopic": 569,
+      "Armenian": 459,
+      "Georgian": 375,
+      "Kana": 265,
+      "byte_atom": 256,
+      "Thai": 254,
+      "special": 4
+    },
+    "unigram_destarved": {
+      "Latin": 30561,
+      "Han": 17625,
+      "Arabic": 13132,
+      "sym_num_space": 2542,
+      "Hangul": 368,
+      "OtherScript": 344,
+      "byte_atom": 256,
+      "Kana": 220,
+      "Cyrillic": 125,
+      "OtherIndic": 104,
+      "Greek": 73,
+      "Thai": 41,
+      "Devanagari": 40,
+      "Hebrew": 29,
+      "Armenian": 29,
+      "Georgian": 22,
+      "OtherSEA": 12,
+      "mixed": 8,
+      "special": 4,
+      "Ethiopic": 1
+    }
+  },
+  "starved_over_destarved_tokens": {
+    "unigram": {
+      "en": 1.2001734428403816,
+      "de": 1.3713864351176053,
+      "fr": 1.301278871065542,
+      "ar": 1.475659679408138,
+      "zh": 1.3043660859777917
+    }
+  }
+}
