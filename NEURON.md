@@ -350,6 +350,23 @@ tr '\0' '\n' < /proc/<training-pid>/environ | grep NEURON_RT_VISIBLE_CORES
   skips models that already have a result JSON (resumable), and polls for
   completion rather than trusting `wait` (§5).
 
+- `src/xscript/eval/neurons.py` — **new**; LAPE language-specific-neuron
+  recording (arXiv 2402.16438, CLAUDE.md §6c): per-FFN-neuron over-zero counts
+  per language, fixed-shape XLA path (same conventions as `alignment.py` —
+  host-built tensors, float-cast before reduction to dodge the bool-`.sum()`
+  bug, even widths). Verified XLA↔CPU parity. Identification is a faithful
+  port of the paper's `identify.py` (percentile thresholds preserved).
+- `scripts/external_bench/run_lape.py` — **new**; sweeps LAPE recording over
+  checkpoints. Same fetch/reassemble machinery as `run_alignment.py`, but also
+  deletes the HF-cache part-blobs after each model (109 checkpoints ≈ 450 GB
+  would not fit scratch). Resumable; per-run npz only, no shared summary.
+  Full 109-model sweep ran ~2.5h on two `trn2.3xlarge` core-pairs
+  (~2.5 min/model: ~40s download + ~100s forward for 5 langs × 2009 sents).
+- `scripts/external_bench/analyze_lape.py` — **new**; pure-CPU identification
+  + report over the npz outputs (counts per model×lang, layer profiles,
+  token-budget trajectories, Jaccard consolidation). Outputs committed to
+  `results/lape/`.
+
 Neuron writes stray `*PostSPMDPassesExecutionDuration.txt` files into the cwd —
 gitignore them.
 

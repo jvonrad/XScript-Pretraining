@@ -883,6 +883,87 @@ quote; raw per-model alignment scores are not.
 
 ---
 
+## 6c. Language-specific neurons (LAPE, arXiv 2402.16438)
+
+Port of Tang et al. 2024's LAPE to this repo: for every SwiGLU FFN neuron
+(16 layers × 5632 = 90,112 per model), record `P(silu(w1·x) > 0)` per language
+on FLORES+ dev+devtest (2009 parallel sentences, 60–96k counted tokens/lang,
+BOS/pad excluded), then keep the bottom-1%-entropy neurons under the paper's
+95th-percentile activation filters. `src/xscript/eval/neurons.py` (recording +
+faithful `identify.py` port), swept over **all 109 checkpoints × 5 languages**
+including the full token-budget series. Raw counts:
+`/mnt/scratch/xscript_lape/results/lape/*.npz` (376 MB, one 16×5632×5 count
+tensor + per-lang token totals each — re-analysis needs no forward pass);
+identification + per-model tables committed in `results/lape/`.
+XLA↔CPU parity verified (117 of 450k cells off by exactly 1 count, fp32 ties).
+
+**The paper's picture inverts at this scale: language-specific neurons mark
+foreignness, not competence.** Mean specific-neuron count per language over
+final checkpoints: **trained** languages 27–49 (fair) / 8–28 (starved) vs
+**untrained** 83–542 (fair) / 48–689 (starved) — a ~10× gap in the opposite
+direction from the multilingual-LLM setting the paper studies, where each
+trained language owns hundreds of neurons.
+
+**Layer structure reproduces the paper's bottom+top concentration, but the two
+ends carry different things.** Trained-language neurons sit almost entirely in
+the top layers (L14–15 hold ~61% in both tokenizer conditions; layer 0 has
+essentially none). Untrained-language neurons split between layer 0 (embedding
+script-detectors) and the top.
+
+**The thesis-relevant result — tokenizer starvation polarizes the script
+divide at the neuron level.** For *untrained* languages at final checkpoints:
+
+| untrained lang group | fair | starved |
+|---|---|---|
+| same-script (Latin) | mean 199 | **mean 27** (dissolves) |
+| cross-script (ar/zh) | mean 340 | **mean 432** (grows) |
+
+And *where* the foreign ar/zh neurons live flips with the tokenizer:
+
+| foreign ar/zh | layer-0 share | top-2-layer share |
+|---|---|---|
+| fair | 0.03–0.10 | 0.44–0.70 |
+| starved | **0.69–0.76** | 0.09–0.15 |
+
+Under the fair tokenizer a foreign cross-script language is handled by
+top-of-stack (prediction-side) machinery; under the starved tokenizer it is
+segregated at the embedding layer by dedicated script-detector neurons, while
+foreign *same*-script text becomes nearly transparent (shared vocab pieces).
+This is a clean mechanistic companion to §6b's depth-of-emergence finding
+(starved tokenizers delay the layer at which cross-lingual alignment appears):
+starvation keeps cross-script input segregated at the bottom of the network.
+
+**Bilingual training absorbs the partner's neurons.** Adding X as a training
+language collapses X-specific counts, at every matched budget (en-mono →
+en-X bilingual @30B: ar 402→47 fair / 741→15 starved; zh 225→58 / 142→12;
+de 196→73 / 58→25; fr 192→54 / 68→30). Once trained, cross-script partners
+need barely more dedicated neurons than same-script ones (fair finals:
+de 73, fr 54, ar 47, zh 58) — dedicated-neuron count is NOT where the
+cross-script penalty lives; the fair-condition model integrates ar/zh into
+shared circuitry about as well as de/fr. Starvation halves own-language
+neurons across the board (partner counts 73/54/47/58 → 25/30/15/12; en-mono
+27→7): the starved tokenizer forces *more* sharing for trained languages.
+
+**Dynamics: neuron sets consolidate slowly and never settle.** Jaccard overlap
+between consecutive checkpoints' selected sets rises from ~0.15 (1B→2B) to
+only ~0.3–0.48 late in training; trained-language sets are more stable than
+foreign ones (mean J 0.44 vs 0.28 over the LR-matched 15B→23B step). The
+mono 15B→30B transitions (which include the entire cooldown, so LR state is
+mixed — same caveat as §6) churn hardest, down to J 0.08 for ar/starved.
+Counts per language are roughly flat across training; what changes is *which*
+neurons are selected.
+
+Caveats: neuron identity is only comparable within a family (same run/init),
+so cross-family Jaccards are meaningless and were not computed; LAPE
+thresholds are per-model percentiles, making counts relative measures; single
+corpus (FLORES+, news-ish register); no error bars (one run per cell), though
+the fair-vs-starved contrasts replicate across every family. English is an
+outlier throughout: it never accumulates many specific neurons in any model
+(max ~200, early checkpoints only) — as the highest-resource, most-shared
+language its activations are broadly distributed.
+
+---
+
 ## 8. Open / next steps
 
 - ~~Run the alignment sweep~~ **DONE** — all 26 checkpoints, n=2009, with d'
@@ -916,3 +997,15 @@ quote; raw per-model alignment scores are not.
 - If the debiased scoring should ship in the portable HF export, re-upload
   `src/xscript/**` (the debiasing is now folded into `bench.py` itself, so the
   export just needs to be refreshed — no separate script to bundle).
+- **LAPE follow-up (§6c): the deactivation experiment.** The paper's causal
+  check — zero the identified neurons and measure per-language PPL — has not
+  been run. `run_bpb.py` already emits per-sentence NLL, so ablated-vs-intact
+  BPB deltas with sentence-bootstrap CIs are straightforward: mask the selected
+  gates in `neurons._over_zero_batch`-style forwards for the ~26 headline
+  checkpoints. Prediction from §6c: ablating a *trained* language's (top-layer)
+  neurons should hurt that language selectively; ablating the starved models'
+  layer-0 foreign-script detectors should barely matter for trained langs.
+  The raw over-zero npz for all 109 checkpoints are on scratch
+  (`/mnt/scratch/xscript_lape/results/lape/`) — threshold sensitivity or new
+  statistics need no re-recording; but scratch is instance-local, so copy them
+  off (or re-record, ~2.5h) if the box is torn down.
