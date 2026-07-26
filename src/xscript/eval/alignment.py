@@ -204,15 +204,15 @@ def _retrieval(E, F, with_hits=False):
     return r
 
 
-def _discriminability(sim):
-    """Per-query margin and d' from a [n, n] similarity matrix.
-
-    ``d' = (matched - mean_nonmatched) / std_nonmatched`` per query. Unlike
-    top-1 accuracy this is continuous and cannot ceiling -- top-1 saturated
-    above 0.95 even for monolingual CONTROLS on this pool, which is why it is
-    the preferred statistic (see the module docstring). Dividing by the
-    non-match spread also makes it scale-free: models differ in overall cosine
-    scale, so a raw margin is not comparable across them.
+def _discriminability_1d(sim):
+    """Per-query margin and d' from a [n, n] similarity matrix, ROW-wise (A
+    retrieving B): ``d' = (matched - mean_nonmatched) / std_nonmatched``, the
+    match compared against the other entries in its row. Unlike top-1 accuracy
+    this is continuous and cannot ceiling -- top-1 saturated above 0.95 even
+    for monolingual CONTROLS on this pool, which is why it is the preferred
+    statistic (see the module docstring). Dividing by the non-match spread
+    also makes it scale-free: models differ in overall cosine scale, so a raw
+    margin is not comparable across them.
 
     Computed from row sums rather than materialising the off-diagonal (which
     would be an n x (n-1) copy).
@@ -227,6 +227,32 @@ def _discriminability(sim):
     margin = matched - mean_off
     dprime = margin / np.maximum(np.sqrt(var_off), 1e-9)
     return margin, dprime
+
+
+def _discriminability(sim):
+    """Bidirectional per-query margin and d' from a [n, n] similarity matrix.
+
+    ``_discriminability_1d(sim)`` is the A->B direction (row statistics: each
+    query's match judged against the rest of its row). MEXA's ``mutual_nn``
+    requires the diagonal to win both its row AND its column, so a
+    one-directional d' is only half of what that accuracy metric reflects.
+    ``sim.T`` swaps rows and columns, so running the identical row-wise
+    computation on the transpose gives the B->A direction (each match judged
+    against the rest of its column) -- not reused from the A->B pass, since
+    the off-diagonal mean/variance differ per direction.
+
+    Returns a dict of per-query arrays: ``margin_a2b``/``dprime_a2b`` (the
+    original statistic), ``margin_b2a``/``dprime_b2a`` (transposed), and
+    ``margin_sym``/``dprime_sym`` (their mean).
+    """
+    margin_a2b, dprime_a2b = _discriminability_1d(sim)
+    margin_b2a, dprime_b2a = _discriminability_1d(sim.T)
+    return {
+        "margin_a2b": margin_a2b, "dprime_a2b": dprime_a2b,
+        "margin_b2a": margin_b2a, "dprime_b2a": dprime_b2a,
+        "margin_sym": (margin_a2b + margin_b2a) / 2,
+        "dprime_sym": (dprime_a2b + dprime_b2a) / 2,
+    }
 
 
 def _retrieval_sim(sim, with_hits=False):
@@ -246,14 +272,22 @@ def _retrieval_sim(sim, with_hits=False):
            "cosine_nonmatched": nonmatched,
            "cosine_margin": matched - nonmatched,
            "n": n}
-    margin_q, dprime_q = _discriminability(sim)
-    res["dprime"] = float(dprime_q.mean())
+    d = _discriminability(sim)
+    # `dprime` is kept as-is (== dprime_a2b): downstream scripts and the
+    # committed results/alignment/*.csv key off this exact name/definition.
+    res["dprime"] = float(d["dprime_a2b"].mean())
+    res["dprime_a2b"] = res["dprime"]
+    res["dprime_b2a"] = float(d["dprime_b2a"].mean())
+    res["dprime_sym"] = float(d["dprime_sym"].mean())
     if with_hits:
         res["hits"] = {"a2b": hit_ab.astype(np.uint8).tolist(),
                        "b2a": hit_ba.astype(np.uint8).tolist()}
         # per-query d' so analyze_alignment.py can paired-bootstrap it exactly
         # the way it does the 0/1 retrieval hits.
-        res["dprime_q"] = [round(float(x), 4) for x in dprime_q]
+        res["dprime_q"] = [round(float(x), 4) for x in d["dprime_a2b"]]
+        res["dprime_a2b_q"] = res["dprime_q"]
+        res["dprime_b2a_q"] = [round(float(x), 4) for x in d["dprime_b2a"]]
+        res["dprime_sym_q"] = [round(float(x), 4) for x in d["dprime_sym"]]
     return res
 
 

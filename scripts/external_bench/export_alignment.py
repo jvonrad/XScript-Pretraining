@@ -28,7 +28,8 @@ import json
 from pathlib import Path
 
 PER_LAYER_METRICS = ["top1_a2b", "top1_b2a", "mutual_nn", "cosine_matched",
-                     "cosine_nonmatched", "cosine_margin", "dprime"]
+                     "cosine_nonmatched", "cosine_margin", "dprime",
+                     "dprime_a2b", "dprime_b2a", "dprime_sym"]
 
 
 def main() -> None:
