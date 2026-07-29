@@ -367,6 +367,50 @@ tr '\0' '\n' < /proc/<training-pid>/environ | grep NEURON_RT_VISIBLE_CORES
   token-budget trajectories, Jaccard consolidation). Outputs committed to
   `results/lape/`.
 
+- `scripts/external_bench/run_extra_bench.py` — **new**; the five-language
+  benchmarks added on top of the C.5 suite (CLAUDE.md §6d): the missing
+  `hellaswag_zh`, SIB-200, SIB-200 with English labels (control), and
+  Taxi-1500. Same fetch/reassemble machinery as `run_appendix_c5.py`. Two
+  differences that matter operationally: results are **merged** into
+  `$WORK/results/extra_bench/<run>_final.json` per (lang, task) rather than
+  overwritten, so two invocations with different `--families` on different
+  core-pairs can build up one file for the same model without clobbering each
+  other (and `--overwrite` re-scores at task granularity, not model
+  granularity); and `correct` has an extra metric level,
+  `{lang: {task: {metric: [0/1, …]}}}`, because these tasks report
+  acc/acc_norm/acc_mutual_info and they disagree.
+- `scripts/external_bench/analyze_extra_bench.py` — **new**; pure-stdlib
+  aggregation of the above: the three-metric comparison with both baselines
+  (chance *and* majority-class), a **constant-prediction degeneracy check**
+  (a cell whose hit vector is exactly `gold == c` scored the majority rate
+  while learning nothing), per-model × per-language tables, the SIB-200
+  label-language control, and transfer deltas with the same paired bootstrap
+  as `bootstrap_transfer.py` (LR-mismatched pairs flagged `BAD`).
+- `src/xscript/eval/c5_tasks/hellaswag_zh/` — **new**; Chinese HellaSwag.
+  lm-eval 0.4.12 ships 31 okapi HellaSwag languages but no `zh`, even though
+  `alexandrainst/m_hellaswag` has `data/zh/val.jsonl` — because that file does
+  not load: 4 of its 37,064 `endings` are `{"zh":…,"en":…}` dicts instead of
+  strings, so pyarrow's schema inference rejects the whole split
+  (`ArrowInvalid: Column(/endings/[]) changed from string to object in row
+  153`). `utils.build_dataset` reads the jsonl with the stdlib and takes the
+  `"zh"` member, recovering all 9266 docs; preprocessing is a verbatim copy of
+  upstream's so the column stays comparable with de/fr/ar.
+- `src/xscript/eval/c5_tasks/sib200/` — **new**; SIB-200 topic classification
+  (7 topics over FLORES-200 sentences) for all five languages, plus the
+  `sib200_enlab_*` English-label control. `utils.build_dataset` merges
+  `Davlan/sib200`'s train+dev+test TSVs into one 1004-doc `test` split sorted
+  by FLORES sentence id — nothing is finetuned on SIB-200 here, so all splits
+  are unseen data, and the sort makes the doc order identical across
+  languages.
+- `src/xscript/eval/c5_tasks/taxi1500/` — **new**; Taxi-1500 (6 topics over
+  Bible verses), all five languages. Only the *English* labels are
+  distributable; the per-language text is joined onto them by PBC verse id
+  from the openly-licensed **Taxi1500-c v3.0** corpus zip (786 MB, downloaded
+  and pruned to five editions on first use — pre-warm with
+  `python src/xscript/eval/c5_tasks/taxi1500/utils.py` before a fan-out).
+  Editions are pinned in `EDITIONS`, chosen for full coverage of all 1077
+  labelled verses and the most modern register available.
+
 Neuron writes stray `*PostSPMDPassesExecutionDuration.txt` files into the cwd —
 gitignore them.
 

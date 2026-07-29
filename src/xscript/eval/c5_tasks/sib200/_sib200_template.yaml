@@ -1,0 +1,35 @@
+# Shared stanza for every sib200_* task. Has no `task:` key, so lm-eval's task
+# collector skips it and it is only ever pulled in via `include:`.
+#
+# 0-shot cloze multiple choice: the topic's own words are the scored
+# continuation, never a letter -- the same methodology as belebele_cloze/ and
+# for the same reason (Appendix D of Messmer et al. 2025: cloze "is shown to
+# serve as a more reliable performance indicator earlier in training").
+#
+# Three metrics, deliberately:
+#   acc              raw summed loglikelihood over the label words
+#   acc_norm         byte-length-normalized -- the 7 labels differ a lot in
+#                    length ("science and technology" vs "sport")
+#   acc_mutual_info  PMI, log P(label|text) - log P(label): the prior-
+#                    normalized score that turned XNLI-zh from exactly-chance
+#                    into real signal (CLAUDE.md 6). Doubles the request count.
+custom_dataset: !function utils.build_dataset
+output_type: multiple_choice
+training_split: null
+validation_split: null
+test_split: test
+doc_to_target: label
+should_decontaminate: true
+doc_to_decontamination_query: "{{text}}"
+metric_list:
+  - metric: acc
+    aggregation: mean
+    higher_is_better: true
+  - metric: acc_norm
+    aggregation: mean
+    higher_is_better: true
+  - metric: acc_mutual_info
+    aggregation: mean
+    higher_is_better: true
+metadata:
+  version: 0.0

@@ -1,0 +1,6 @@
+include: _sib200_template.yaml
+task: sib200_enlab_zho_Hans
+dataset_kwargs:
+  lang: zho_Hans
+doc_to_text: "{{text}}\nTopic:"
+doc_to_choice: !function utils.choices_eng_Latn

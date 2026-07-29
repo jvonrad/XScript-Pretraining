@@ -1,0 +1,7 @@
+include: _sib200_template.yaml
+task: sib200_zho_Hans
+dataset_kwargs:
+  lang: zho_Hans
+doc_to_text: "{{text}}\n主题："
+doc_to_choice: !function utils.choices_zho_Hans
+target_delimiter: ""

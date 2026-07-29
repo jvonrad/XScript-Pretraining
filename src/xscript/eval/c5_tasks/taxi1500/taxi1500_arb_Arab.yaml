@@ -1,0 +1,6 @@
+include: _taxi1500_template.yaml
+task: taxi1500_arb_Arab
+dataset_kwargs:
+  lang: arb_Arab
+doc_to_text: "{{text}}\nالموضوع:"
+doc_to_choice: !function utils.choices_arb_Arab

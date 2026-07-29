@@ -26,8 +26,16 @@ A/B/C/D letters), normalized accuracy.
     ARC           en/de/fr/ar/zh  (native arc_easy for en, `okapi` M-ARC
                                     translations for de/fr/ar/zh)
     HellaSwag     en/de/fr/ar     (native hellaswag for en, `okapi` for
-                                    de/fr/ar -- no Chinese translation exists
-                                    in this lm-eval build, so zh is skipped)
+                                    de/fr/ar. zh is skipped HERE because
+                                    lm-eval 0.4.12 registers no hellaswag_zh
+                                    -- but the okapi data DOES contain zh; it
+                                    just fails to load (4 malformed `endings`
+                                    break the split's schema inference). The
+                                    repaired task lives in
+                                    c5_tasks/hellaswag_zh/ and is run by
+                                    run_extra_bench.py, deliberately NOT added
+                                    here so the committed C.5 numbers stay
+                                    comparable with the earlier sweeps.)
     XStoryCloze   en/ar/zh        (dataset doesn't cover de/fr)
     XWinograd     en/fr/zh        (dataset doesn't cover de/ar)
 

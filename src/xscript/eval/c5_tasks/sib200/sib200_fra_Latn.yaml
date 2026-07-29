@@ -1,0 +1,6 @@
+include: _sib200_template.yaml
+task: sib200_fra_Latn
+dataset_kwargs:
+  lang: fra_Latn
+doc_to_text: "{{text}}\nSujet :"
+doc_to_choice: !function utils.choices_fra_Latn

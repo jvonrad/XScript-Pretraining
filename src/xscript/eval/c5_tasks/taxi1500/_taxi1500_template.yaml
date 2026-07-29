@@ -1,0 +1,24 @@
+# Shared stanza for every taxi1500_* task; no `task:` key, so the collector
+# skips it and it is only pulled in via `include:`.
+# Same 0-shot cloze methodology and same three metrics as sib200/ -- see
+# ../sib200/_sib200_template.yaml for why all three are recorded.
+custom_dataset: !function utils.build_dataset
+output_type: multiple_choice
+training_split: null
+validation_split: null
+test_split: test
+doc_to_target: label
+should_decontaminate: true
+doc_to_decontamination_query: "{{text}}"
+metric_list:
+  - metric: acc
+    aggregation: mean
+    higher_is_better: true
+  - metric: acc_norm
+    aggregation: mean
+    higher_is_better: true
+  - metric: acc_mutual_info
+    aggregation: mean
+    higher_is_better: true
+metadata:
+  version: 0.0

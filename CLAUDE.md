@@ -10,18 +10,26 @@ See [README.md](README.md) for the experiment design, and
 **[NEURON.md](NEURON.md)** for everything about *running* this on AWS Trainium:
 environment setup, dependency pins, the XLA scoring adaptation and its silent
 traps, the eval fan-out, and the training port. Section numbers are preserved
-across both files, so cross-references still resolve — **§3, §6, §6b, §8 are
-here; §1, §2, §4, §5, §7, §9 are in NEURON.md**.
+across both files, so cross-references still resolve — **§3, §6, §6b, §6c, §6d,
+§8 are here; §1, §2, §4, §5, §7, §9 are in NEURON.md**.
 
 ---
 
 ## TL;DR
 
-- **Only XNLI carries downstream signal at this scale.** The apparent
-  "Arabic/Chinese are at chance" result was an **evaluation artifact, not a
-  training failure** — `xnli_ar`/`xnli_zh` are now debiased automatically inside
-  `bench.py`. Global-MMLU is genuinely at chance; Belebele has only a faint
-  recoverable signal (§6).
+- **Of the C.5 suite, only XNLI carries downstream signal at this scale.** The
+  apparent "Arabic/Chinese are at chance" result was an **evaluation artifact,
+  not a training failure** — `xnli_ar`/`xnli_zh` are now debiased automatically
+  inside `bench.py`. Global-MMLU is genuinely at chance; Belebele has only a
+  faint recoverable signal (§6). **SIB-200 (§6d) is the second benchmark that
+  does discriminate**, and unlike XNLI it covers all five languages.
+- **No cross-script downstream penalty on SIB-200 (§6d).** Own-language
+  accuracy for the 30B bilinguals: de .518, fr .571, **ar .557, zh .569** —
+  cross-script inside the same-script range, on a benchmark clearing its .251
+  majority baseline. Consistent with §6's corrected-XNLI reading.
+- **zh HellaSwag was never missing** — the okapi data has it; 4 malformed rows
+  make the split unloadable, so lm-eval ships no task for it. Repaired in §6d;
+  every zh checkpoint scores .350–.411 acc_norm against .250 chance.
 - **The BPB→BTS headline numbers did not survive recomputation.** They are
   confounded by LR state (cooled finals vs mid-stable intermediates) and swamped
   by checkpoint noise; the interaction is **not established** at any LR-matched
@@ -39,7 +47,10 @@ here; §1, §2, §4, §5, §7, §9 are in NEURON.md**.
   depend on an unresolved layer-selection rule (§6b).
 - Three times now, an uncontrolled evaluation number turned out to be measuring
   the benchmark rather than the training (XNLI connectives, Belebele letter
-  format, the alignment fixed-layer probe). Control before quoting.
+  format, the alignment fixed-layer probe). Control before quoting. §6d adds
+  three more traps caught *before* they were quoted: `acc_norm` length bias,
+  constant-prediction collapse, and the label-language confound (worth ~14
+  points, in opposite directions for trained vs untrained languages).
 
 ---
 
@@ -330,7 +341,7 @@ excluded):
 | XNLI | en/de/fr/ar/zh | reuses the debiased ar/zh routing above |
 | Belebele | en/de/fr/ar/zh | **custom cloze task** — see below |
 | ARC | en/de/fr/ar/zh | native `arc_easy` (en) + `okapi` M-ARC translations |
-| HellaSwag | en/de/fr/ar | no Chinese translation exists in this lm-eval build |
+| HellaSwag | en/de/fr/ar | zh is **not** absent from the data, only from lm-eval's task list — see §6d; the zh column is filled by `run_extra_bench.py`, not by this script |
 | XStoryCloze | en/ar/zh | dataset doesn't cover de/fr |
 | XWinograd | en/fr/zh | dataset doesn't cover de/ar |
 
@@ -964,6 +975,182 @@ language its activations are broadly distributed.
 
 ---
 
+## 6d. Five-language benchmarks: SIB-200, Taxi-1500, zh HellaSwag
+
+The C.5 suite cannot answer "how does this model compare *across* the five
+languages" on its own, for two independent reasons: only XNLI carries signal at
+this scale (§6), and **four of its six benchmarks do not even cover all five
+languages** — HellaSwag has no zh, XStoryCloze no de/fr, XWinograd no de/ar.
+`run_extra_bench.py` + `analyze_extra_bench.py` add three benchmarks that do.
+Results: `$WORK/results/extra_bench/<run>_final.json`, 28 checkpoints.
+
+### The blank ZH-HellaSwag column was a corrupt data file, not a missing translation
+
+§6 recorded it as "no Chinese translation exists in this lm-eval build". Half
+right. `alexandrainst/m_hellaswag` — the dataset behind the registered
+`hellaswag_{ar,de,fr,…}` okapi tasks — **does** ship `data/zh/val.jsonl`. It
+does not load:
+
+```
+ArrowInvalid: JSON parse error: Column(/endings/[]) changed from string to object in row 153
+```
+
+4 of the split's 37,064 `endings` (all in doc index 5074) were written as
+`{"zh": …, "en": …}` dicts instead of bare strings — a translation-pipeline
+leak. pyarrow infers the schema from the first chunk, hits the type change and
+rejects the whole file, which is why lm-eval 0.4.12 ships 31 okapi HellaSwag
+languages and no `zh`. Reading the jsonl with the stdlib and taking the `"zh"`
+member recovers all 9266 docs (`c5_tasks/hellaswag_zh/utils.py`), reusing
+upstream's `process_docs` **verbatim** so the column stays comparable.
+
+| checkpoint | zh tokens | acc | acc_norm |
+|---|---|---|---|
+| zh-fair-12b | ~11.75B | .3158 | .3664 |
+| zh-starved-12b | ~11.75B | .3050 | .3501 |
+| zh-fair-15b | ~14.76B | .3194 | .3728 |
+| zh-starved-15b | ~14.76B | .3091 | .3532 |
+| en-zh-fair-23b | ~11.4B | .3178 | .3706 |
+| en-zh-starved-23b | ~11.4B | .3100 | .3554 |
+| en-zh-fair (30B) | ~15B | .3383 | .4112 |
+| en-zh-starved (30B) | ~15B | .3302 | .3950 |
+
+Chinese HellaSwag is **nowhere near chance** (.250) — `en-zh-fair`'s .411 sits
+between its own English (.456) and en-de-fair's German (.422) in §6's C.5
+table. And **fair > starved in all four matched pairs** (+.016/.020/.015/.016
+acc_norm), with no exceptions.
+
+**The LR-state confound reproduces exactly here, on a benchmark this project
+had never run.** Bilingual − monolingual on zh HellaSwag, the same comparison
+computed two ways (per-metric, so the two rows are like-for-like):
+
+| | fair | starved |
+|---|---|---|
+| **LR-matched** (`zh-*-12b` vs `en-zh-*-23b`, both mid-stable @3e-3), acc | **+0.002 [−0.003, +0.007]** | **+0.005 [+0.000, +0.010]** |
+| LR-mismatched (`zh-*-15b` vs cooled 30B final), acc | +0.019 | +0.021 |
+| **LR-matched**, acc_norm | **+0.004** | **+0.005** |
+| LR-mismatched, acc_norm | +0.038 | +0.042 |
+
+An **8–9× inflation on both metrics**, and the clean deltas are
+indistinguishable from zero. Independent corroboration of the warning §6
+attaches to 5 of its 7 transfer cells — on a benchmark that did not exist in
+this project when that warning was written.
+
+### SIB-200 (primary) and Taxi-1500 (backup)
+
+| | SIB-200 | Taxi-1500 |
+|---|---|---|
+| source | FLORES-200 sentences | Parallel Bible Corpus verses |
+| topics / chance | 7 / 0.143 | 6 / 0.167 |
+| **majority class** | **0.251** | **0.261** |
+| n per language | 1004 | 1077 |
+
+SIB-200 is the one to quote. Topic classification is largely lexical, so it is
+a task an undertrained model can actually do — and it is built on the **same
+FLORES sentences** as §6's BPB and §6b's alignment, so downstream capability
+and representation alignment are measured on identical text. Both are scored
+0-shot cloze (the topic's own words as continuation, never a letter), docs
+sorted by FLORES sentence id / PBC verse id so **the doc order is identical
+across all five languages**.
+
+**SIB-200 is only the second benchmark in this repo, after XNLI, to
+discriminate at this scale** — `en-fair` scores .690 on English against a .251
+majority baseline, where ARC, Global-MMLU and Belebele all sit at chance.
+
+### Three controls, and all three changed the answer
+
+1. **`acc_norm` is degenerate on this task.** Averaged over the 28 models it
+   stays in .181–.375 across every (lang, task) cell, i.e. pinned near the
+   majority rate, while `acc` spans .202–.533 over the same cells. It divides
+   loglikelihood by the answer's byte length, which favours the longest
+   option — and SIB-200's longest label ("science and technology") is *also*
+   its majority class. **Quote `acc`.** (This is why the runner stores all of
+   acc/acc_norm/acc_mutual_info with per-example hit lists rather than picking
+   one; note the `scores` field in the JSONs prefers `acc_norm` for shape
+   compatibility with the C.5 files and is therefore **the wrong field to read
+   for these tasks** — use `metrics`.)
+
+2. **Constant-prediction collapse, which accuracy alone cannot reveal.**
+   `analyze_extra_bench.py` flags a cell whose 0/1 hit vector is exactly the
+   indicator `gold == c`: the model ranked the same label first for all ~1000
+   documents and "scored" that class's frequency having learned nothing.
+   **12 of 392 cells collapsed**, every one of them in a language the model
+   was not trained on, and 7 of the 12 in Arabic. The clearest case: `en-fair` on
+   Arabic SIB-200 scores .110 — *below* uniform chance — purely because its
+   constant choice happens to be a minority class. Without this check that
+   reads as "very poor Arabic"; with it, it reads as **zero input-dependent
+   Arabic discrimination**, which is a different and much stronger statement.
+   Note `en-starved` on the same cell does **not** collapse (.199) — the
+   starved tokenizer leaves an English-only model with *some* Arabic
+   discrimination where the fair one has none, the same direction as §6's
+   `ar/xnli` fair−starved delta (−0.087, favouring starved) and §6c's
+   forced-vocabulary-sharing story. Single models, no CIs — suggestive only.
+
+3. **Label language, which is worth ~14 points.** Both datasets ship English
+   label words for every language, so the naive setup asks a zh-only model to
+   rank English strings. `sib200_{code}` localizes prompt and labels;
+   `sib200_enlab_{code}` is the same texts with the English ones. Paired
+   bootstrap over `localized − English`, split by whether the model trained on
+   that language:
+
+   | | n cells | mean Δ |
+   |---|---|---|
+   | trained on that language | 24 | **+0.049** |
+   | not trained on it | 88 | **−0.093** |
+
+   English labels **inflate** scores on languages the model doesn't know (it
+   falls back on reading the label) and **deflate** them on languages it does.
+   `en-fair` on German: .281 localized vs .519 with English labels; `de-fair`
+   on German: .515 vs .536. A cross-language table built on the shipped
+   English labels would have been wrong in both directions simultaneously.
+
+### The headline: no cross-script downstream penalty on SIB-200
+
+Own-language accuracy, localized labels, `acc` (chance .143, majority .251):
+
+| partner | script | bilingual 30B final (fair) | monolingual final (fair) |
+|---|---|---|---|
+| de | same | .518 | .515 |
+| fr | same | .571 | .544 |
+| **ar** | **cross** | **.557** | **.570** |
+| **zh** | **cross** | **.569** | .546 (15b) |
+| en | — | .624–.690 | .690 |
+
+**Arabic and Chinese sit inside the same-script range on both the bilingual and
+the monolingual side**, and the Arabic monolingual is the strongest non-English
+model in the table. On the first benchmark in this project that both covers all
+five languages and clears the majority baseline, the cross-script penalty does
+not appear downstream. That is consistent with §6's corrected-XNLI conclusion
+(the apparent cross-script downstream penalty was largely a measurement
+artifact) and inconsistent with reading §6's ATLAS-BTS separation as a
+capability gap.
+
+Fair ≥ starved on own-language SIB-200 in 6 of 8 pairs, and **by far the most
+on English** (en-fair .690 vs en-starved .581, **+.109**). On partner languages
+the effect is smaller and not uniform: ar-mono +.055, en-ar +.033, en-de +.024,
+zh-15b +.022, en-fr +.013, but fr-mono −.004 and en-zh −.007. That is the same
+asymmetry §6 found in the matched-token transfer deltas — the tokenizer's
+effect is large and consistent on English, ~0 and sign-unstable on the partner
+language.
+
+**Taxi-1500 is much weaker and should only corroborate.** Own-language accuracy
+is .188–.363 against a .261 majority baseline — barely separable. Its domain
+(scripture) is a poor match for FineWeb2-trained checkpoints, and its register
+is uneven *across* languages: the only full-coverage open Arabic edition is
+from **1865** while the pinned de/fr/en editions are 20th–21st century, so the
+Arabic column is disadvantaged for reasons unrelated to the model. Where it and
+SIB-200 disagree (e.g. `en-zh-starved` zh: .576 SIB vs .188 Taxi), believe
+SIB-200.
+
+**Caveats.** One training run per cell, so the fair-vs-starved contrasts have
+no error bars (the *deltas* do — paired bootstrap over docs — but not the runs).
+`de` has no starved monolingual at any budget, as everywhere else in this repo.
+The transfer-delta table in `analyze_extra_bench.py`'s section 4 carries the
+**same LR-state confound as §6**: only the two `zh` rows are LR-matched, and
+they are the ones flagged `ok`; the de/fr/ar rows are flagged `BAD` and are not
+quotable.
+
+---
+
 ## 8. Open / next steps
 
 - ~~Run the alignment sweep~~ **DONE** — all 26 checkpoints, n=2009, with d'
@@ -997,6 +1184,16 @@ language its activations are broadly distributed.
 - If the debiased scoring should ship in the portable HF export, re-upload
   `src/xscript/**` (the debiasing is now folded into `bench.py` itself, so the
   export just needs to be refreshed — no separate script to bundle).
+- **Fill the ZH-HellaSwag column for the rest of the C.5 roster (§6d).** Only
+  the 8 Chinese-relevant checkpoints were scored on `hellaswag_zh`; the other
+  18 in §6's per-model table still show `n/a` there. ~10 min/model on one
+  core-pair, and `run_extra_bench.py --families hellaswag_zh` merges into the
+  existing per-model JSONs rather than overwriting them.
+- **SIB-200 is the benchmark to grow, not Belebele.** It is the only
+  all-five-language task in the repo that clears its majority baseline. Worth
+  running over the token-budget series (`*-1b`…`*-23b`) to get a *curve* rather
+  than the single-budget snapshot §6d reports — the same lesson §6's ATLAS-BTS
+  anchor-sensitivity taught.
 - **LAPE follow-up (§6c): the deactivation experiment.** The paper's causal
   check — zero the identified neurons and measure per-language PPL — has not
   been run. `run_bpb.py` already emits per-sentence NLL, so ablated-vs-intact

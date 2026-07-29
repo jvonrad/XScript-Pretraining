@@ -1,0 +1,6 @@
+include: _taxi1500_template.yaml
+task: taxi1500_eng_Latn
+dataset_kwargs:
+  lang: eng_Latn
+doc_to_text: "{{text}}\nTopic:"
+doc_to_choice: !function utils.choices_eng_Latn

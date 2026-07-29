@@ -1,0 +1,6 @@
+include: _sib200_template.yaml
+task: sib200_enlab_arb_Arab
+dataset_kwargs:
+  lang: arb_Arab
+doc_to_text: "{{text}}\nTopic:"
+doc_to_choice: !function utils.choices_eng_Latn
