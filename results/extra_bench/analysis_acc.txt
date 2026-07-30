@@ -1,24 +1,24 @@
-# 28 model(s) from /home/ubuntu/xscript_bench/results/extra_bench
+# 41 model(s) from /home/ubuntu/xscript_bench/results/extra_bench
 
 ==============================================================================
 1. SCORING CHOICE -- the three metrics do not agree
 ==============================================================================
                                                            acc          acc_norm   acc_mutual_info
-en                    sib200_eng_Latn                    0.533             0.262             0.391
-en                    taxi1500_eng_Latn                  0.298             0.301             0.259
-de                    sib200_deu_Latn                    0.273             0.264             0.210
-de                    sib200_enlab_deu_Latn              0.397             0.254             0.344
-de                    taxi1500_deu_Latn                  0.202             0.181             0.197
-fr                    sib200_enlab_fra_Latn              0.440             0.260             0.338
-fr                    sib200_fra_Latn                    0.363             0.251             0.288
-fr                    taxi1500_fra_Latn                  0.219             0.232             0.204
-ar                    sib200_arb_Arab                    0.250             0.234             0.240
-ar                    sib200_enlab_arb_Arab              0.237             0.249             0.212
-ar                    taxi1500_arb_Arab                  0.205             0.248             0.163
+en                    sib200_eng_Latn                    0.529             0.263             0.380
+en                    taxi1500_eng_Latn                  0.303             0.301             0.272
+de                    sib200_deu_Latn                    0.278             0.267             0.232
+de                    sib200_enlab_deu_Latn              0.395             0.255             0.341
+de                    taxi1500_deu_Latn                  0.204             0.181             0.195
+fr                    sib200_enlab_fra_Latn              0.441             0.261             0.338
+fr                    sib200_fra_Latn                    0.371             0.258             0.301
+fr                    taxi1500_fra_Latn                  0.219             0.226             0.203
+ar                    sib200_arb_Arab                    0.255             0.239             0.250
+ar                    sib200_enlab_arb_Arab              0.247             0.249             0.212
+ar                    taxi1500_arb_Arab                  0.205             0.246             0.160
 zh                    hellaswag_zh                       0.318             0.372                 -
-zh                    sib200_enlab_zho_Hans              0.425             0.254             0.346
-zh                    sib200_zho_Hans                    0.364             0.375             0.447
-zh                    taxi1500_zho_Hans                  0.224             0.218             0.238
+zh                    sib200_enlab_zho_Hans              0.401             0.254             0.324
+zh                    sib200_zho_Hans                    0.323             0.351             0.388
+zh                    taxi1500_zho_Hans                  0.210             0.208             0.235
 
 mean over all loaded models; '-' = metric not reported by that task
 baselines -- SIB-200: chance 0.143, MAJORITY CLASS 0.251 (science/technology, 252/1004); HellaSwag: chance 0.250
@@ -29,12 +29,16 @@ also the majority class, so a high acc_norm can be pure length bias.
 ==============================================================================
 1b. DEGENERACY CHECK -- constant-prediction collapse  (acc)
 ==============================================================================
+  COLLAPSED  ar-starved-12b        zh  taxi1500_zho_Hans       always predicts class 3 (acc = 0.142)
   COLLAPSED  ar-starved-15b        zh  taxi1500_zho_Hans       always predicts class 2 (acc = 0.171)
   COLLAPSED  de-fair               ar  sib200_arb_Arab         always predicts class 1 (acc = 0.197)
+  COLLAPSED  de-fair-12b           ar  sib200_arb_Arab         always predicts class 1 (acc = 0.197)
   COLLAPSED  de-fair-15b           ar  sib200_arb_Arab         always predicts class 4 (acc = 0.110)
+  COLLAPSED  en-de-fair-23b        ar  sib200_arb_Arab         always predicts class 4 (acc = 0.110)
   COLLAPSED  en-de-starved         ar  taxi1500_arb_Arab       always predicts class 2 (acc = 0.171)
   COLLAPSED  en-fair               ar  sib200_arb_Arab         always predicts class 4 (acc = 0.110)
   COLLAPSED  en-fair               ar  taxi1500_arb_Arab       always predicts class 2 (acc = 0.171)
+  COLLAPSED  en-fair-12b           ar  taxi1500_arb_Arab       always predicts class 2 (acc = 0.171)
   COLLAPSED  en-fair-15b           ar  sib200_arb_Arab         always predicts class 1 (acc = 0.197)
   COLLAPSED  en-zh-fair-23b        ar  sib200_arb_Arab         always predicts class 4 (acc = 0.110)
   COLLAPSED  zh-fair-15b           fr  sib200_fra_Latn         always predicts class 3 (acc = 0.122)
@@ -42,35 +46,48 @@ also the majority class, so a high acc_norm can be pure length bias.
   COLLAPSED  zh-starved-12b        fr  taxi1500_fra_Latn       always predicts class 1 (acc = 0.241)
   COLLAPSED  zh-starved-15b        fr  taxi1500_fra_Latn       always predicts class 1 (acc = 0.241)
 
-12 of 392 (model x lang x task) cells collapsed to a constant prediction.
+16 of 574 (model x lang x task) cells collapsed to a constant prediction.
 
 ==============================================================================
 2. PER-MODEL x PER-LANGUAGE  (acc)
 ==============================================================================
 model                        en:sib200     en:taxi1500       de:sib200  de:sib200enlab     de:taxi1500  fr:sib200enlab       fr:sib200     fr:taxi1500       ar:sib200  ar:sib200enlab     ar:taxi1500    zh:hellaswag  zh:sib200enlab       zh:sib200     zh:taxi1500
 ar-fair                          0.502           0.254           0.136           0.364           0.202           0.451           0.418           0.206           0.570           0.517           0.242               -           0.174           0.146           0.184
+ar-fair-12b                      0.514           0.271           0.135           0.289           0.070           0.371           0.356           0.069           0.531           0.528           0.236               -           0.166           0.113           0.173
 ar-fair-15b                      0.468           0.280           0.186           0.239           0.085           0.366           0.340           0.234           0.555           0.509           0.329               -           0.164           0.146           0.146
 ar-starved                       0.473           0.293           0.135           0.209           0.111           0.395           0.303           0.230           0.515           0.485           0.249               -           0.146           0.121           0.142
+ar-starved-12b                   0.333           0.255           0.156           0.126           0.096           0.235           0.181           0.228           0.538           0.381           0.284               -           0.115           0.111           0.142
 ar-starved-15b                   0.359           0.270           0.148           0.183           0.193           0.287           0.264           0.243           0.520           0.437           0.253               -           0.126           0.090           0.171
 de-fair                          0.534           0.279           0.515           0.536           0.314           0.500           0.377           0.183           0.197           0.164           0.189               -           0.369           0.321           0.218
+de-fair-12b                      0.532           0.334           0.488           0.533           0.301           0.463           0.291           0.237           0.197           0.144           0.136               -           0.304           0.197           0.182
 de-fair-15b                      0.495           0.284           0.492           0.498           0.297           0.474           0.420           0.207           0.110           0.199           0.191               -           0.349           0.155           0.223
 en-ar-fair                       0.680           0.331           0.259           0.535           0.208           0.596           0.452           0.131           0.557           0.656           0.295               -           0.638           0.413           0.267
+en-ar-fair-23b                   0.568           0.283           0.228           0.403           0.172           0.488           0.422           0.203           0.527           0.583           0.238               -           0.483           0.363           0.143
 en-ar-starved                    0.583           0.297           0.195           0.391           0.176           0.517           0.367           0.214           0.524           0.567           0.304               -           0.501           0.322           0.186
+en-ar-starved-23b                0.556           0.369           0.223           0.343           0.185           0.453           0.324           0.245           0.428           0.516           0.189               -           0.445           0.286           0.153
 en-de-fair                       0.635           0.315           0.518           0.556           0.342           0.570           0.401           0.171           0.189           0.168           0.184               -           0.590           0.503           0.234
+en-de-fair-23b                   0.580           0.299           0.541           0.534           0.341           0.484           0.371           0.182           0.110           0.217           0.240               -           0.459           0.223           0.224
 en-de-starved                    0.566           0.332           0.494           0.556           0.323           0.523           0.379           0.175           0.199           0.178           0.171               -           0.463           0.269           0.209
+en-de-starved-23b                0.556           0.323           0.516           0.496           0.324           0.538           0.236           0.152           0.199           0.177           0.242               -           0.426           0.309           0.190
 en-fair                          0.690           0.317           0.281           0.519           0.214           0.601           0.333           0.147           0.110           0.200           0.171               -           0.616           0.445           0.189
+en-fair-12b                      0.579           0.307           0.347           0.471           0.141           0.505           0.362           0.134           0.125           0.157           0.171               -           0.475           0.395           0.217
 en-fair-15b                      0.619           0.293           0.291           0.462           0.164           0.501           0.260           0.124           0.197           0.156           0.246               -           0.473           0.282           0.186
 en-fr-fair                       0.660           0.328           0.296           0.561           0.202           0.535           0.571           0.311           0.194           0.164           0.175               -           0.458           0.413           0.292
+en-fr-fair-23b                   0.594           0.287           0.186           0.502           0.218           0.533           0.540           0.280           0.105           0.145           0.173               -           0.403           0.185           0.186
 en-fr-starved                    0.599           0.329           0.328           0.471           0.201           0.475           0.558           0.324           0.199           0.157           0.171               -           0.524           0.299           0.233
+en-fr-starved-23b                0.516           0.369           0.302           0.402           0.203           0.470           0.566           0.283           0.200           0.201           0.152               -           0.350           0.253           0.167
 en-starved                       0.581           0.333           0.240           0.437           0.190           0.515           0.343           0.180           0.199           0.152           0.243               -           0.508           0.317           0.258
+en-starved-12b                   0.609           0.349           0.210           0.365           0.205           0.494           0.344           0.230           0.112           0.151           0.235               -           0.449           0.151           0.195
 en-starved-15b                   0.537           0.310           0.246           0.345           0.101           0.450           0.309           0.246           0.132           0.143           0.174               -           0.438           0.296           0.242
 en-zh-fair                       0.624           0.290           0.309           0.477           0.226           0.509           0.380           0.136           0.196           0.176           0.176           0.338           0.598           0.569           0.344
 en-zh-fair-23b                   0.603           0.318           0.208           0.452           0.182           0.493           0.349           0.197           0.110           0.123           0.173           0.318           0.577           0.580           0.337
 en-zh-starved                    0.568           0.331           0.260           0.405           0.166           0.492           0.320           0.255           0.191           0.181           0.172           0.330           0.553           0.576           0.188
 en-zh-starved-23b                0.536           0.296           0.250           0.356           0.198           0.434           0.249           0.242           0.139           0.207           0.173           0.310           0.451           0.534           0.259
 fr-fair                          0.543           0.307           0.299           0.499           0.301           0.435           0.544           0.363           0.185           0.141           0.172               -           0.426           0.315           0.112
+fr-fair-12b                      0.342           0.296           0.261           0.280           0.262           0.208           0.529           0.354           0.198           0.114           0.181               -           0.191           0.230           0.194
 fr-fair-15b                      0.504           0.248           0.331           0.395           0.187           0.334           0.538           0.365           0.196           0.139           0.179               -           0.332           0.289           0.225
 fr-starved                       0.540           0.350           0.280           0.405           0.153           0.480           0.548           0.260           0.200           0.183           0.171               -           0.450           0.429           0.205
+fr-starved-12b                   0.491           0.307           0.157           0.329           0.184           0.521           0.520           0.267           0.204           0.152           0.187               -           0.277           0.215           0.149
 fr-starved-15b                   0.423           0.290           0.272           0.231           0.157           0.320           0.516           0.243           0.200           0.147           0.246               -           0.296           0.237           0.066
 zh-fair-12b                      0.416           0.228           0.195           0.230           0.250           0.236           0.142           0.058           0.116           0.108           0.170           0.316           0.442           0.542           0.340
 zh-fair-15b                      0.434           0.239           0.160           0.312           0.204           0.270           0.122           0.203           0.110           0.143           0.172           0.319           0.383           0.546           0.277
@@ -90,151 +107,229 @@ ar-fair               de    -0.227 [-0.263, -0.193]*
 ar-fair               fr    -0.033 [-0.058, -0.009]*      
 ar-fair               ar    +0.053 [+0.031, +0.074]*      
 ar-fair               zh    -0.028 [-0.063, +0.005]       
-ar-fair-15b           de    -0.053 [-0.075, -0.031]*      
+ar-fair-12b           de    -0.153 [-0.183, -0.124]*      
+ar-fair-12b           fr    -0.015 [-0.044, +0.014]       
+ar-fair-12b           ar    +0.003 [-0.022, +0.027]       
+ar-fair-12b           zh    -0.054 [-0.079, -0.028]*      
+ar-fair-15b           de    -0.053 [-0.074, -0.032]*      
 ar-fair-15b           fr    -0.026 [-0.052, +0.000]       
-ar-fair-15b           ar    +0.046 [+0.027, +0.065]*      
+ar-fair-15b           ar    +0.046 [+0.026, +0.066]*      
 ar-fair-15b           zh    -0.018 [-0.032, -0.005]*      
-ar-starved            de    -0.074 [-0.109, -0.038]*      
-ar-starved            fr    -0.093 [-0.118, -0.067]*      
-ar-starved            ar    +0.030 [+0.006, +0.054]*      
-ar-starved            zh    -0.026 [-0.055, +0.005]       
-ar-starved-15b        de    -0.035 [-0.065, -0.005]*      
-ar-starved-15b        fr    -0.023 [-0.051, +0.004]       
-ar-starved-15b        ar    +0.083 [+0.059, +0.109]*      
-ar-starved-15b        zh    -0.037 [-0.067, -0.009]*      
-de-fair               de    -0.021 [-0.040, -0.001]*      
-de-fair               fr    -0.123 [-0.148, -0.098]*      
+ar-starved            de    -0.074 [-0.108, -0.040]*      
+ar-starved            fr    -0.093 [-0.120, -0.066]*      
+ar-starved            ar    +0.030 [+0.007, +0.053]*      
+ar-starved            zh    -0.026 [-0.058, +0.006]       
+ar-starved-12b        de    +0.030 [+0.012, +0.047]*      
+ar-starved-12b        fr    -0.054 [-0.082, -0.027]*      
+ar-starved-12b        ar    +0.156 [+0.129, +0.182]*      
+ar-starved-12b        zh    -0.004 [-0.022, +0.014]       
+ar-starved-15b        de    -0.035 [-0.064, -0.003]*      
+ar-starved-15b        fr    -0.023 [-0.054, +0.006]       
+ar-starved-15b        ar    +0.083 [+0.058, +0.108]*      
+ar-starved-15b        zh    -0.037 [-0.066, -0.009]*      
+de-fair               de    -0.021 [-0.039, -0.003]*      
+de-fair               fr    -0.123 [-0.149, -0.098]*      
 de-fair               ar    +0.033 [+0.004, +0.062]*      
-de-fair               zh    -0.048 [-0.076, -0.019]*      
-de-fair-15b           de    -0.006 [-0.030, +0.018]       
-de-fair-15b           fr    -0.054 [-0.073, -0.034]*      
-de-fair-15b           ar    -0.090 [-0.123, -0.056]*      
-de-fair-15b           zh    -0.193 [-0.226, -0.161]*      
-en-ar-fair            de    -0.276 [-0.309, -0.245]*      
-en-ar-fair            fr    -0.143 [-0.172, -0.117]*      
-en-ar-fair            ar    -0.100 [-0.125, -0.075]*      
-en-ar-fair            zh    -0.225 [-0.259, -0.194]*      
-en-ar-starved         de    -0.196 [-0.225, -0.169]*      
-en-ar-starved         fr    -0.150 [-0.179, -0.121]*      
-en-ar-starved         ar    -0.043 [-0.066, -0.019]*      
+de-fair               zh    -0.048 [-0.075, -0.018]*      
+de-fair-12b           de    -0.045 [-0.065, -0.026]*      
+de-fair-12b           fr    -0.172 [-0.201, -0.145]*      
+de-fair-12b           ar    +0.053 [+0.017, +0.088]*      
+de-fair-12b           zh    -0.107 [-0.133, -0.080]*      
+de-fair-15b           de    -0.006 [-0.031, +0.018]       
+de-fair-15b           fr    -0.054 [-0.074, -0.034]*      
+de-fair-15b           ar    -0.090 [-0.125, -0.056]*      
+de-fair-15b           zh    -0.193 [-0.223, -0.160]*      
+en-ar-fair            de    -0.276 [-0.307, -0.246]*      
+en-ar-fair            fr    -0.143 [-0.170, -0.115]*      
+en-ar-fair            ar    -0.100 [-0.125, -0.076]*      
+en-ar-fair            zh    -0.225 [-0.258, -0.193]*      
+en-ar-fair-23b        de    -0.175 [-0.204, -0.145]*      
+en-ar-fair-23b        fr    -0.066 [-0.086, -0.047]*      
+en-ar-fair-23b        ar    -0.056 [-0.080, -0.032]*      
+en-ar-fair-23b        zh    -0.121 [-0.147, -0.093]*      
+en-ar-starved         de    -0.196 [-0.226, -0.168]*      
+en-ar-starved         fr    -0.150 [-0.180, -0.118]*      
+en-ar-starved         ar    -0.043 [-0.068, -0.018]*      
 en-ar-starved         zh    -0.179 [-0.208, -0.149]*      
-en-de-fair            de    -0.038 [-0.058, -0.018]*      
-en-de-fair            fr    -0.168 [-0.192, -0.141]*      
-en-de-fair            ar    +0.021 [-0.007, +0.050]       
-en-de-fair            zh    -0.087 [-0.113, -0.062]*      
-en-de-starved         de    -0.062 [-0.085, -0.040]*      
-en-de-starved         fr    -0.143 [-0.171, -0.117]*      
-en-de-starved         ar    +0.021 [-0.008, +0.050]       
-en-de-starved         zh    -0.194 [-0.223, -0.163]*      
-en-fair               de    -0.238 [-0.269, -0.207]*      
-en-fair               fr    -0.268 [-0.298, -0.236]*      
-en-fair               ar    -0.091 [-0.123, -0.057]*      
-en-fair               zh    -0.170 [-0.200, -0.142]*      
-en-fair-15b           de    -0.171 [-0.201, -0.145]*      
-en-fair-15b           fr    -0.241 [-0.277, -0.206]*      
-en-fair-15b           ar    +0.041 [+0.004, +0.076]*      
-en-fair-15b           zh    -0.191 [-0.226, -0.156]*      
-en-fr-fair            de    -0.265 [-0.294, -0.236]*      
-en-fr-fair            fr    +0.036 [+0.008, +0.065]*      
-en-fr-fair            ar    +0.030 [-0.005, +0.067]       
+en-ar-starved-23b     de    -0.120 [-0.147, -0.090]*      
+en-ar-starved-23b     fr    -0.129 [-0.159, -0.101]*      
+en-ar-starved-23b     ar    -0.088 [-0.114, -0.061]*      
+en-ar-starved-23b     zh    -0.159 [-0.189, -0.130]*      
+en-de-fair            de    -0.038 [-0.058, -0.020]*      
+en-de-fair            fr    -0.168 [-0.194, -0.143]*      
+en-de-fair            ar    +0.021 [-0.008, +0.049]       
+en-de-fair            zh    -0.087 [-0.110, -0.064]*      
+en-de-fair-23b        de    +0.007 [-0.011, +0.025]       
+en-de-fair-23b        fr    -0.114 [-0.141, -0.087]*      
+en-de-fair-23b        ar    -0.108 [-0.140, -0.076]*      
+en-de-fair-23b        zh    -0.236 [-0.271, -0.197]*      
+en-de-starved         de    -0.062 [-0.085, -0.041]*      
+en-de-starved         fr    -0.143 [-0.171, -0.115]*      
+en-de-starved         ar    +0.021 [-0.010, +0.049]       
+en-de-starved         zh    -0.194 [-0.223, -0.165]*      
+en-de-starved-23b     de    +0.020 [-0.005, +0.046]       
+en-de-starved-23b     fr    -0.302 [-0.333, -0.273]*      
+en-de-starved-23b     ar    +0.022 [-0.005, +0.050]       
+en-de-starved-23b     zh    -0.118 [-0.149, -0.087]*      
+en-fair               de    -0.238 [-0.270, -0.207]*      
+en-fair               fr    -0.268 [-0.297, -0.237]*      
+en-fair               ar    -0.091 [-0.125, -0.057]*      
+en-fair               zh    -0.170 [-0.199, -0.142]*      
+en-fair-12b           de    -0.125 [-0.153, -0.098]*      
+en-fair-12b           fr    -0.143 [-0.170, -0.118]*      
+en-fair-12b           ar    -0.032 [-0.054, -0.009]*      
+en-fair-12b           zh    -0.080 [-0.109, -0.052]*      
+en-fair-15b           de    -0.171 [-0.198, -0.143]*      
+en-fair-15b           fr    -0.241 [-0.277, -0.205]*      
+en-fair-15b           ar    +0.041 [+0.005, +0.076]*      
+en-fair-15b           zh    -0.191 [-0.226, -0.154]*      
+en-fr-fair            de    -0.265 [-0.295, -0.236]*      
+en-fr-fair            fr    +0.036 [+0.008, +0.064]*      
+en-fr-fair            ar    +0.030 [-0.008, +0.065]       
 en-fr-fair            zh    -0.045 [-0.075, -0.016]*      
-en-fr-starved         de    -0.143 [-0.173, -0.115]*      
-en-fr-starved         fr    +0.083 [+0.059, +0.109]*      
-en-fr-starved         ar    +0.042 [+0.008, +0.078]*      
-en-fr-starved         zh    -0.225 [-0.260, -0.191]*      
-en-starved            de    -0.197 [-0.228, -0.169]*      
-en-starved            fr    -0.172 [-0.202, -0.142]*      
-en-starved            ar    +0.047 [+0.011, +0.082]*      
+en-fr-fair-23b        de    -0.316 [-0.348, -0.283]*      
+en-fr-fair-23b        fr    +0.007 [-0.014, +0.029]       
+en-fr-fair-23b        ar    -0.041 [-0.055, -0.028]*      
+en-fr-fair-23b        zh    -0.218 [-0.254, -0.182]*      
+en-fr-starved         de    -0.143 [-0.174, -0.114]*      
+en-fr-starved         fr    +0.083 [+0.060, +0.107]*      
+en-fr-starved         ar    +0.042 [+0.005, +0.078]*      
+en-fr-starved         zh    -0.225 [-0.260, -0.188]*      
+en-fr-starved-23b     de    -0.101 [-0.133, -0.064]*      
+en-fr-starved-23b     fr    +0.096 [+0.059, +0.128]*      
+en-fr-starved-23b     ar    -0.001 [-0.013, +0.012]       
+en-fr-starved-23b     zh    -0.097 [-0.134, -0.057]*      
+en-starved            de    -0.197 [-0.227, -0.167]*      
+en-starved            fr    -0.172 [-0.203, -0.142]*      
+en-starved            ar    +0.047 [+0.011, +0.084]*      
 en-starved            zh    -0.191 [-0.225, -0.157]*      
-en-starved-15b        de    -0.099 [-0.129, -0.070]*      
-en-starved-15b        fr    -0.141 [-0.169, -0.113]*      
-en-starved-15b        ar    -0.011 [-0.034, +0.013]       
-en-starved-15b        zh    -0.142 [-0.175, -0.111]*      
-en-zh-fair            de    -0.168 [-0.195, -0.140]*      
-en-zh-fair            fr    -0.128 [-0.155, -0.103]*      
-en-zh-fair            ar    +0.020 [-0.017, +0.058]       
-en-zh-fair            zh    -0.029 [-0.050, -0.009]*      
-en-zh-fair-23b        de    -0.244 [-0.273, -0.215]*      
-en-zh-fair-23b        fr    -0.144 [-0.169, -0.120]*      
+en-starved-12b        de    -0.154 [-0.183, -0.124]*      
+en-starved-12b        fr    -0.150 [-0.183, -0.120]*      
+en-starved-12b        ar    -0.040 [-0.066, -0.013]*      
+en-starved-12b        zh    -0.298 [-0.333, -0.263]*      
+en-starved-15b        de    -0.099 [-0.126, -0.069]*      
+en-starved-15b        fr    -0.141 [-0.169, -0.114]*      
+en-starved-15b        ar    -0.011 [-0.035, +0.011]       
+en-starved-15b        zh    -0.142 [-0.173, -0.111]*      
+en-zh-fair            de    -0.168 [-0.194, -0.142]*      
+en-zh-fair            fr    -0.128 [-0.155, -0.102]*      
+en-zh-fair            ar    +0.020 [-0.018, +0.059]       
+en-zh-fair            zh    -0.029 [-0.048, -0.010]*      
+en-zh-fair-23b        de    -0.244 [-0.274, -0.212]*      
+en-zh-fair-23b        fr    -0.144 [-0.169, -0.121]*      
 en-zh-fair-23b        ar    -0.013 [-0.026, -0.001]*      
-en-zh-fair-23b        zh    +0.003 [-0.019, +0.025]       
-en-zh-starved         de    -0.145 [-0.177, -0.117]*      
-en-zh-starved         fr    -0.172 [-0.202, -0.142]*      
+en-zh-fair-23b        zh    +0.003 [-0.018, +0.024]       
+en-zh-starved         de    -0.145 [-0.176, -0.117]*      
+en-zh-starved         fr    -0.172 [-0.202, -0.144]*      
 en-zh-starved         ar    +0.010 [-0.018, +0.038]       
-en-zh-starved         zh    +0.023 [+0.001, +0.047]*      
-en-zh-starved-23b     de    -0.106 [-0.133, -0.078]*      
-en-zh-starved-23b     fr    -0.185 [-0.218, -0.151]*      
-en-zh-starved-23b     ar    -0.068 [-0.097, -0.035]*      
-en-zh-starved-23b     zh    +0.083 [+0.058, +0.108]*      
-fr-fair               de    -0.200 [-0.230, -0.171]*      
-fr-fair               fr    +0.109 [+0.081, +0.136]*      
-fr-fair               ar    +0.044 [+0.011, +0.078]*      
-fr-fair               zh    -0.112 [-0.142, -0.080]*      
+en-zh-starved         zh    +0.023 [+0.000, +0.048]       
+en-zh-starved-23b     de    -0.106 [-0.134, -0.077]*      
+en-zh-starved-23b     fr    -0.185 [-0.220, -0.152]*      
+en-zh-starved-23b     ar    -0.068 [-0.100, -0.034]*      
+en-zh-starved-23b     zh    +0.083 [+0.057, +0.109]*      
+fr-fair               de    -0.200 [-0.229, -0.169]*      
+fr-fair               fr    +0.109 [+0.080, +0.137]*      
+fr-fair               ar    +0.044 [+0.010, +0.078]*      
+fr-fair               zh    -0.112 [-0.141, -0.080]*      
+fr-fair-12b           de    -0.019 [-0.049, +0.012]       
+fr-fair-12b           fr    +0.321 [+0.291, +0.353]*      
+fr-fair-12b           ar    +0.085 [+0.050, +0.119]*      
+fr-fair-12b           zh    +0.039 [+0.020, +0.059]*      
 fr-fair-15b           de    -0.065 [-0.091, -0.040]*      
-fr-fair-15b           fr    +0.204 [+0.172, +0.234]*      
-fr-fair-15b           ar    +0.057 [+0.020, +0.092]*      
-fr-fair-15b           zh    -0.043 [-0.070, -0.014]*      
-fr-starved            de    -0.125 [-0.150, -0.100]*      
-fr-starved            fr    +0.068 [+0.045, +0.092]*      
-fr-starved            ar    +0.017 [-0.022, +0.053]       
-fr-starved            zh    -0.021 [-0.049, +0.006]       
-fr-starved-15b        de    +0.041 [+0.015, +0.067]*      
-fr-starved-15b        fr    +0.196 [+0.166, +0.226]*      
-fr-starved-15b        ar    +0.053 [+0.018, +0.087]*      
-fr-starved-15b        zh    -0.059 [-0.095, -0.022]*      
-zh-fair-12b           de    -0.035 [-0.068, -0.001]*      
-zh-fair-12b           fr    -0.094 [-0.121, -0.067]*      
-zh-fair-12b           ar    +0.008 [-0.021, +0.038]       
-zh-fair-12b           zh    +0.100 [+0.071, +0.129]*      
-zh-fair-15b           de    -0.151 [-0.187, -0.120]*      
-zh-fair-15b           fr    -0.148 [-0.174, -0.121]*      
-zh-fair-15b           ar    -0.034 [-0.061, -0.007]*      
-zh-fair-15b           zh    +0.162 [+0.133, +0.191]*      
-zh-starved-12b        de    -0.107 [-0.140, -0.073]*      
-zh-starved-12b        fr    -0.087 [-0.111, -0.063]*      
-zh-starved-12b        ar    +0.070 [+0.041, +0.100]*      
-zh-starved-12b        zh    +0.135 [+0.110, +0.161]*      
-zh-starved-15b        de    -0.077 [-0.106, -0.048]*      
-zh-starved-15b        fr    -0.104 [-0.131, -0.074]*      
+fr-fair-15b           fr    +0.204 [+0.173, +0.236]*      
+fr-fair-15b           ar    +0.057 [+0.022, +0.093]*      
+fr-fair-15b           zh    -0.043 [-0.071, -0.016]*      
+fr-starved            de    -0.125 [-0.151, -0.100]*      
+fr-starved            fr    +0.068 [+0.045, +0.091]*      
+fr-starved            ar    +0.017 [-0.020, +0.053]       
+fr-starved            zh    -0.021 [-0.050, +0.008]       
+fr-starved-12b        de    -0.171 [-0.203, -0.140]*      
+fr-starved-12b        fr    -0.001 [-0.025, +0.022]       
+fr-starved-12b        ar    +0.052 [+0.022, +0.082]*      
+fr-starved-12b        zh    -0.062 [-0.099, -0.024]*      
+fr-starved-15b        de    +0.041 [+0.015, +0.068]*      
+fr-starved-15b        fr    +0.196 [+0.168, +0.227]*      
+fr-starved-15b        ar    +0.053 [+0.019, +0.087]*      
+fr-starved-15b        zh    -0.059 [-0.095, -0.023]*      
+zh-fair-12b           de    -0.035 [-0.068, -0.003]*      
+zh-fair-12b           fr    -0.094 [-0.121, -0.065]*      
+zh-fair-12b           ar    +0.008 [-0.021, +0.037]       
+zh-fair-12b           zh    +0.100 [+0.073, +0.129]*      
+zh-fair-15b           de    -0.151 [-0.183, -0.118]*      
+zh-fair-15b           fr    -0.148 [-0.176, -0.123]*      
+zh-fair-15b           ar    -0.034 [-0.058, -0.009]*      
+zh-fair-15b           zh    +0.162 [+0.134, +0.193]*      
+zh-starved-12b        de    -0.107 [-0.139, -0.073]*      
+zh-starved-12b        fr    -0.087 [-0.110, -0.063]*      
+zh-starved-12b        ar    +0.070 [+0.040, +0.099]*      
+zh-starved-12b        zh    +0.135 [+0.109, +0.161]*      
+zh-starved-15b        de    -0.077 [-0.104, -0.049]*      
+zh-starved-15b        fr    -0.104 [-0.132, -0.074]*      
 zh-starved-15b        ar    +0.080 [+0.047, +0.111]*      
-zh-starved-15b        zh    +0.060 [+0.033, +0.085]*      
-  mean                de    -0.124   (over 28 models)
-  mean                fr    -0.077   (over 28 models)
-  mean                ar    +0.013   (over 28 models)
-  mean                zh    -0.061   (over 28 models)
+zh-starved-15b        zh    +0.060 [+0.034, +0.084]*      
+  mean                de    -0.117   (over 41 models)
+  mean                fr    -0.070   (over 41 models)
+  mean                ar    +0.009   (over 41 models)
+  mean                zh    -0.078   (over 41 models)
 
 ==============================================================================
 4. TRANSFER DELTAS: bilingual - monolingual  (acc)
 ==============================================================================
 partner  script        tok      LR   task                  delta on partner              delta on English              
-de       same-script   fair     BAD  sib200_deu_Latn       +0.026 [+0.005, +0.047]*      +0.017 [-0.003, +0.037]       
-de       same-script   fair     BAD  sib200_enlab_deu_Latn +0.058 [+0.039, +0.077]*                                    
-de       same-script   fair     BAD  taxi1500_deu_Latn     +0.045 [+0.023, +0.068]*      +0.021 [-0.001, +0.042]       
-fr       same-script   fair     BAD  sib200_enlab_fra_Latn +0.201 [+0.171, +0.230]*                                    
-fr       same-script   fair     BAD  sib200_fra_Latn       +0.033 [+0.015, +0.051]*      +0.042 [+0.018, +0.065]*      
-fr       same-script   fair     BAD  taxi1500_fra_Latn     -0.054 [-0.083, -0.024]*      +0.034 [+0.013, +0.057]*      
-fr       same-script   starved  BAD  sib200_enlab_fra_Latn +0.155 [+0.129, +0.180]*                                    
-fr       same-script   starved  BAD  sib200_fra_Latn       +0.042 [+0.020, +0.064]*      +0.062 [+0.039, +0.085]*      
-fr       same-script   starved  BAD  taxi1500_fra_Latn     +0.081 [+0.046, +0.113]*      +0.019 [+0.000, +0.036]       
-ar       cross-script  fair     BAD  sib200_arb_Arab       +0.002 [-0.017, +0.022]       +0.062 [+0.039, +0.086]*      
-ar       cross-script  fair     BAD  sib200_enlab_arb_Arab +0.147 [+0.121, +0.173]*                                    
-ar       cross-script  fair     BAD  taxi1500_arb_Arab     -0.033 [-0.069, +0.002]       +0.037 [+0.016, +0.058]*      
-ar       cross-script  starved  BAD  sib200_arb_Arab       +0.004 [-0.017, +0.025]       +0.046 [+0.020, +0.070]*      
-ar       cross-script  starved  BAD  sib200_enlab_arb_Arab +0.129 [+0.104, +0.155]*                                    
-ar       cross-script  starved  BAD  taxi1500_arb_Arab     +0.050 [+0.023, +0.075]*      -0.013 [-0.034, +0.009]       
+de       same-script   fair     ok   sib200_deu_Latn       +0.053 [+0.032, +0.073]*      +0.001 [-0.020, +0.021]       
+de       same-script   fair     ok   sib200_enlab_deu_Latn +0.001 [-0.021, +0.023]                                     
+de       same-script   fair     ok   taxi1500_deu_Latn     +0.040 [+0.019, +0.059]*      -0.008 [-0.038, +0.022]       
+fr       same-script   fair     ok   sib200_enlab_fra_Latn +0.325 [+0.297, +0.355]*                                    
+fr       same-script   fair     ok   sib200_fra_Latn       +0.011 [-0.011, +0.031]       +0.015 [-0.006, +0.038]       
+fr       same-script   fair     ok   taxi1500_fra_Latn     -0.073 [-0.102, -0.045]*      -0.020 [-0.050, +0.008]       
+fr       same-script   starved  ok   sib200_enlab_fra_Latn -0.051 [-0.079, -0.024]*                                    
+fr       same-script   starved  ok   sib200_fra_Latn       +0.046 [+0.019, +0.074]*      -0.093 [-0.120, -0.066]*      
+fr       same-script   starved  ok   taxi1500_fra_Latn     +0.016 [-0.014, +0.045]       +0.019 [-0.004, +0.043]       
+ar       cross-script  fair     ok   sib200_arb_Arab       -0.004 [-0.024, +0.016]       -0.011 [-0.031, +0.011]       
+ar       cross-script  fair     ok   sib200_enlab_arb_Arab +0.055 [+0.027, +0.084]*                                    
+ar       cross-script  fair     ok   taxi1500_arb_Arab     +0.002 [-0.022, +0.028]       -0.024 [-0.052, +0.005]       
+ar       cross-script  starved  ok   sib200_arb_Arab       -0.110 [-0.135, -0.086]*      -0.053 [-0.074, -0.032]*      
+ar       cross-script  starved  ok   sib200_enlab_arb_Arab +0.134 [+0.108, +0.163]*                                    
+ar       cross-script  starved  ok   taxi1500_arb_Arab     -0.095 [-0.122, -0.065]*      +0.019 [-0.006, +0.043]       
 zh       cross-script  fair     ok   hellaswag_zh          +0.002 [-0.003, +0.007]                                     
-zh       cross-script  fair     ok   sib200_enlab_zho_Hans +0.134 [+0.106, +0.163]*                                    
-zh       cross-script  fair     ok   sib200_zho_Hans       +0.038 [+0.018, +0.059]*      ~-0.016 [-0.040, +0.006]      
-zh       cross-script  fair     ok   taxi1500_zho_Hans     -0.003 [-0.032, +0.024]       ~+0.024 [+0.005, +0.044]*     
-zh       cross-script  starved  ok   hellaswag_zh          +0.005 [+0.000, +0.010]                                     
-zh       cross-script  starved  ok   sib200_enlab_zho_Hans +0.063 [+0.038, +0.090]*                                    
-zh       cross-script  starved  ok   sib200_zho_Hans       +0.010 [-0.016, +0.034]       ~-0.001 [-0.021, +0.020]      
-zh       cross-script  starved  ok   taxi1500_zho_Hans     -0.041 [-0.074, -0.007]*      ~-0.014 [-0.031, +0.003]      
+zh       cross-script  fair     ok   sib200_enlab_zho_Hans +0.134 [+0.107, +0.163]*                                    
+zh       cross-script  fair     ok   sib200_zho_Hans       +0.038 [+0.017, +0.059]*      +0.024 [+0.002, +0.047]*      
+zh       cross-script  fair     ok   taxi1500_zho_Hans     -0.003 [-0.032, +0.025]       +0.010 [-0.015, +0.035]       
+zh       cross-script  starved  ok   hellaswag_zh          +0.005 [+0.000, +0.010]*                                    
+zh       cross-script  starved  ok   sib200_enlab_zho_Hans +0.063 [+0.037, +0.089]*                                    
+zh       cross-script  starved  ok   sib200_zho_Hans       +0.010 [-0.015, +0.034]       -0.073 [-0.097, -0.049]*      
+zh       cross-script  starved  ok   taxi1500_zho_Hans     -0.041 [-0.075, -0.008]*      -0.053 [-0.072, -0.033]*      
+de       same-script   fair     BAD  sib200_deu_Latn       +0.026 [+0.006, +0.047]*      +0.017 [-0.003, +0.037]       
+de       same-script   fair     BAD  sib200_enlab_deu_Latn +0.058 [+0.038, +0.079]*                                    
+de       same-script   fair     BAD  taxi1500_deu_Latn     +0.045 [+0.023, +0.067]*      +0.021 [+0.001, +0.042]*      
+fr       same-script   fair     BAD  sib200_enlab_fra_Latn +0.201 [+0.170, +0.230]*                                    
+fr       same-script   fair     BAD  sib200_fra_Latn       +0.033 [+0.016, +0.052]*      +0.042 [+0.020, +0.066]*      
+fr       same-script   fair     BAD  taxi1500_fra_Latn     -0.054 [-0.082, -0.023]*      +0.034 [+0.013, +0.057]*      
+fr       same-script   starved  BAD  sib200_enlab_fra_Latn +0.155 [+0.131, +0.180]*                                    
+fr       same-script   starved  BAD  sib200_fra_Latn       +0.042 [+0.020, +0.064]*      +0.062 [+0.040, +0.086]*      
+fr       same-script   starved  BAD  taxi1500_fra_Latn     +0.081 [+0.047, +0.113]*      +0.019 [+0.000, +0.037]       
+ar       cross-script  fair     BAD  sib200_arb_Arab       +0.002 [-0.017, +0.022]       +0.062 [+0.038, +0.084]*      
+ar       cross-script  fair     BAD  sib200_enlab_arb_Arab +0.147 [+0.120, +0.175]*                                    
+ar       cross-script  fair     BAD  taxi1500_arb_Arab     -0.033 [-0.066, +0.000]       +0.037 [+0.016, +0.059]*      
+ar       cross-script  starved  BAD  sib200_arb_Arab       +0.004 [-0.016, +0.024]       +0.046 [+0.022, +0.070]*      
+ar       cross-script  starved  BAD  sib200_enlab_arb_Arab +0.129 [+0.104, +0.155]*                                    
+ar       cross-script  starved  BAD  taxi1500_arb_Arab     +0.050 [+0.024, +0.076]*      -0.013 [-0.036, +0.009]       
+zh       cross-script  fair     BAD  hellaswag_zh          +0.019 [+0.014, +0.024]*                                    
+zh       cross-script  fair     BAD  sib200_enlab_zho_Hans +0.214 [+0.187, +0.243]*                                    
+zh       cross-script  fair     BAD  sib200_zho_Hans       +0.023 [+0.005, +0.042]*      +0.005 [-0.017, +0.027]       
+zh       cross-script  fair     BAD  taxi1500_zho_Hans     +0.067 [+0.043, +0.093]*      -0.004 [-0.025, +0.017]       
+zh       cross-script  starved  BAD  hellaswag_zh          +0.021 [+0.016, +0.026]*                                    
+zh       cross-script  starved  BAD  sib200_enlab_zho_Hans +0.089 [+0.064, +0.114]*                                    
+zh       cross-script  starved  BAD  sib200_zho_Hans       +0.052 [+0.030, +0.076]*      +0.031 [+0.007, +0.055]*      
+zh       cross-script  starved  BAD  taxi1500_zho_Hans     -0.063 [-0.087, -0.039]*      +0.020 [+0.000, +0.042]       
 
-'~' on an English delta = approximate anchor: no ~11.4B English mono
-checkpoint exists to match the en-zh bilingual's English share, so the
-~14.76B en-*-15b stands in (same caveat as CLAUDE.md's transfer table).
-LR column: 'BAD' = the monolingual is a mid-stable snapshot at peak LR
-3.0e-3 while the bilingual is a COOLED 30B final at 3.0e-4, handing the
-bilingual an entire decay phase for free (CLAUDE.md 6). Those rows are
-biased positive and are not quotable; only the LR-matched zh rows are.
+LR column:
+  ok  = mono `*-12b` vs bilingual `*-23b`, BOTH mid-stable @3e-3, and
+        the English anchor is `en-*-12b` (~11.75B vs the bilingual's
+        ~11.4B English share). These are the quotable rows.
+  BAD = mono `*-15b` (mid-stable @3e-3) vs the COOLED 30B bilingual
+        final (@3e-4), which hands the bilingual an entire decay phase
+        for free (CLAUDE.md 6). Biased positive; shown ONLY so the size
+        of that bias is visible next to the matched row above it.
+Compare the two rows for the same (partner, tok) to read the bias off
+directly -- on zh HellaSwag it is an 8-9x inflation.

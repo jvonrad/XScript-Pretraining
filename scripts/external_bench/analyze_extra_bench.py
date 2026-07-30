@@ -63,25 +63,46 @@ BASELINES = {
     "taxi1500": {"chance": 1 / 6, "majority": 281 / 1077},
 }
 
-# Matched-token pairs, copied from bootstrap_transfer.py so the two scripts
-# agree. `lr_matched=False` marks the pairs where the monolingual is a
-# mid-stable snapshot at peak LR and the bilingual is a cooled 30B final.
+# Matched-token pairs. Two families, and the distinction is the whole ballgame
+# (CLAUDE.md 6): `base_main.yaml` is WSD with decay starting at 24B, so a
+# `*-12b`/`*-23b` checkpoint is a mid-STABLE snapshot at peak LR 3.0e-3 while an
+# unsuffixed 30B model is a COOLED final at 3.0e-4.
+#
+#   LR-MATCHED   `{lang}-{tok}-12b` (~11.75B/lang) vs `en-{lang}-{tok}-23b`
+#                (~22.76B total, ~11.4B/lang) -- both mid-stable. Quotable.
+#   LR-MISMATCHED `{lang}-{tok}-15b` (~14.76B, mid-stable) vs the unsuffixed
+#                30B bilingual (~15B/lang, COOLED). Hands the bilingual an
+#                entire decay phase for free; inflated positive, NOT quotable.
+#                Kept only so the size of that bias stays visible.
+#
+# de+starved is absent from both families: no de-starved monolingual exists at
+# any budget (the run collapsed mid-training, CLAUDE.md 6).
 TRANSFER_PAIRS = [
     # (partner, script, tok, mono, bilingual, lr_matched)
+    ("de", "same-script",  "fair",    "de-fair-12b",    "en-de-fair-23b",    True),
+    ("fr", "same-script",  "fair",    "fr-fair-12b",    "en-fr-fair-23b",    True),
+    ("fr", "same-script",  "starved", "fr-starved-12b", "en-fr-starved-23b", True),
+    ("ar", "cross-script", "fair",    "ar-fair-12b",    "en-ar-fair-23b",    True),
+    ("ar", "cross-script", "starved", "ar-starved-12b", "en-ar-starved-23b", True),
+    ("zh", "cross-script", "fair",    "zh-fair-12b",    "en-zh-fair-23b",    True),
+    ("zh", "cross-script", "starved", "zh-starved-12b", "en-zh-starved-23b", True),
     ("de", "same-script",  "fair",    "de-fair-15b",    "en-de-fair",        False),
     ("fr", "same-script",  "fair",    "fr-fair-15b",    "en-fr-fair",        False),
     ("fr", "same-script",  "starved", "fr-starved-15b", "en-fr-starved",     False),
     ("ar", "cross-script", "fair",    "ar-fair-15b",    "en-ar-fair",        False),
     ("ar", "cross-script", "starved", "ar-starved-15b", "en-ar-starved",     False),
-    ("zh", "cross-script", "fair",    "zh-fair-12b",    "en-zh-fair-23b",    True),
-    ("zh", "cross-script", "starved", "zh-starved-12b", "en-zh-starved-23b", True),
+    ("zh", "cross-script", "fair",    "zh-fair-15b",    "en-zh-fair",        False),
+    ("zh", "cross-script", "starved", "zh-starved-15b", "en-zh-starved",     False),
 ]
-EN_ANCHOR = {"fair": "en-fair-15b", "starved": "en-starved-15b"}
-# zh is the one partner whose English anchor is only approximate: the en-zh
-# bilingual's English share is ~11.4B, but no ~11.4B English monolingual was
-# uploaded, so the ~14.76B `en-*-15b` stands in. Marked '~' in the output, as
-# in CLAUDE.md's matched-token transfer table.
-APPROX_EN_ANCHOR = {"zh"}
+# English anchor must match the bilingual's ENGLISH share and its LR state, so
+# it is chosen per family: `en-*-12b` (~11.75B, mid-stable) against the -23b
+# bilinguals' ~11.4B English share -- a near-exact match, unlike the ~14.76B
+# `en-*-15b` this script previously had to use for zh.
+EN_ANCHOR = {True:  {"fair": "en-fair-12b",  "starved": "en-starved-12b"},
+             False: {"fair": "en-fair-15b",  "starved": "en-starved-15b"}}
+# No remaining anchor is a stand-in: every cell now has a same-LR English
+# monolingual within ~3% of the bilingual's English token count.
+APPROX_EN_ANCHOR: set[str] = set()
 
 
 def load(path: Path) -> dict[str, dict]:
@@ -311,7 +332,7 @@ def section_transfer(models, present, metric, rng):
             print(f"{partner:<9}{script:<14}{tok:<9}{'ok' if lr_ok else 'BAD':<5}"
                   f"{'-- missing ' + (mono if mono not in models else bi):<82}")
             continue
-        anchor = EN_ANCHOR[tok]
+        anchor = EN_ANCHOR[lr_ok][tok]
         for t in present.get(partner, []):
             hm, hb = hits(models[mono], partner, t, metric), hits(models[bi], partner, t, metric)
             if not hm or not hb:
@@ -329,13 +350,16 @@ def section_transfer(models, present, metric, rng):
                         + fmt(pe, *ci95(repse))
             print(f"{partner:<9}{script:<14}{tok:<9}{'ok' if lr_ok else 'BAD':<5}"
                   f"{t:<22}{cell_p:<30}{cell_e:<30}")
-    print("\n'~' on an English delta = approximate anchor: no ~11.4B English mono")
-    print("checkpoint exists to match the en-zh bilingual's English share, so the")
-    print("~14.76B en-*-15b stands in (same caveat as CLAUDE.md's transfer table).")
-    print("LR column: 'BAD' = the monolingual is a mid-stable snapshot at peak LR")
-    print("3.0e-3 while the bilingual is a COOLED 30B final at 3.0e-4, handing the")
-    print("bilingual an entire decay phase for free (CLAUDE.md 6). Those rows are")
-    print("biased positive and are not quotable; only the LR-matched zh rows are.")
+    print("\nLR column:")
+    print("  ok  = mono `*-12b` vs bilingual `*-23b`, BOTH mid-stable @3e-3, and")
+    print("        the English anchor is `en-*-12b` (~11.75B vs the bilingual's")
+    print("        ~11.4B English share). These are the quotable rows.")
+    print("  BAD = mono `*-15b` (mid-stable @3e-3) vs the COOLED 30B bilingual")
+    print("        final (@3e-4), which hands the bilingual an entire decay phase")
+    print("        for free (CLAUDE.md 6). Biased positive; shown ONLY so the size")
+    print("        of that bias is visible next to the matched row above it.")
+    print("Compare the two rows for the same (partner, tok) to read the bias off")
+    print("directly -- on zh HellaSwag it is an 8-9x inflation.")
 
 
 def main() -> None:

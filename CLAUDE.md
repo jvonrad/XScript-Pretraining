@@ -23,10 +23,16 @@ across both files, so cross-references still resolve — **§3, §6, §6b, §6c,
   inside `bench.py`. Global-MMLU is genuinely at chance; Belebele has only a
   faint recoverable signal (§6). **SIB-200 (§6d) is the second benchmark that
   does discriminate**, and unlike XNLI it covers all five languages.
-- **No cross-script downstream penalty on SIB-200 (§6d).** Own-language
-  accuracy for the 30B bilinguals: de .518, fr .571, **ar .557, zh .569** —
-  cross-script inside the same-script range, on a benchmark clearing its .251
-  majority baseline. Consistent with §6's corrected-XNLI reading.
+- **On SIB-200 (§6d), cross-script costs nothing in attained capability but
+  something in transfer.** Own-language accuracy for the 30B bilinguals is flat
+  across scripts (de .518, fr .571, **ar .557, zh .569**), yet the LR-clean
+  bilingual−monolingual delta is **+0.037 same-script vs −0.016 cross-script**.
+  The gap is carried almost entirely by `ar/starved` (−0.110), the one cell
+  where cross-script *and* starvation combine — suggestive of the predicted
+  interaction, but it is a single run.
+- **The `*-12b` vs `*-23b` pairing is LR-matched for free** (both mid-stable at
+  peak LR; decay starts at 24B), giving 7 of 8 transfer cells clean with no new
+  training — §6's matched-token table had only 2 of 7 (§6d).
 - **zh HellaSwag was never missing** — the okapi data has it; 4 malformed rows
   make the split unloadable, so lm-eval ships no task for it. Repaired in §6d;
   every zh checkpoint scores .350–.411 acc_norm against .250 chance.
@@ -982,7 +988,9 @@ languages" on its own, for two independent reasons: only XNLI carries signal at
 this scale (§6), and **four of its six benchmarks do not even cover all five
 languages** — HellaSwag has no zh, XStoryCloze no de/fr, XWinograd no de/ar.
 `run_extra_bench.py` + `analyze_extra_bench.py` add three benchmarks that do.
-Results: `$WORK/results/extra_bench/<run>_final.json`, 28 checkpoints.
+Results: `$WORK/results/extra_bench/<run>_final.json`, **41 checkpoints** — the
+15 finals, the `*-15b`/`*-12b` matched-token monolinguals and the `*-23b`
+bilinguals, which is what makes the LR-clean transfer table below possible.
 
 ### The blank ZH-HellaSwag column was a corrupt data file, not a missing translation
 
@@ -1058,9 +1066,9 @@ majority baseline, where ARC, Global-MMLU and Belebele all sit at chance.
 
 ### Three controls, and all three changed the answer
 
-1. **`acc_norm` is degenerate on this task.** Averaged over the 28 models it
-   stays in .181–.375 across every (lang, task) cell, i.e. pinned near the
-   majority rate, while `acc` spans .202–.533 over the same cells. It divides
+1. **`acc_norm` is degenerate on this task.** Averaged over the 41 models it
+   stays in .181–.372 across every (lang, task) cell, i.e. pinned near the
+   majority rate, while `acc` spans .204–.529 over the same cells. It divides
    loglikelihood by the answer's byte length, which favours the longest
    option — and SIB-200's longest label ("science and technology") is *also*
    its majority class. **Quote `acc`.** (This is why the runner stores all of
@@ -1073,8 +1081,9 @@ majority baseline, where ARC, Global-MMLU and Belebele all sit at chance.
    `analyze_extra_bench.py` flags a cell whose 0/1 hit vector is exactly the
    indicator `gold == c`: the model ranked the same label first for all ~1000
    documents and "scored" that class's frequency having learned nothing.
-   **12 of 392 cells collapsed**, every one of them in a language the model
-   was not trained on, and 7 of the 12 in Arabic. The clearest case: `en-fair` on
+   **16 of 574 cells collapsed**, every one of them in a language the model
+   was not trained on, and 10 of the 16 in Arabic. **No cell used by the
+   LR-matched transfer table below is among them.** The clearest case: `en-fair` on
    Arabic SIB-200 scores .110 — *below* uniform chance — purely because its
    constant choice happens to be a minority class. Without this check that
    reads as "very poor Arabic"; with it, it reads as **zero input-dependent
@@ -1094,8 +1103,8 @@ majority baseline, where ARC, Global-MMLU and Belebele all sit at chance.
 
    | | n cells | mean Δ |
    |---|---|---|
-   | trained on that language | 24 | **+0.049** |
-   | not trained on it | 88 | **−0.093** |
+   | trained on that language | 35 | **+0.046** |
+   | not trained on it | 129 | **−0.094** |
 
    English labels **inflate** scores on languages the model doesn't know (it
    falls back on reading the label) and **deflate** them on languages it does.
@@ -1141,13 +1150,71 @@ Arabic column is disadvantaged for reasons unrelated to the model. Where it and
 SIB-200 disagree (e.g. `en-zh-starved` zh: .576 SIB vs .188 Taxi), believe
 SIB-200.
 
+### Transfer deltas, now LR-clean in 7 of 8 cells
+
+Scoring the `*-12b` monolinguals and `*-23b` bilinguals closed the gap §6 flags
+as its biggest weakness. `{lang}-{tok}-12b` (~11.75B/lang) vs
+`en-{lang}-{tok}-23b` (~11.4B/lang) are **both mid-stable at peak LR 3.0e-3**
+— decay starts at 24B — so this pairing is LR-matched *by construction*, needs
+no new training, and the English anchor is `en-{tok}-12b` at 11.75B against the
+bilingual's 11.4B English share (a ~3% match, retiring the `~` stand-in
+CLAUDE.md's §6 table had to use for zh). Only `de/starved` is still missing, for
+the usual reason: no `de-starved` monolingual exists at any budget.
+
+SIB-200, localized labels, `acc`, bilingual − monolingual (paired bootstrap,
+B=2000, n=1004; `*` = CI excludes 0):
+
+| partner | script | tok | mono | bi | **Δ on partner** | Δ on English |
+|---|---|---|---|---|---|---|
+| de | same | fair | .488 | .541 | **+0.053** [+.032, +.073]* | +0.001 |
+| fr | same | fair | .529 | .540 | +0.011 [−.011, +.031] | +0.015 |
+| fr | same | starved | .520 | .566 | **+0.046** [+.019, +.074]* | **−0.093*** |
+| ar | cross | fair | .531 | .527 | −0.004 [−.024, +.016] | −0.011 |
+| **ar** | **cross** | **starved** | .538 | .428 | **−0.110** [−.135, −.086]* | **−0.053*** |
+| zh | cross | fair | .542 | .580 | **+0.038** [+.017, +.059]* | **+0.024*** |
+| zh | cross | starved | .524 | .534 | +0.010 [−.015, +.034] | **−0.073*** |
+
+Mean Δ: **same-script +0.037** (n=3) vs **cross-script −0.016** (n=4), a gap of
++0.053 in the thesis's predicted direction — adding English helps a same-script
+partner and does not help a cross-script one.
+
+**But read that gap as one cell, not four.** It is carried almost entirely by
+`ar/starved` (−0.110); drop that cell and cross-script becomes +0.015 against
+same-script's +0.037, a gap of +0.022 with no cell individually significant in
+the negative direction. What `ar/starved` *is* — the one condition where
+cross-script and tokenizer starvation apply **together** — makes it exactly the
+cell the interaction hypothesis predicts should be worst, and Taxi-1500
+independently agrees on its sign (−0.095 [−.122, −.065]). Two caveats before
+anyone quotes it: `en-ar-starved-23b` is also significantly worse than the
+English monolingual **on English** (−0.053), i.e. that bilingual underperforms
+on *both* its languages, which is what interference looks like but is equally
+consistent with one weak training run; and there is one run per cell, so the
+group means have no error bars even though the individual deltas do.
+
+**The mismatched rows are kept alongside, and the bias is large.** Same cells,
+scored `*-15b` mono vs the cooled 30B bilingual: de/fair +0.026 (vs +0.053
+matched), fr/fair +0.033 (vs +0.011), ar/fair +0.002 (vs −0.004), ar/starved
++0.004 (vs **−0.110**). The confound does not merely inflate — for `ar/starved`
+it **flips the sign and hides a 0.11 effect**, which is the strongest argument
+yet for §6's warning.
+
+**Do not read the `sib200_enlab_*` rows as transfer.** They move hugely
+(fr/fair +0.325, ar/starved +0.134) because an English-trained bilingual is much
+better at ranking *English label words* — that is the label-language effect
+above, not partner-language capability.
+
+**This does not contradict the flat own-language table above.** The two measure
+different things and both hold: cross-script models *reach* comparable absolute
+accuracy (ar .557, zh .569 vs de .518, fr .571 at 30B), while adding English to
+a cross-script run *buys less* than adding it to a same-script one. A penalty in
+transfer, not in attained capability.
+
 **Caveats.** One training run per cell, so the fair-vs-starved contrasts have
 no error bars (the *deltas* do — paired bootstrap over docs — but not the runs).
 `de` has no starved monolingual at any budget, as everywhere else in this repo.
-The transfer-delta table in `analyze_extra_bench.py`'s section 4 carries the
-**same LR-state confound as §6**: only the two `zh` rows are LR-matched, and
-they are the ones flagged `ok`; the de/fr/ar rows are flagged `BAD` and are not
-quotable.
+Mid-stable checkpoints sit in the noisy regime §6 documents for BPB (adjacent
+checkpoints move ±0.008–0.019), so a single-budget delta should not be
+over-read even when LR-matched — the fix is the curve, as with ATLAS-BTS.
 
 ---
 
@@ -1184,6 +1251,17 @@ quotable.
 - If the debiased scoring should ship in the portable HF export, re-upload
   `src/xscript/**` (the debiasing is now folded into `bench.py` itself, so the
   export just needs to be refreshed — no separate script to bundle).
+- **Re-derive §6's matched-token transfer table on the `*-12b`/`*-23b`
+  pairing.** §6d shows that pairing is LR-matched by construction and needs no
+  new training, yet §6's table (and §6b's alignment deltas, which use the same
+  checkpoint families) still rest on the `*-15b`-vs-cooled-final comparison
+  flagged as not quotable. On SIB-200 that confound flipped `ar/starved` from
+  +0.004 to −0.110, so re-deriving is not cosmetic. `run_appendix_c5.py` and
+  `run_alignment.py` both accept the new run names already.
+- **`ar/starved` needs a second run before its −0.110 is load-bearing.** It is
+  the single cell carrying §6d's same-vs-cross-script gap, and its bilingual is
+  worse than the monolingual on *both* languages — interference or one weak run
+  cannot be told apart with n=1.
 - **Fill the ZH-HellaSwag column for the rest of the C.5 roster (§6d).** Only
   the 8 Chinese-relevant checkpoints were scored on `hellaswag_zh`; the other
   18 in §6's per-model table still show `n/a` there. ~10 min/model on one
