@@ -282,7 +282,13 @@ def degeneracy(raw: dict, hits: list[int], n_classes: int | None = None) -> dict
                     nothing (§6d's check, kept)
     """
     gold = raw["gold"]
-    k = n_classes or raw.get("n_choices") or (max(gold) + 1)
+    # `n_choices` is -1 for a RAGGED choice set (ArabicMMLU has 2-5 options,
+    # BMLAMA 2-10). `-1 or ...` is truthy in Python, so the old expression kept
+    # k = -1 and `range(k)` was empty -> every recall dict came back empty and
+    # n_recalled was silently 0. Fall back to the widest gold index instead.
+    k = n_classes or raw.get("n_choices") or 0
+    if k is None or k <= 0:
+        k = max(gold) + 1
     rec = {}
     for c in range(k):
         idx = [i for i, g in enumerate(gold) if g == c]
@@ -329,6 +335,10 @@ def prediction_profile(raw: dict, variant: str = "acc_cal") -> dict:
         counts[max(range(len(row)), key=row.__getitem__)] += 1
     n = len(scores)
     frac = [c / n for c in counts]
+    # NOTE for ragged sets: entropy is normalised by the WIDEST option count,
+    # so a task that is mostly 4-way but occasionally 5-way cannot reach 1.00
+    # even when perfectly uniform. Read pred_entropy as a floor there, not as
+    # evidence of concentration (ARC-Easy sits at ~0.85 for this reason).
     ent = abs(-sum(p * math.log(p) for p in frac if p > 0) / math.log(kmax)) if kmax > 1 else 0.0
     # Empirical null: the accuracy this same prediction DISTRIBUTION would get
     # if its predictions were independent of the gold labels, i.e. sum_c
