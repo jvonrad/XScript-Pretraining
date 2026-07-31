@@ -77,17 +77,35 @@ XNLI_DEBIAS_METHOD = {"ar": "standard", "zh": "pmi"}
 
 
 def _xnli_debiased(lm, lang: str, limit: int | float | None,
-                   disable_tqdm: bool = False, return_correct: bool = False):
-    """Debiased XNLI accuracy for `lang` (must be a key of XNLI_DEBIAS_METHOD).
+                   disable_tqdm: bool = False, return_correct: bool = False,
+                   return_raw: bool = False, method: str | None = None):
+    """Debiased XNLI accuracy for `lang`.
 
     Reuses `lm._loglikelihood_tokens` -- the verified fixed-shape/Neuron
     scoring path -- by framing each candidate string as a bare continuation
     (empty context), so the returned logprob is the string's total loglik
     exactly as CLAUDE.md's debiasing recipe requires.
 
-    With `return_correct=True`, returns `(accuracy, per_example_hits)`
-    instead of just `accuracy` -- the 0/1 hit list needed to bootstrap a
-    confidence interval, e.g. for transfer-delta significance testing.
+    `method` defaults to `XNLI_DEBIAS_METHOD[lang]` where that exists and to
+    "standard" (raw loglikelihood, the same rule lm-eval's own task applies)
+    otherwise, so en/de/fr can be routed through here too. Note this is not
+    bit-identical to lm-eval's registered xnli_{en,de,fr}: those score
+    `" " + candidate` (the task's target_delimiter is prepended to a candidate
+    whose context is empty), while this path scores the bare candidate. The
+    offset is the same for all three candidates, so rankings agree except on
+    near-ties -- verify against the previous sweep, do not assume equality. That matters because the reported
+    accuracy is not the point any more: with `return_raw=True` this returns
+    the per-candidate loglikelihoods, and `eval/rawscores.py` re-derives every
+    estimator -- including the calibrated one -- offline. lm-eval's registered
+    xnli_{en,de,fr} tasks throw those away, which is why the connective prior
+    was free to move accuracy around by 5 points between adjacent checkpoints
+    (en-de-fair XNLI-de: .470 @10B, .457 @15B, .406 @23B, .480 @30B, while
+    every other benchmark on those same checkpoints rose monotonically).
+
+    With `return_correct=True`, returns `(accuracy, per_example_hits)` -- the
+    0/1 hit list needed to bootstrap a confidence interval. With
+    `return_raw=True`, appends the raw block in `rawscores.extract_raw`'s
+    schema.
     """
     import datasets
 
@@ -103,12 +121,13 @@ def _xnli_debiased(lm, lang: str, limit: int | float | None,
             full_strs.append(f"{d['premise']}, {qw}? {c}, {d['hypothesis']}")
             null_strs.append(f"{qw}? {c}, {d['hypothesis']}")
 
-    requests = [(None, [], lm.tok_encode(s)) for s in full_strs + null_strs]
+    encoded = [lm.tok_encode(s) for s in full_strs + null_strs]
+    requests = [(None, [], e) for e in encoded]
     scored = lm._loglikelihood_tokens(requests, disable_tqdm=disable_tqdm)
     lls = [lp for lp, _ in scored]
     full_ll, null_ll = lls[:len(full_strs)], lls[len(full_strs):]
 
-    method = XNLI_DEBIAS_METHOD[lang]
+    method = method or XNLI_DEBIAS_METHOD.get(lang, "standard")
     hits = []
     for j, g in enumerate(golds):
         f3 = full_ll[3 * j:3 * j + 3]
@@ -119,7 +138,22 @@ def _xnli_debiased(lm, lang: str, limit: int | float | None,
             scores3 = f3
         hits.append(int(max(range(3), key=lambda k: scores3[k]) == g))
     accuracy = sum(hits) / n
-    return (accuracy, hits) if return_correct else accuracy
+    if not return_raw:
+        return (accuracy, hits) if return_correct else accuracy
+
+    raw = {
+        "n_choices": 3,
+        "doc_id": list(range(n)),
+        "gold": golds,
+        "ll": [full_ll[3 * j:3 * j + 3] for j in range(n)],
+        "ll_uncond": [null_ll[3 * j:3 * j + 3] for j in range(n)],
+        "nchars": [[len(full_strs[3 * j + k]) for k in range(3)] for j in range(n)],
+        "nbytes": [[len(full_strs[3 * j + k].encode("utf-8")) for k in range(3)]
+                   for j in range(n)],
+        "ntok": [[len(encoded[3 * j + k]) for k in range(3)] for j in range(n)],
+        "method": method,
+    }
+    return (accuracy, hits, raw) if return_correct else (accuracy, raw)
 
 
 def tasks_for_langs(langs: list[str]) -> list[str]:
@@ -287,32 +321,67 @@ class XScriptLM:
             ok = bool(greedy[row, m - n:m].all().item())
             out[out_i] = (lp, ok)
 
+    # Allowed fixed widths on XLA. A batch is padded up to the smallest rung
+    # that fits it, so the number of distinct compiled graphs is bounded by
+    # this ladder rather than by the data. Every rung is even (NCC-5266, see
+    # below). The graphs are weight-independent, so they compile once and are
+    # reused for every checkpoint afterwards.
+    WIDTH_LADDER = (64, 96, 128, 192, 256, 384, 512, 768, 1024, 1536, 2048)
+
+    def _fixed_width_for(self, longest: int) -> int:
+        """Smallest ladder rung >= `longest`, else `longest` rounded up to even.
+
+        NCC-5266: neuronx-cc's matmul transpose lowering requires an even step
+        for non-FP32 dst dims -- an odd fixed_width reliably fails compilation
+        (confirmed: zh debiased-XNLI fixed_width=85 crashes every time, solo or
+        concurrent; ar's fixed_width=88 never does).
+        """
+        for rung in self.WIDTH_LADDER:
+            if longest <= rung:
+                return rung
+        return longest + (longest % 2)
+
     def _loglikelihood_tokens(self, requests, disable_tqdm: bool = False):
         from tqdm import tqdm
-        out = []
-        fixed_width = None
-        if self.device.type == "xla":
-            # One constant graph shape for the entire task: pad every batch to
-            # the longest prepared sequence in this task (bounded by the model's
-            # max_seq_len via _prepare's left-truncation of context).
-            fixed_width = max(
-                (len(self._prepare(list(c), list(k))) - 1 for _, c, k in requests),
-                default=1,
-            )
-            fixed_width = max(fixed_width, 1)
-            # NCC-5266: neuronx-cc's matmul transpose lowering requires an
-            # even step for non-FP32 dst dims -- an odd fixed_width reliably
-            # fails compilation (confirmed: zh debiased-XNLI fixed_width=85
-            # crashes every time, solo or concurrent; ar's fixed_width=88
-            # never does). Round up to the next even width; the extra column
-            # is inert padding, identical to any other padded position.
-            if fixed_width % 2:
-                fixed_width += 1
-        batches = range(0, len(requests), self.batch_size)
+        if self.device.type != "xla":
+            out = []
+            batches = range(0, len(requests), self.batch_size)
+            for st in tqdm(batches, disable=disable_tqdm, desc="[bench] scoring"):
+                chunk = requests[st:st + self.batch_size]
+                out.extend(self._score_batch([(c, k) for _, c, k in chunk],
+                                             fixed_width=None))
+            return out
+
+        # XLA: LENGTH-BUCKETED batching. Padding every batch to the longest
+        # sequence in the whole *task* is correct but pathologically wasteful
+        # when the length distribution is skewed -- Global-MMLU's cloze prompts
+        # have median 42 tokens and max 1051, so a task-wide width made every
+        # batch pay 25x the median and one model-language cost ~2h. Sorting by
+        # length first means each batch is padded only to its own longest
+        # member, and rounding that up to `WIDTH_LADDER` keeps the number of
+        # compiled graphs small (~11 instead of one per distinct length).
+        #
+        # This changes only which requests share a batch. Scoring is per
+        # request and independent of batch composition: padding is strictly
+        # right of each sequence, so causal attention cannot let it reach a
+        # scored position, and rows past the real requests are inert. Results
+        # are restored to the caller's order below. Verified against the
+        # unbucketed path to ~1e-6 on real checkpoints (see
+        # scripts/external_bench/verify_bucketing.py).
+        prepared_len = [max(1, len(self._prepare(list(c), list(k))) - 1)
+                        for _, c, k in requests]
+        order = sorted(range(len(requests)), key=prepared_len.__getitem__)
+        out: list = [None] * len(requests)
+        batches = range(0, len(order), self.batch_size)
         for st in tqdm(batches, disable=disable_tqdm, desc="[bench] scoring"):
-            chunk = requests[st:st + self.batch_size]
-            out.extend(self._score_batch([(c, k) for _, c, k in chunk],
-                                         fixed_width=fixed_width))
+            idx = order[st:st + self.batch_size]
+            width = self._fixed_width_for(max(prepared_len[i] for i in idx))
+            scored = self._score_batch(
+                [(requests[i][1], requests[i][2]) for i in idx],
+                fixed_width=width,
+            )
+            for slot, i in enumerate(idx):
+                out[i] = scored[slot]
         return out
 
     @torch.no_grad()

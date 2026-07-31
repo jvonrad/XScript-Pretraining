@@ -294,6 +294,19 @@ tr '\0' '\n' < /proc/<training-pid>/environ | grep NEURON_RT_VISIBLE_CORES
 - `scripts/external_bench/run_xnli_debiased.py` — standalone diagnostic
   reporting both `standard` and `pmi` per language (CLAUDE.md §6); superseded for normal
   runs by the automatic debiasing in `bench.py` above.
+- Both `run_appendix_c5.py` and `run_extra_bench.py` gained **`--own-langs`**
+  (score each model only on its own training languages — ~74% less work; the
+  bilingual-vs-monolingual comparisons only ever pair trained-language scores,
+  so nothing they need is dropped, but the zero-shot cross-lingual readout is
+  given up), **`--only` / `--families`** task-family filters that MERGE into the
+  existing per-model JSON rather than replacing it, and raw-sidecar output.
+  `run_appendix_c5.py` also gained `--xnli-raw-all-langs`, which routes
+  xnli_{en,de,fr} through `_xnli_debiased()` so their per-candidate
+  loglikelihoods are stored too. That path is **not** bit-identical to
+  lm-eval's registered task — lm-eval prepends its `target_delimiter` (a space)
+  to each candidate and this path does not, worth ~0.005 acc from near-ties
+  flipping (measured: de-fair-12b xnli_en .4702 vs .4655). Compare against the
+  previous sweep, do not assume equality.
 - `scripts/external_bench/run_appendix_c5.py` — **new**; replicates Messmer et
   al. 2025 Appendix C.5 across en/de/fr/ar/zh and all checkpoints (CLAUDE.md §6). Now
   runs with `log_samples=True` and per-task batch sizing (`--batch-size` for
@@ -379,6 +392,108 @@ tr '\0' '\n' < /proc/<training-pid>/environ | grep NEURON_RT_VISIBLE_CORES
   granularity); and `correct` has an extra metric level,
   `{lang: {task: {metric: [0/1, …]}}}`, because these tasks report
   acc/acc_norm/acc_mutual_info and they disagree.
+- `scripts/external_bench/verify_mubench.py` — **new**; the pool-identity gate.
+  For each MuBench task it checks item counts, `_id` alignment across all five
+  languages, gold-index validity, and — where an English original exists — what
+  fraction of the English questions appear in it. **Run this before any new
+  multilingual benchmark**: it is the check that would have caught
+  arc_easy(en)-vs-ARC-Challenge(others) immediately, and it caught a silent
+  zero-row failure on ar/zh when the option-marker regex was English-only.
+- `src/xscript/eval/c5_tasks/mubench/` — **new**; MuBench (`aialt/MuBench`),
+  12 benchmarks x 61 languages aligned by `_id`, converted to localized CLOZE.
+  Two traps, both silent: use **`local_template`** not `en_template`, and note
+  the **option markers are localized** (`الخيار A:`, `选项 A:`, `选项A:`, vs a
+  bare `A:` for ARC-Easy/BMLAMA) — an English-only regex yields ZERO ar/zh rows
+  without erroring. The parser requires a Latin capital immediately before a
+  colon (ASCII or full-width) with any prefix, plus the letters running
+  A, B, C, ... consecutively; that ordering check is what makes the loose
+  prefix safe.
+- `src/xscript/eval/c5_tasks/native_mmlu/` — **new**; ArabicMMLU (n=14455,
+  ragged 2-5 options so its uniform-random null is **0.293**, not 0.25) and
+  CMMLU (n=11582), localized cloze. These are the instruments that show ar/zh
+  knowledge translated MMLU cannot (CLAUDE.md §6e).
+- `src/xscript/eval/c5_tasks/mmmlu_probe/` — **new**; MMMLU (`openai/MMMLU`,
+  professional translation) + English MMLU as cloze, item-aligned.
+- `src/xscript/eval/c5_tasks/gmmlu_probe/` — **new**; full-size Global-MMLU
+  (n=14042, vs the n=400 `-Lite` build lm-eval defaults to) in letter and cloze
+  form, plus `gmmlu_cloze_encue_*`, the English-cue control that measured the
+  scaffolding effect at exactly 0.000.
+- ⚠️ `src/xscript/eval/c5_tasks/arc_pmi/` and `.../mubench_arc/` are **dead**
+  — superseded by `mubench/`'s `mub_arceasy_*`. They are still registered in
+  `run_extra_bench.py`'s `FAMILIES`; delete both plus their entries.
+- `scripts/external_bench/watch_sweep.py` — **new**; one-pass health check for
+  a running sweep, safe to poll (prints ONLY anomalies, so silence == healthy).
+  Three tiers: liveness (workers alive via an **anchored** `--worker-pattern`,
+  stall detection, FAILED lines, disk), integrity (every stored raw block must
+  still reconstruct lm-eval's own hit lists, expected doc counts, no NaN/inf),
+  and plausibility — prediction-entropy collapse, a cell not beating its own
+  empirical null, an accuracy outside the benchmark's possible range. That last
+  tier is the one that would have caught the format artifacts in CLAUDE.md
+  6/6d/6e while a sweep was still running rather than months later.
+  **The `--worker-pattern` must be anchored (`^bash /path/...`)**: an
+  unanchored `pgrep -f`/`pkill -f` pattern matches the shell that invokes it,
+  which silently breaks the liveness check and, with `pkill`, kills the caller
+  mid-script. That mistake cost this session three shells and ~3.7h of wall
+  clock (two waiters each matched the other's pattern and deadlocked, so a
+  chained sweep never launched).
+- `scripts/external_bench/verify_bucketing.py` — **new**; re-scores a task with
+  the current code and diffs the per-candidate loglikelihoods against those
+  stored by an earlier sweep. Used to certify the length-bucketed batching in
+  `bench.py` (below): max delta 4.8e-06 over 200 docs x 7 choices, i.e. fp32
+  noise from differing pad widths, not a score change.
+- `src/xscript/eval/bench.py` — `_loglikelihood_tokens` now **length-buckets**
+  on XLA: requests are sorted by prepared length and each batch is padded only
+  to its own longest member, rounded up to `WIDTH_LADDER` so the number of
+  compiled graphs stays bounded (~11) instead of growing with the data. The old
+  behaviour padded every batch to the task-wide maximum, which is
+  pathological on a skewed task -- Global-MMLU's cloze prompts have median 42
+  tokens and max 1051, so one model-language cost ~2h. Only batch composition
+  changes: padding is strictly right of each sequence so causal attention
+  cannot reach a scored position, and results are restored to caller order.
+  Note the speedup is smaller than the median/max ratio suggests (~2.4x, not
+  ~10x) because sorting ascending puts all the long sequences in the final
+  batches, which then dominate.
+- `src/xscript/eval/rawscores.py` — **new**; the raw-loglikelihood contract
+  behind CLAUDE.md §6e. `extract_raw()` pulls each document's per-candidate
+  loglikelihoods out of lm-eval's `log_samples` records; `score_variants()`
+  re-derives acc / acc_norm / acc_tokennorm / acc_pmi / **acc_cal** /
+  acc_cal_loo / acc_cal_pmi from them on CPU. `check_reproduces()` asserts the
+  stored scores reconstruct lm-eval's own `acc`/`acc_norm`/`acc_mutual_info`
+  bit-for-bit — nothing derived is trusted until that holds. Two conventions
+  must match lm-eval exactly or `acc_norm` silently drifts: it normalizes by
+  **character** count (`completion_len`, not `byte_length`), of the raw choice
+  **without** the `target_delimiter` that `arguments` carries. `acc_cal` is
+  gated on the `SHARED_CHOICE_TASKS` allowlist — it is only meaningful where
+  the choice *index* means the same thing in every document, and is withheld
+  for HellaSwag/ARC/Belebele/XStoryCloze/XWinograd, where it would silently
+  return a position-bias correction instead.
+- `scripts/external_bench/analyze_raw_scores.py` — **new**; pure-stdlib reports
+  off the raw sidecars: every estimator, a degeneracy report (prediction
+  entropy + per-gold-class recall + the **empirical null**
+  `sum_c P(pred c) P(gold c)`, which is the honest chance level rather than
+  1/k), trajectory monotonicity over a token-budget series, and transfer
+  deltas with the same paired bootstrap as `bootstrap_transfer.py`.
+- `scripts/external_bench/backfill_calibrated.py` — **new**; injects the
+  derived hit lists into the per-model result JSONs so `analyze_extra_bench.py`
+  and `bootstrap_transfer.py` work unchanged apart from selecting `acc_cal`.
+  Idempotent; refuses a cell whose raw scores fail `check_reproduces`.
+- `scripts/external_bench/test_rawscores.py` — **new**; offline correctness
+  test, no checkpoint and no accelerator. Runs lm-eval over the real task
+  configs with a stub scorer and asserts (1) re-derivation matches lm-eval
+  exactly, (2) `acc_cal` is invariant to an injected per-candidate offset while
+  `acc`/`acc_norm` both move, (3) the degeneracy check fires on a deliberately
+  collapsed predictor. Run it after touching `rawscores.py`.
+- `src/xscript/eval/c5_tasks/gmmlu_probe/` — **new**; Global-MMLU at FULL size
+  (`CohereForAI/Global-MMLU`, n=14042 for en — lm-eval defaults to the n=400
+  `-Lite` build) in both answer formats, `gmmlu_letter_*` and `gmmlu_cloze_*`.
+  This is what overturned §6's "world-knowledge MCQ is beyond a 1B/30B model"
+  (CLAUDE.md §6e). **Operational note:** its prompts embed all four options, so
+  `fixed_width` is the task-wide max (1088 tokens for en, against a median of
+  77) and every batch pays it. `--batch-size 16` fails with
+  `NCC_EOOM002` (28.45GB > 24GB) because `_score_active_xla`'s one-hot
+  materializes a `[batch, width, 65536]` float tensor — use **`--batch-size 8`**
+  or lower, and run the two formats as separate `--families` on separate
+  core-pairs.
 - `scripts/external_bench/analyze_extra_bench.py` — **new**; pure-stdlib
   aggregation of the above: the three-metric comparison with both baselines
   (chance *and* majority-class), a **constant-prediction degeneracy check**

@@ -91,6 +91,63 @@ FAMILIES = {
         "ar": ["sib200_enlab_arb_Arab"],
         "zh": ["sib200_enlab_zho_Hans"],
     },
+    # Global-MMLU, FULL size (n=14042 for en), in both answer formats -- see
+    # c5_tasks/gmmlu_probe/utils.py. CLAUDE.md 6's "genuinely at chance"
+    # verdict was measured at --limit 200, where the smallest 2-sigma
+    # detectable effect is +6.1 points; this is the powered version.
+    #   gmmlu_letter_*  A/B/C/D -- shared choice set, so acc_cal removes the
+    #                   model's SELECTION bias (a fixed preference for one
+    #                   option id). It cannot manufacture knowledge.
+    #   gmmlu_cloze_*   the answer TEXT -- per-document choices, so
+    #                   calibration does not apply and acc_norm is correct.
+    #                   This is the format that tests world knowledge.
+    # Split into two families so the formats can run on separate core-pairs:
+    # fixed_width here is the task-wide MAX prompt (1088 tokens for en, against
+    # a median of 77), so these graphs are ~11x wider than SIB-200's and must
+    # use a smaller batch -- batch 16 OOMs at NCC_EOOM002 (28.45GB > 24GB).
+    "gmmlu_letter": {lang: [f"gmmlu_letter_{lang}"]
+                     for lang in ("en", "de", "fr", "ar", "zh")},
+    "gmmlu_cloze": {lang: [f"gmmlu_cloze_{lang}"]
+                    for lang in ("en", "de", "fr", "ar", "zh")},
+    # MMMLU (openai/MMMLU): the same 14,042 MMLU items rendered by PROFESSIONAL
+    # TRANSLATORS, which is what Messmer et al. 2025 evaluate on. Global-MMLU is
+    # largely machine-translated, so gmmlu_cloze vs mmmlu_cloze isolates
+    # translation quality -- the one prompt-side explanation for Arabic sitting
+    # at chance that the cue test did not rule out.
+    "mmmlu_cloze": {lang: [f"mmmlu_cloze_{lang}"]
+                    for lang in ("en", "de", "fr", "ar", "zh")},
+    # ARC-Challenge, like-for-like across all five languages, WITH PMI.
+    # Fixes the ARC-Easy(en) vs ARC-Challenge(others) pool mismatch behind
+    # 6d's "English-only" ARC claim, and adds the one estimator never tried on
+    # ARC. See c5_tasks/arc_pmi/.
+    "arc_pmi": {lang: [f"arc_pmi_{lang}"] for lang in ("en","de","fr","ar","zh")},
+    # MuBench: 12 benchmarks x 61 aligned languages, so every language is a
+    # rendering of ONE item set -- the structural fix for the pool mismatch
+    # ARC exposed. Cloze-converted; see c5_tasks/mubench/ and verified by
+    # scripts/external_bench/verify_mubench.py.
+    "mub_hellaswag": {l: [f"mub_hellaswag_{l}"] for l in ("en","de","fr","ar","zh")},
+    "mub_mnli": {l: [f"mub_mnli_{l}"] for l in ("en","de","fr","ar","zh")},
+    "mub_snli": {l: [f"mub_snli_{l}"] for l in ("en","de","fr","ar","zh")},
+    "mub_bmlama": {l: [f"mub_bmlama_{l}"] for l in ("en","de","fr","ar","zh")},
+    "mub_storycloze": {l: [f"mub_storycloze_{l}"] for l in ("en","de","fr","ar","zh")},
+    "mub_winogrande": {l: [f"mub_winogrande_{l}"] for l in ("en","de","fr","ar","zh")},
+    "mub_mmlu": {l: [f"mub_mmlu_{l}"] for l in ("en","de","fr","ar","zh")},
+    "mub_arceasy": {l: [f"mub_arceasy_{l}"] for l in ("en","de","fr","ar","zh")},
+    # ARC-EASY aligned across all five languages (MuBench), cloze + PMI. This
+    # is the like-for-like ARC our C.5 column never had. See mubench_arc/.
+    "mubench_arc": {l: [f"mubench_arceasy_{l}"] for l in ("en","de","fr","ar","zh")},
+    # NATIVE-language knowledge exams (ArabicMMLU / CMMLU), localized cloze.
+    # Translated MMLU asks whether a model knows Anglocentric facts in another
+    # language; this asks whether it knows facts its own web text contains.
+    # Messmer et al. 2025 evaluate non-English with FineTasks, which is native
+    # per language -- see c5_tasks/native_mmlu/.
+    "native_mmlu": {"ar": ["nativemmlu_cloze_ar"], "zh": ["nativemmlu_cloze_zh"]},
+    # English-cue control: identical documents, the answer cue left in English
+    # ("Answer:" after an Arabic question). Same primary/control split as
+    # sib200_* vs sib200_enlab_*; no `en` entry because it would be identical
+    # to the primary.
+    "gmmlu_cloze_encue": {lang: [f"gmmlu_cloze_encue_{lang}"]
+                          for lang in ("de", "fr", "ar", "zh")},
     "taxi1500": {
         "en": ["taxi1500_eng_Latn"],
         "de": ["taxi1500_deu_Latn"],
@@ -125,6 +182,24 @@ def main() -> None:
                     help="cuda / cpu / xla (Neuron). Default: auto (cuda else cpu).")
     ap.add_argument("--keep-checkpoints", action="store_true",
                     help="keep each 4GB checkpoint after eval (default: delete)")
+    ap.add_argument("--own-langs", action="store_true",
+                    help="score each model only on ITS OWN training languages "
+                         "(models.json `langs`), instead of all five. Cuts ~74%% "
+                         "of the work. The bilingual-vs-monolingual comparisons "
+                         "are unaffected -- every transfer cell needs only "
+                         "trained-language scores (partner-lang delta: bi(X) vs "
+                         "mono-X(X); English delta: bi(en) vs en-mono(en)) -- and "
+                         "calibration is computed per (model, lang, task) so it "
+                         "does not weaken either. What is given up is the "
+                         "zero-shot cross-lingual readout: the out-of-domain "
+                         "cells, the untrained arm of the SIB-200 label-language "
+                         "control, and the constant-prediction findings, which "
+                         "were all in languages the model never trained on.")
+    ap.add_argument("--no-require-raw", dest="require_raw", action="store_false",
+                    help="treat a task as done even if its raw per-choice "
+                         "loglikelihoods are missing. Default is to re-score "
+                         "such tasks, so a resumed sweep backfills the raw "
+                         "sidecar every offline estimator now reads.")
     ap.add_argument("--overwrite", action="store_true",
                     help="re-score tasks that are already in a model's result "
                          "JSON (default: skip only the models whose requested "
@@ -277,6 +352,8 @@ def main() -> None:
     from xscript.tok.wrapper import Tok
     from xscript.paths import tokenizer_dir, ensure
     from xscript.eval.bench import _make_lm
+    from xscript.eval.rawscores import (extract_raw, check_reproduces,
+                                        has_shared_choices)
 
     task_manager = TaskManager(include_path=str(c5_tasks_dir))
     # Fail loudly and early on a task the include_path does not define -- e.g.
@@ -316,6 +393,24 @@ def main() -> None:
         # field per sample -- the 0/1 hit list a paired bootstrap needs.
         return [int(round(s[metric])) for s in samples if metric in s]
 
+    def _raw_block(samples: list[dict], metric_names, tok, task: str) -> dict | None:
+        """Raw per-choice loglikelihoods for one task, or None if lm-eval's
+        records don't carry them.
+
+        This is the part that makes the scoring rule auditable after the run:
+        acc / acc_norm / PMI / calibrated accuracy are all re-derivable from
+        it on CPU, so changing the estimator never costs another Neuron pass
+        (see eval/rawscores.py for why the shipped acc and acc_norm are both
+        length-degenerate on SIB-200)."""
+        try:
+            block = extract_raw(samples, metric_names, tok=tok)
+            block["shared_choices"] = has_shared_choices(task)
+            return block
+        except (KeyError, ValueError) as exc:
+            print(f"[extra] raw capture skipped: {type(exc).__name__}: {exc}",
+                  flush=True)
+            return None
+
     def read_existing(path: Path) -> dict:
         """Previous result for this model, or {}. Results are MERGED into it
         rather than replacing it: one model's tasks are routinely produced by
@@ -338,12 +433,33 @@ def main() -> None:
         return out
 
     out_dir = ensure(Path(work / "results" / "extra_bench"))
+    raw_dir = ensure(Path(work / "results" / "extra_bench" / "raw"))
     for i, run in enumerate(runs, 1):
         out_path = out_dir / f"{run}_final.json"
         prev = read_existing(out_path)
         done = {(lang, t) for lang, ts in prev.get("metrics", {}).items() for t in ts}
+        if args.require_raw:
+            # A task scored before the raw sidecar existed is NOT done: its
+            # estimator can no longer be audited or changed without a rerun.
+            raw_path = raw_dir / f"{run}_raw.json"
+            have_raw = set()
+            if raw_path.exists():
+                try:
+                    have_raw = {(l, t) for l, ts in
+                                json.loads(raw_path.read_text()).get("raw", {}).items()
+                                for t in ts}
+                except json.JSONDecodeError:
+                    have_raw = set()
+            done &= have_raw
+        wanted = ({lang: ts for lang, ts in tasks_by_lang.items()
+                   if lang in set(models[run]["langs"])}
+                  if args.own_langs else tasks_by_lang)
+        if not wanted:
+            print(f"[extra] [{i}/{len(runs)}] {run}: no requested task covers its "
+                  f"training languages {models[run]['langs']}, skipping", flush=True)
+            continue
         todo = {lang: [t for t in ts if args.overwrite or (lang, t) not in done]
-                for lang, ts in tasks_by_lang.items()}
+                for lang, ts in wanted.items()}
         todo = {k: v for k, v in todo.items() if v}
         if not todo:
             print(f"[extra] [{i}/{len(runs)}] {run}: all requested tasks already "
@@ -375,9 +491,10 @@ def main() -> None:
             subtasks = results.get("results", {})
             samples = results.get("samples", {})
 
-            scores, metrics, correct = {}, {}, {}
+            scores, metrics, correct, raw = {}, {}, {}, {}
             for lang, lang_tasks in todo.items():
                 scores[lang], metrics[lang], correct[lang] = {}, {}, {}
+                raw[lang] = {}
                 for t in lang_tasks:
                     rec = subtasks.get(t, {})
                     if not _all_metrics(rec):
@@ -396,6 +513,18 @@ def main() -> None:
                             m: _per_example_hits(samples[t], m)
                             for m in metrics[lang][t]
                         }
+                        block = _raw_block(samples[t], metrics[lang][t], tok, t)
+                        if block is not None:
+                            raw[lang][t] = block
+                            # Fail loudly if the stored raw scores do not
+                            # reconstruct lm-eval's own hit lists -- every
+                            # derived estimator rests on that identity.
+                            mism = check_reproduces(block, correct[lang][t])
+                            bad = {k: v for k, v in mism.items() if v}
+                            if bad:
+                                print(f"[extra] WARNING {run}/{lang}/{t}: raw "
+                                      f"scores disagree with lm-eval hits {bad}",
+                                      flush=True)
                 print(f"[extra] {run} / {lang}: " + ", ".join(
                     f"{k}=" + "/".join(f"{mk}:{mv:.4f}" for mk, mv in
                                        sorted(metrics[lang][k].items()))
@@ -414,6 +543,28 @@ def main() -> None:
             tmp = out_path.with_suffix(f".tmp.{os.getpid()}")
             tmp.write_text(json.dumps(payload, indent=2))
             os.replace(tmp, out_path)   # never leave a half-written result behind
+
+            # Raw loglikelihoods go to a SIDECAR, not into the result JSON:
+            # they are ~10x its size, and every existing reader
+            # (analyze_extra_bench.py, bootstrap_transfer.py) keeps working
+            # untouched. Merged across invocations exactly like `metrics`.
+            raw = {l: ts for l, ts in raw.items() if ts}
+            if raw:
+                raw_path = raw_dir / f"{run}_raw.json"
+                prev_raw = {}
+                if raw_path.exists():
+                    try:
+                        prev_raw = json.loads(raw_path.read_text())
+                    except json.JSONDecodeError:
+                        prev_raw = {}
+                merged = {l: dict(ts) for l, ts in prev_raw.get("raw", {}).items()}
+                for l, ts in raw.items():
+                    merged.setdefault(l, {}).update(ts)
+                tmp = raw_path.with_suffix(f".tmp.{os.getpid()}")
+                tmp.write_text(json.dumps(
+                    {"run": run, "tokenizer": tok_name, "raw": merged},
+                    separators=(",", ":")))
+                os.replace(tmp, raw_path)
         except Exception as exc:
             print(f"[extra] {run} FAILED: {type(exc).__name__}: {exc}", flush=True)
             if prev:

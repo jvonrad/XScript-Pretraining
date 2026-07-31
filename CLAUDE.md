@@ -17,19 +17,33 @@ across both files, so cross-references still resolve — **§3, §6, §6b, §6c,
 
 ## TL;DR
 
-- **Of the C.5 suite, only XNLI carries downstream signal at this scale.** The
-  apparent "Arabic/Chinese are at chance" result was an **evaluation artifact,
-  not a training failure** — `xnli_ar`/`xnli_zh` are now debiased automatically
-  inside `bench.py`. Global-MMLU is genuinely at chance; Belebele has only a
-  faint recoverable signal (§6). **SIB-200 (§6d) is the second benchmark that
-  does discriminate**, and unlike XNLI it covers all five languages.
-- **On SIB-200 (§6d), cross-script costs nothing in attained capability but
-  something in transfer.** Own-language accuracy for the 30B bilinguals is flat
-  across scripts (de .518, fr .571, **ar .557, zh .569**), yet the LR-clean
-  bilingual−monolingual delta is **+0.037 same-script vs −0.016 cross-script**.
-  The gap is carried almost entirely by `ar/starved` (−0.110), the one cell
-  where cross-script *and* starvation combine — suggestive of the predicted
-  interaction, but it is a single run.
+- ⛔ **READ §6e FIRST.** A fifth format artifact was found and fixed: SIB-200,
+  Taxi-1500 and XNLI(en/de/fr) were scored by estimators whose argmax is
+  decided by a per-candidate constant rather than by the document (SIB-200's
+  majority class has **median recall 0.000** under `acc`). Re-scored with prior
+  calibration across all 41 checkpoints, §6d's same-vs-cross-script gap falls
+  +0.053 → **+0.016**, no same-script cell stays significant, the
+  cross-script × starvation interaction disappears, Taxi-1500 stops
+  corroborating, the fair-vs-starved effect reverses from English to the
+  partner languages, and Global-MMLU turns out **not** to be at chance
+  (+0.059 ≈ 15σ in cloze format at n=14,042). Runners now persist raw
+  per-candidate loglikelihoods, so any future scoring change is pure CPU.
+- **Most of the suite discriminates once scored correctly — "only XNLI" was
+  wrong.** Own-language, all five languages, over each cell's own empirical
+  null: HellaSwag **13–23σ** (the strongest), Taxi-1500 11–17σ, XNLI 5–13σ,
+  SIB-200, Belebele-cloze 2.4–3.9σ. The earlier "only XNLI" verdict came from
+  reading tables that pool every model over languages it never trained on,
+  which drags own-language signal into the noise. `xnli_ar`/`xnli_zh` remain
+  debiased automatically inside `bench.py`.
+- **Cross-script costs nothing in attained capability, and the transfer gap is
+  much smaller than §6d reports.** Calibrated, own-language SIB-200 is flat
+  across scripts (ar .734, fr .738, en .761, de .694) — Arabic is the
+  strongest non-English model. The same-vs-cross-script transfer gap falls
+  from +0.053 to **+0.016**, no same-script cell remains significant, and the
+  residual is **Arabic-specific, not cross-script**: zh is +0.011, identical
+  to de's +0.010. There is **no cross-script × starvation interaction**
+  (ar/fair −0.040 vs ar/starved −0.037). XNLI does not reproduce even the
+  Arabic effect (+0.018, opposite sign), so it is not established. See §6e.
 - **The `*-12b` vs `*-23b` pairing is LR-matched for free** (both mid-stable at
   peak LR; decay starts at 24B), giving 7 of 8 transfer cells clean with no new
   training — §6's matched-token table had only 2 of 7 (§6d).
@@ -51,12 +65,14 @@ across both files, so cross-references still resolve — **§3, §6, §6b, §6c,
 - **Representation alignment: only the *ordering* is robust** (cross-script >
   same-script, the reverse of the downstream ordering). The absolute deltas
   depend on an unresolved layer-selection rule (§6b).
-- Three times now, an uncontrolled evaluation number turned out to be measuring
-  the benchmark rather than the training (XNLI connectives, Belebele letter
-  format, the alignment fixed-layer probe). Control before quoting. §6d adds
-  three more traps caught *before* they were quoted: `acc_norm` length bias,
-  constant-prediction collapse, and the label-language confound (worth ~14
-  points, in opposite directions for trained vs untrained languages).
+- **Seven times now** an evaluation number turned out to be measuring the
+  benchmark rather than the training: XNLI connectives, the Belebele letter
+  format, the alignment fixed-layer probe, SIB-200's `acc`/`acc_norm` length
+  degeneracy, Global-MMLU's underpowered n=200, lm-eval's hardcoded English
+  scaffolding, and **ARC comparing English ARC-Easy against non-English
+  ARC-Challenge**. Six of the seven were invisible in the accuracy number
+  alone. Control before quoting — and check *dataset identity* before any
+  cross-language comparison (§6e).
 
 ---
 
@@ -281,12 +297,26 @@ largest budget each supports (fr 7.75B, ar/zh ~11.2B), so the penalty mixes
 budgets. Landing `de-starved` fixes the first and is the single highest-value
 run remaining.
 
-### Only XNLI discriminates; MMLU & Belebele are at chance
+### ~~Only XNLI discriminates; MMLU & Belebele are at chance~~ (RETRACTED, §6e)
+Kept for the record; every headline in this subsection is superseded.
+Own-language and correctly scored, HellaSwag/Taxi-1500/XNLI/SIB-200/Belebele-cloze all discriminate, and Global-MMLU clears chance in all
+five languages (21 of 23 cells). The original text:
 From the `--limit 200` matrix over all 15 models (chance: MMLU/Belebele 0.25,
 XNLI 0.333):
-- **Global-MMLU: 0/23 model×lang cells above chance.** Confirmed real (not an
+- ~~**Global-MMLU: 0/23 model×lang cells above chance.** Confirmed real (not an
   artifact): letter, cloze, and cloze+PMI scoring all stay ≈0.21–0.23 for en.
-  World-knowledge MCQ is beyond a 1B/30B model.
+  World-knowledge MCQ is beyond a 1B/30B model.~~ **RETRACTED — see §6e.**
+  This was measured at `--limit 200`, where the smallest effect detectable at
+  2σ is **+6.1 accuracy points**; the real effect is **+5.9**, i.e. the
+  experiment sat exactly on its own detection boundary and could not have
+  found it however often it was run. On the full `CohereForAI/Global-MMLU`
+  (n=14,042, not the n=400 `-Lite` build lm-eval defaults to), `en-fair` in
+  **cloze** format scores **0.310 acc_norm against a 0.251 empirical null,
+  +0.059 ≈ 15σ**. The **letter** (A/B/C/D) format genuinely is at chance
+  (0.2499) and stays there after calibration (+0.004) — so these models do
+  hold measurable world knowledge but cannot do the A/B/C/D indirection. Note
+  the old cloze figure of 0.21–0.23 is *below* chance, which was itself the
+  tell that length bias was dragging it under.
 - **Belebele: at chance** under lm-eval's letter format. cloze+PMI on en gives a
   faint lift (0.26 → ~0.34, ~+1.8σ at n=80) — suggestive only, not confirmed.
 - **XNLI: signal on en/de/fr** out of the box; ar/zh sat at exactly chance (0.335).
@@ -410,6 +440,13 @@ real but modest lift over the letter-format numbers (chance 0.25 → ~0.27–0.3
 vs the letter-format ~0.21–0.31 in §6's original matrix). Global-MMLU-style
 world knowledge stays flat regardless of format (unchanged from §6).
 
+> ⛔ **The ARC half of the next paragraph is RETRACTED (§6e).** English was
+> scored on ARC-**Easy** (n=2376) and the other languages on okapi m_arc,
+> which is 100% ARC-**Challenge** (n=1169) — different difficulty tiers.
+> Like-for-like on ARC-Challenge, English is .268–.285 vs the others'
+> .24–.26: a ~2-point gap, not 25. ARC-Challenge carries almost no signal
+> in ANY language at this scale, English included.
+
 **ARC and XStoryCloze show a striking English-only pattern**: clear signal in
 English (0.42, 0.58) but every other language sits at or within noise of
 chance (ARC: 0.24–0.26; XStoryCloze ar/zh: 0.49–0.50) — despite those same
@@ -423,39 +460,14 @@ the 11 new checkpoints include lower-token-budget runs (12–15B vs the
 original 30B) with weaker English, plus zh-fair-12b/zh-starved-12b which are
 zh-only mono runs with a comparatively weak English zero-shot score.)
 
-**Full per-model breakdown** (all 26 checkpoints × all 25 `(lang, task)`
-cells; bold = model was trained on that language — a zero-shot readout
-everywhere else; `Bele`=Belebele, `HS`=HellaSwag, `SC`=XStoryCloze,
-`WG`=XWinograd; `-` = task not defined for that language):
-
-| model | tok | trained | EN-XNLI | EN-Bele | EN-ARC | EN-HS | EN-SC | EN-WG | DE-XNLI | DE-Bele | DE-ARC | DE-HS | FR-XNLI | FR-Bele | FR-ARC | FR-HS | FR-WG | AR-XNLI | AR-Bele | AR-ARC | AR-HS | AR-SC | ZH-XNLI | ZH-Bele | ZH-ARC | ZH-SC | ZH-WG |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| ar-fair | fair | AR | .456 | .284 | .361 | .317 | .547 | .604 | .334 | .260 | .241 | .271 | .361 | .289 | .234 | .283 | .566 | **.469** | **.332** | **.251** | **.382** | **.555** | .337 | .226 | .253 | .469 | .548 |
-| ar-fair-15b | fair | AR | .420 | .271 | .338 | .298 | .537 | .572 | .332 | .260 | .241 | .262 | .367 | .269 | .251 | .273 | .506 | **.452** | **.319** | **.224** | **.346** | **.531** | .339 | .222 | .266 | .475 | .484 |
-| ar-starved | starved | AR | .425 | .294 | .342 | .292 | .522 | .550 | .334 | .276 | .233 | .274 | .337 | .291 | .244 | .288 | .518 | **.455** | **.301** | **.252** | **.349** | **.551** | .332 | .252 | .267 | .490 | .500 |
-| ar-starved-15b | starved | AR | .328 | .268 | .310 | .281 | .520 | .532 | .342 | .252 | .223 | .273 | .335 | .276 | .240 | .287 | .554 | **.376** | **.306** | **.256** | **.318** | **.523** | .338 | .232 | .272 | .473 | .510 |
-| de-fair | fair | DE | .483 | .290 | .390 | .353 | .570 | .649 | **.469** | **.333** | **.275** | **.419** | .367 | .298 | .232 | .300 | .506 | .352 | .260 | .257 | .259 | .477 | .335 | .264 | .245 | .483 | .560 |
-| de-fair-15b | fair | DE | .427 | .294 | .348 | .312 | .544 | .589 | **.461** | **.327** | **.265** | **.367** | .373 | .282 | .253 | .285 | .542 | .334 | .241 | .251 | .257 | .473 | .329 | .246 | .272 | .475 | .522 |
-| en-ar-fair | fair | EN+AR | **.504** | **.324** | **.502** | **.447** | **.623** | **.709** | .339 | .270 | .232 | .275 | .345 | .304 | .260 | .293 | .530 | **.442** | **.334** | **.276** | **.383** | **.555** | .333 | .264 | .245 | .494 | .552 |
-| en-ar-starved | starved | EN+AR | **.495** | **.303** | **.473** | **.408** | **.606** | **.662** | .335 | .282 | .234 | .282 | .338 | .299 | .246 | .299 | .518 | **.453** | **.308** | **.250** | **.350** | **.533** | .322 | .262 | .241 | .486 | .562 |
-| en-de-fair | fair | EN+DE | **.524** | **.332** | **.503** | **.464** | **.635** | **.728** | **.480** | **.330** | **.296** | **.422** | .383 | .316 | .237 | .304 | .566 | .334 | .240 | .256 | .263 | .478 | .339 | .273 | .243 | .489 | .583 |
-| en-de-starved | starved | EN+DE | **.505** | **.317** | **.465** | **.411** | **.617** | **.683** | **.462** | **.314** | **.275** | **.378** | .340 | .294 | .240 | .305 | .530 | .333 | .257 | .234 | .278 | .477 | .322 | .261 | .252 | .492 | .558 |
-| en-fair | fair | EN | **.525** | **.338** | **.532** | **.501** | **.657** | **.751** | .341 | .289 | .222 | .284 | .377 | .294 | .246 | .296 | .446 | .337 | .244 | .259 | .261 | .473 | .341 | .292 | .244 | .500 | .579 |
-| en-fair-15b | fair | EN | **.484** | **.300** | **.473** | **.417** | **.619** | **.676** | .337 | .280 | .232 | .273 | .338 | .310 | .248 | .288 | .518 | .331 | .236 | .259 | .264 | .465 | .330 | .269 | .241 | .477 | .589 |
-| en-fr-fair | fair | EN+FR | **.502** | **.320** | **.497** | **.463** | **.632** | **.722** | .361 | .277 | .230 | .283 | **.474** | **.339** | **.283** | **.447** | **.699** | .333 | .238 | .251 | .268 | .471 | .359 | .291 | .248 | .500 | .540 |
-| en-fr-starved | starved | EN+FR | **.500** | **.307** | **.481** | **.431** | **.625** | **.687** | .341 | .278 | .204 | .284 | **.479** | **.322** | **.280** | **.424** | **.639** | .335 | .279 | .240 | .280 | .465 | .333 | .280 | .242 | .507 | .577 |
-| en-starved | starved | EN | **.495** | **.311** | **.531** | **.472** | **.637** | **.728** | .349 | .274 | .220 | .285 | .336 | .289 | .229 | .302 | .542 | .332 | .273 | .240 | .278 | .469 | .328 | .251 | .244 | .496 | .593 |
-| en-starved-15b | starved | EN | **.507** | **.297** | **.454** | **.389** | **.608** | **.675** | .337 | .280 | .224 | .278 | .331 | .304 | .231 | .298 | .518 | .344 | .266 | .235 | .278 | .469 | .333 | .259 | .259 | .482 | .536 |
-| en-zh-fair | fair | EN+ZH | **.511** | **.322** | **.513** | **.456** | **.624** | **.725** | .337 | .270 | .246 | .274 | .354 | .303 | .258 | .286 | .470 | .336 | .249 | .264 | .262 | .472 | **.420** | **.290** | **.305** | **.570** | **.700** |
-| en-zh-fair-23b | fair | EN+ZH | **.486** | **.310** | **.479** | **.392** | **.610** | **.691** | .341 | .272 | .240 | .267 | .339 | .301 | .239 | .287 | .566 | .334 | .233 | .263 | .256 | .465 | **.416** | **.302** | **.294** | **.559** | **.710** |
-| en-zh-starved | starved | EN+ZH | **.480** | **.307** | **.477** | **.427** | **.621** | **.722** | .335 | .279 | .217 | .284 | .345 | .288 | .238 | .296 | .542 | .333 | .264 | .236 | .277 | .465 | **.407** | **.296** | **.285** | **.551** | **.708** |
-| en-zh-starved-23b | starved | EN+ZH | **.476** | **.277** | **.448** | **.369** | **.598** | **.667** | .331 | .281 | .205 | .277 | .337 | .307 | .245 | .294 | .494 | .339 | .257 | .255 | .275 | .471 | **.398** | **.286** | **.270** | **.549** | **.687** |
-| fr-fair | fair | FR | .456 | .293 | .378 | .337 | .570 | .610 | .347 | .274 | .238 | .269 | **.467** | **.342** | **.294** | **.435** | **.627** | .333 | .267 | .260 | .262 | .474 | .332 | .266 | .250 | .495 | .569 |
-| fr-fair-15b | fair | FR | .457 | .281 | .349 | .304 | .533 | .583 | .340 | .271 | .243 | .263 | **.471** | **.312** | **.259** | **.379** | **.627** | .333 | .246 | .252 | .265 | .469 | .340 | .250 | .265 | .475 | .538 |
-| fr-starved | starved | FR | .443 | .289 | .371 | .320 | .547 | .582 | .340 | .284 | .238 | .280 | **.466** | **.320** | **.281** | **.409** | **.602** | .342 | .270 | .252 | .279 | .471 | .333 | .259 | .249 | .495 | .528 |
-| fr-starved-15b | starved | FR | .398 | .266 | .344 | .297 | .510 | .551 | .339 | .293 | .222 | .280 | **.443** | **.316** | **.257** | **.358** | **.590** | .333 | .259 | .253 | .272 | .467 | .339 | .253 | .258 | .474 | .520 |
-| zh-fair-12b | fair | ZH | .420 | .274 | .332 | .291 | .526 | .584 | .330 | .257 | .241 | .262 | .350 | .263 | .251 | .267 | .482 | .331 | .242 | .263 | .252 | .467 | **.398** | **.317** | **.285** | **.554** | **.671** |
-| zh-starved-12b | starved | ZH | .421 | .278 | .317 | .285 | .510 | .545 | .338 | .276 | .220 | .274 | .324 | .283 | .235 | .283 | .506 | .331 | .229 | .261 | .258 | .461 | **.374** | **.277** | **.283** | **.541** | **.641** |
+> ⚠️ The full per-model breakdown (26 checkpoints × 25 `(lang, task)` cells)
+> now lives in [`results/appendix_c5/per_model_table.md`](results/appendix_c5/per_model_table.md)
+> — it is raw data rather than findings, and CLAUDE.md is loaded into context
+> every session. Three corrections apply to it (§6e): its **ARC** columns
+> compare Easy (en) against Challenge (others), its **XNLI** column predates
+> the connective calibration, and it scores every model on languages it never
+> trained on — averaging those cells is what produced the retracted "only
+> XNLI discriminates" verdict.
 
 ### Same-script vs. cross-script transfer (matched-token, bootstrap CIs)
 
@@ -984,8 +996,9 @@ language its activations are broadly distributed.
 ## 6d. Five-language benchmarks: SIB-200, Taxi-1500, zh HellaSwag
 
 The C.5 suite cannot answer "how does this model compare *across* the five
-languages" on its own, for two independent reasons: only XNLI carries signal at
-this scale (§6), and **four of its six benchmarks do not even cover all five
+languages" on its own, for two independent reasons: at the time only XNLI
+appeared to carry signal (§6 — that verdict is retracted in §6e; the others
+were being read from pooled cross-language tables), and **four of its six benchmarks do not even cover all five
 languages** — HellaSwag has no zh, XStoryCloze no de/fr, XWinograd no de/ar.
 `run_extra_bench.py` + `analyze_extra_bench.py` add three benchmarks that do.
 Results: `$WORK/results/extra_bench/<run>_final.json`, **41 checkpoints** — the
@@ -1069,13 +1082,20 @@ majority baseline, where ARC, Global-MMLU and Belebele all sit at chance.
 1. **`acc_norm` is degenerate on this task.** Averaged over the 41 models it
    stays in .181–.372 across every (lang, task) cell, i.e. pinned near the
    majority rate, while `acc` spans .204–.529 over the same cells. It divides
-   loglikelihood by the answer's byte length, which favours the longest
-   option — and SIB-200's longest label ("science and technology") is *also*
-   its majority class. **Quote `acc`.** (This is why the runner stores all of
-   acc/acc_norm/acc_mutual_info with per-example hit lists rather than picking
-   one; note the `scores` field in the JSONs prefers `acc_norm` for shape
-   compatibility with the C.5 files and is therefore **the wrong field to read
-   for these tasks** — use `metrics`.)
+   loglikelihood by the answer's length (**characters**, lm-eval's
+   `completion_len` — not bytes as originally written here), which favours the
+   longest option — and SIB-200's longest label ("science and technology") is
+   *also* its majority class. ~~**Quote `acc`.**~~
+   ⛔ **"Quote `acc`" is RETRACTED (§6e).** `acc` is degenerate in the
+   *opposite* direction and just as badly: it never ranks the longest label
+   first, so the 25.1%-majority class has **median recall 0.000** across all
+   205 cells. Both estimators decide the argmax before reading the document.
+   **Quote `acc_cal`** (prior-calibrated), and report `acc − null` and
+   prediction entropy alongside. (The runner storing every metric is still the
+   right call, and it now stores the raw loglikelihoods too, so this was
+   fixable without re-running the accelerator. Note the `scores` field in the
+   JSONs prefers `acc_norm` for shape compatibility and remains **the wrong
+   field to read** — use `metrics`, or better, the raw sidecar.)
 
 2. **Constant-prediction collapse, which accuracy alone cannot reveal.**
    `analyze_extra_bench.py` flags a cell whose 0/1 hit vector is exactly the
@@ -1114,6 +1134,10 @@ majority baseline, where ARC, Global-MMLU and Belebele all sit at chance.
 
 ### The headline: no cross-script downstream penalty on SIB-200
 
+> ⛔ The `acc` numbers in this subsection and the next are superseded by §6e.
+> The *conclusion* here (no cross-script penalty in attained capability)
+> survives and is strengthened; the transfer deltas below do not.
+
 Own-language accuracy, localized labels, `acc` (chance .143, majority .251):
 
 | partner | script | bilingual 30B final (fair) | monolingual final (fair) |
@@ -1141,14 +1165,29 @@ asymmetry §6 found in the matched-token transfer deltas — the tokenizer's
 effect is large and consistent on English, ~0 and sign-unstable on the partner
 language.
 
-**Taxi-1500 is much weaker and should only corroborate.** Own-language accuracy
-is .188–.363 against a .261 majority baseline — barely separable. Its domain
-(scripture) is a poor match for FineWeb2-trained checkpoints, and its register
-is uneven *across* languages: the only full-coverage open Arabic edition is
-from **1865** while the pinned de/fr/en editions are 20th–21st century, so the
-Arabic column is disadvantaged for reasons unrelated to the model. Where it and
-SIB-200 disagree (e.g. `en-zh-starved` zh: .576 SIB vs .188 Taxi), believe
-SIB-200.
+~~**Taxi-1500 is much weaker and should only corroborate.** Own-language
+accuracy is .188–.363 against a .261 majority baseline — barely separable.~~
+⛔ **The "much weaker" half is RETRACTED (§6e): that was the scoring rule, not
+the benchmark.** Calibrated, Taxi-1500 clears its own null by **+0.175 to
++0.249 at 11–17σ in all five languages**, with prediction entropy 0.98 and
+**all six classes recalled** — the "Violence class is never predicted" problem
+existed under `acc`/`acc_norm`/PMI and vanishes under `acc_cal`.
+
+What does **not** go away is a defect calibration cannot fix: its register is
+uneven *across* languages. The only full-coverage open Arabic edition is from
+**1865** while the pinned de/fr/en editions are 20th–21st century, so the
+Arabic column is disadvantaged for reasons unrelated to the model — and Arabic
+is indeed its weakest column (+0.175 vs +0.204…+0.249). Therefore:
+
+* **exclude from any cross-language aggregate** — difficulty varying by
+  language for corpus reasons breaks exactly the comparison such a mean makes;
+* **include for within-language work** (bilingual−monolingual, fair−starved),
+  where both models read identical text and the edition confound cancels, and
+  where scripture is a genuinely independent domain from the rest of the suite.
+
+Calibrated, its transfer deltas disagree in sign with SIB-200 on 5 of 7 cells
+(including reversing `ar/fair`, +0.036 vs −0.040), so treat agreement between
+them as evidence and disagreement as a flag — do not average them.
 
 ### Transfer deltas, now LR-clean in 7 of 8 cells
 
@@ -1174,22 +1213,43 @@ B=2000, n=1004; `*` = CI excludes 0):
 | zh | cross | fair | .542 | .580 | **+0.038** [+.017, +.059]* | **+0.024*** |
 | zh | cross | starved | .524 | .534 | +0.010 [−.015, +.034] | **−0.073*** |
 
-Mean Δ: **same-script +0.037** (n=3) vs **cross-script −0.016** (n=4), a gap of
-+0.053 in the thesis's predicted direction — adding English helps a same-script
-partner and does not help a cross-script one.
+> ⛔ **EVERY NUMBER IN THE TABLE ABOVE IS SUPERSEDED — see §6e.** The `acc`
+> column it is built on is a length-degenerate estimator: on SIB-200 the
+> majority class ("science and technology", 25.1%, and the longest of the seven
+> shared labels) has **median recall 0.000** across all 205 cells, because an
+> unnormalized summed loglikelihood can never rank the longest candidate first.
+> Re-scored with prior calibration (`acc_cal`), the same checkpoints and the
+> same documents give: de/fair **+0.010**, fr/fair **−0.021**, fr/starved
+> **+0.016**, ar/fair **−0.040\***, ar/starved **−0.037\***, zh/fair
+> **+0.000**, zh/starved **+0.021**. The retractions that follow from that are
+> listed in §6e; the two biggest are that **no same-script cell is significant
+> any more**, and that **`ar/fair` and `ar/starved` are statistically identical
+> (−0.040 vs −0.037)**, so the cross-script × starvation interaction the
+> paragraph below builds on does not exist.
 
-**But read that gap as one cell, not four.** It is carried almost entirely by
+~~Mean Δ: **same-script +0.037** (n=3) vs **cross-script −0.016** (n=4), a gap of
++0.053 in the thesis's predicted direction — adding English helps a same-script
+partner and does not help a cross-script one.~~ (Calibrated: same-script
+**+0.002**, cross-script **−0.014**, gap **+0.016**.)
+
+~~**But read that gap as one cell, not four.** It is carried almost entirely by
 `ar/starved` (−0.110); drop that cell and cross-script becomes +0.015 against
 same-script's +0.037, a gap of +0.022 with no cell individually significant in
 the negative direction. What `ar/starved` *is* — the one condition where
 cross-script and tokenizer starvation apply **together** — makes it exactly the
 cell the interaction hypothesis predicts should be worst, and Taxi-1500
-independently agrees on its sign (−0.095 [−.122, −.065]). Two caveats before
-anyone quotes it: `en-ar-starved-23b` is also significantly worse than the
-English monolingual **on English** (−0.053), i.e. that bilingual underperforms
-on *both* its languages, which is what interference looks like but is equally
-consistent with one weak training run; and there is one run per cell, so the
-group means have no error bars even though the individual deltas do.
+independently agrees on its sign (−0.095 [−.122, −.065]).~~ **All three legs of
+this argument fail under calibration** (§6e): the gap is not one cell (it is one
+*language* — Arabic, in both tokenizer conditions equally, so there is no
+interaction); Taxi-1500 does not corroborate (it disagrees in sign with SIB-200
+on 5 of 7 cells, including reversing `ar/fair` to +0.036); and XNLI, the only
+other benchmark here that discriminates, puts Arabic transfer at **+0.018**,
+the opposite sign. Two caveats that do survive: `en-ar-starved-23b` is still
+worse than the English monolingual **on English** (−0.041 calibrated), i.e.
+that bilingual underperforms on *both* its languages, which is what
+interference looks like but is equally consistent with one weak training run;
+and there is one run per cell, so the group means have no error bars even
+though the individual deltas do.
 
 **The mismatched rows are kept alongside, and the bias is large.** Same cells,
 scored `*-15b` mono vs the cooled 30B bilingual: de/fair +0.026 (vs +0.053
@@ -1215,6 +1275,411 @@ no error bars (the *deltas* do — paired bootstrap over docs — but not the ru
 Mid-stable checkpoints sit in the noisy regime §6 documents for BPB (adjacent
 checkpoints move ±0.008–0.019), so a single-budget delta should not be
 over-read even when LR-matched — the fix is the curve, as with ATLAS-BTS.
+
+---
+
+## 6e. Scoring recalibration: the fifth format artifact, and what it retracts
+
+Everything in §6d, plus §6's XNLI columns and its Global-MMLU verdict, rested
+on estimators that rank candidates by a score containing a **per-candidate
+constant that does not depend on the document**. Removing that constant changes
+several headline conclusions and dissolves three others. This is the fifth time
+in this project an uncontrolled scoring choice turned out to be measuring the
+benchmark rather than the training (after XNLI connectives, the Belebele letter
+format, the alignment fixed-layer probe, and §6d's own `acc_norm`).
+
+### The defect
+
+SIB-200 gives every document the same 7 topic labels. `acc` sums an
+unnormalized loglikelihood over the label, so the longest label loses on every
+document alike; `acc_norm` divides by its length, so the longest label wins on
+every document alike. Measured per-gold-class recall over all **205** SIB-200
+model×lang cells:
+
+| estimator | recall on `science/technology` (25.1% majority, longest label) | classes recalled >10% (of 7) | exactly-constant predictors |
+|---|---|---|---|
+| `acc` (what §6d quotes) | mean 0.023, **median 0.000**, max 0.433 | mean 3.69 | 9 / 205 |
+| `acc_norm` | mean 0.899, **median 0.996** | mean 1.84 | 30 / 205 |
+
+A quarter of the evaluation set is therefore decided before the document is
+read, in every cell, under either estimator. What remains is "which of the
+other labels this checkpoint happens to be able to reach", and that drifts
+between checkpoints — which is the entire source of the non-monotonic
+trajectories (`en-starved` English: .609 @12B, .537 @15B, .581 @30B) and of the
+single-cell swings §6d treats as training effects.
+
+lm-eval's XNLI for en/de/fr has the same defect at the connective
+("Ja"/"Auch"/"Nein"): §6 diagnosed and fixed exactly this for ar/zh and left
+the other three languages on raw loglikelihood.
+
+Note also: **`acc_norm` normalizes by CHARACTER count, not bytes** — §6d says
+bytes. lm-eval's `completion_len`, not its `byte_length`, is what divides.
+
+### The fix
+
+`src/xscript/eval/rawscores.py`. Two parts; the first matters more.
+
+1. **The runners now persist raw per-candidate loglikelihoods** to
+   `<results>/raw/<run>_raw.json` (conditional, unconditional where the task
+   requests PMI, plus each candidate's gold index and char/byte/token lengths).
+   Every estimator is then a pure-CPU re-derivation and **a scoring change
+   never costs another accelerator pass** — the same lesson as §6b's cached
+   embeddings. This is why the defect survived three prior audits: only 0/1 hit
+   lists were kept, so the scoring rule could not be re-examined without a full
+   re-run.
+
+2. **`acc_cal`** — subtract each candidate's mean loglikelihood over the
+   evaluation set: `s(d,c) = ll(c|x_d) − mean_d' ll(c|x_d')`. Contextual
+   calibration (Zhao et al. 2021, arXiv:2102.09690). Removes the per-candidate
+   offset exactly, whatever its cause (length, prior, tokenizer fertility), at
+   zero extra compute.
+
+Guards, because this is the failure mode the project keeps repeating:
+
+- **Verified against lm-eval bit-for-bit.** `check_reproduces()` re-derives
+  lm-eval's own `acc`/`acc_norm`/`acc_mutual_info` from the stored raw scores;
+  0 mismatches, and `acc_pmi` returns 0.5817 against lm-eval's 0.5817 on real
+  data. Nothing derived is trusted until that identity holds.
+- **`acc_cal_loo`** (leave-one-out) answers the transductive objection; agrees
+  with `acc_cal` to three decimals in every cell measured.
+- **Empirical null** `Σ_c P(pred c)·P(gold c)` — the accuracy a given
+  prediction *distribution* would get independent of gold. This is the honest
+  baseline, not 1/k and not the majority rate: a constant predictor scores
+  exactly its class frequency and `acc − null` is 0.
+- **`SHARED_CHOICE_TASKS` allowlist.** `acc_cal` is only emitted where the
+  choice *index* means the same thing in every document — `sib200`,
+  `taxi1500`, `xnli` (index c is always connective c), `gmmlu_letter`. It is
+  withheld for HellaSwag / ARC / Belebele-cloze / XStoryCloze / XWinograd,
+  whose candidates are document-specific text. `_calibrate` would still *run*
+  on a fixed-arity task like HellaSwag and return a number, but that number is
+  a position-bias correction, a different and far smaller effect, and reading
+  it as the label-prior fix would be exactly the error this section documents.
+
+Two independent pre-registered checks that the fix is noise removal and not
+tuning: trajectory monotonicity (XNLI summed backwards movement / range:
+**0.55 → 0.00**, with the range preserved) and accuracy over the empirical null
+(`en-ar-starved-23b` Arabic: +0.294 → +0.465).
+
+### Re-derived results (41 checkpoints, `--own-langs`, full splits)
+
+**SIB-200 transfer, LR-matched `{lang}-{tok}-12b` vs `en-{lang}-{tok}-23b`:**
+
+| cell | script | `acc` (§6d) | **`acc_cal`** |
+|---|---|---|---|
+| de/fair | same | **+0.053\*** | +0.010 [−.019, +.038] |
+| fr/fair | same | +0.011 | −0.021 [−.048, +.006] |
+| fr/starved | same | **+0.046\*** | +0.016 [−.013, +.045] |
+| ar/fair | cross | −0.004 | **−0.040\*** [−.068, −.012] |
+| ar/starved | cross | **−0.110\*** | **−0.037\*** [−.067, −.004] |
+| zh/fair | cross | **+0.038\*** | +0.000 [−.026, +.026] |
+| zh/starved | cross | +0.010 | +0.021 [−.006, +.051] |
+
+Means: same-script +0.037 → **+0.002**; cross-script −0.016 → **−0.014**; gap
++0.053 → **+0.016**. Per language: de +0.010, fr −0.003, **ar −0.038**, zh
+**+0.011**.
+
+**The "cross-script" effect is Arabic, not script.** Chinese is equally
+cross-script and equally non-Latin, and its transfer is *positive* and
+statistically identical to German's. Excluding Arabic, the cross-script mean
+(+0.011) is **higher** than the same-script mean (+0.002) — the sign reverses.
+
+**XNLI transfer, same pairing, does not reproduce the Arabic effect:**
+
+| cell | `acc` | `acc_cal` |
+|---|---|---|
+| de/fair | **−0.053\*** | +0.006 |
+| fr/fair | −0.008 | +0.019 |
+| fr/starved | **+0.041\*** | **+0.050\*** |
+| ar/fair | +0.004 | +0.020 |
+| ar/starved | **+0.023\*** | +0.016 |
+| zh/fair | +0.002 | +0.012 |
+| zh/starved | +0.002 | +0.004 |
+
+Calibrated, every XNLI cell is positive; same +0.025, cross +0.013, gap +0.012.
+Arabic is **+0.018**, the opposite sign to SIB-200's −0.038. So the Arabic
+transfer cost is a **SIB-200 finding that the other discriminating benchmark
+reverses**, and is not established.
+
+**Own-language SIB-200, calibrated — and the degeneracy is gone.** 30B finals:
+ar-fair **.734**, fr-fair .738, en-fair .761, de-fair .694, zh (12B, no 30B zh
+mono exists) .712. All 58 own-language cells have prediction entropy
+**0.95–1.00** and beat their own null by **+0.46 to +0.61** — not one
+degenerate cell, against 9 exactly-constant and 61 near-constant under `acc`.
+Arabic is the strongest non-English model in the table. §6d's "cross-script
+costs nothing in attained capability" is **strengthened**.
+
+**Tokenizer effect on own-language, fair − starved (paired over docs):**
+positive in 8 of 10 cells and significant in 7 (ar 12B +0.064\*, ar 30B
++0.055\*, fr 12B +0.080\*, fr 30B +0.030\*, en 30B +0.030\*, en-ar bi +0.061\*,
+en-fr bi +0.043\*). Under `acc` the sign flips six times across the same ten
+cells. **But the direction is the reverse of §6d's**: §6d says the tokenizer
+effect is "large and consistent on English, ~0 and sign-unstable on the partner
+language" and builds a mechanism on it (English's budget subsidizing ~419
+languages). Calibrated, **English is the weakest and least consistent cell**
+(−0.016, −0.001, +0.030) and the **partner languages are the strongest**
+(+0.030..+0.080). The +0.109 English gap that motivated that mechanism was the
+most length-inflated number in the table; the mechanism as written is not
+supported.
+
+**Taxi-1500 does not corroborate and should be dropped.** Calibrated, it
+disagrees in sign with SIB-200 on 5 of 7 cells, including reversing `ar/fair`
+(+0.036 vs −0.040) — the exact cell where SIB-200 finds its effect. §6d cites
+Taxi as independently supporting `ar/starved`; that one agreement is a coin
+landing the same way, not corroboration. Its "Violence" class has recall
+0.00–0.03 in every cell under every estimator, i.e. it is effectively a 5-way
+task at best.
+
+### Global-MMLU: the models DO have world knowledge
+
+§6's verdict was underpowered rather than wrong-headed. `en-fair`, English,
+full `CohereForAI/Global-MMLU` (n=14,042; lm-eval defaults to the n=400
+`-Lite` build, and §6 used `--limit 200`):
+
+| format | estimator | acc | null | over null | pred entropy |
+|---|---|---|---|---|---|
+| **cloze** (answer text) | `acc` | .292 | .247 | **+0.045** | 0.98 |
+| **cloze** | **`acc_norm`** | **.310** | .251 | **+0.059** | 0.99 |
+| cloze | `acc_tokennorm` | .309 | — | — | — |
+| letter (A/B/C/D) | `acc` | .2499 | .248 | +0.002 | 0.80 |
+| letter | `acc_cal` | .256 | .252 | +0.004 | 0.97 |
+
+SE at n=14,042 is 0.0039, so cloze `acc_norm` clears its own null by **≈15σ**,
+and all three cloze estimators agree. The letter format genuinely is at chance
+and **stays there after calibration** — as it must, since calibration removes a
+selection bias but cannot manufacture knowledge.
+
+So: **these checkpoints hold ~6 points of measurable world knowledge but cannot
+do the A/B/C/D indirection at all.** Two reasons §6 missed it: at `--limit 200`
+the 2σ detection threshold is +6.1 points against a true effect of +5.9 (the
+experiment sat on its own detection boundary), and the letter format — the one
+that is genuinely flat — was weighted equally with cloze.
+
+⚠️ One model, English only. Extend to the other four languages and to
+`en-starved` before quoting "+6 points" as a general property.
+
+### Prompt language: the harness hardcodes English, and it matters less than expected
+
+Two findings from chasing why Arabic Global-MMLU sat at chance. The first is a
+property of lm-eval that anyone reading these numbers inherits; the second
+stopped a plausible-sounding explanation from being written down as fact.
+
+**lm-eval hardcodes English scaffolding in multilingual tasks.** Verified in
+0.4.12:
+
+| task | prompt actually shown for a non-English document |
+|---|---|
+| `global_mmlu_*` (**all 15 languages** it ships) | `{question}\nA. {a}\nB. {b}\nC. {c}\nD. {d}\nAnswer:` — English cue, Latin option letters, regardless of language |
+| `arc_{de,fr,ar,zh}` (okapi m-arc) | `Question: {translated question}\nAnswer:` — e.g. `'Question: آنا تحمل مكعب ثلج…\nAnswer:'` |
+| `hellaswag_{de,fr,ar}` (okapi) | clean — uses the translated `activity_label`, no English |
+| `belebele_cloze_*` (ours) | clean — passage + question only |
+| `sib200_*`, `taxi1500_*` (ours) | clean — localized cue (`الموضوع:`, `Thema:`, …) |
+
+Note the asymmetry this creates for **ARC**, which §6d reads as "a striking
+English-only pattern" (en 0.42 vs 0.24–0.26 elsewhere): English `arc_easy` gets
+a natively-English prompt while `arc_{de,fr,ar,zh}` get a translated question
+inside English scaffolding. The comparison is not like-for-like. Whether that
+*explains* the gap is a separate question — see below, which suggests it does
+not.
+
+**Cue language ≠ label language, by an order of magnitude.** §6d measured the
+label-language effect on SIB-200 at **~14 points**, so the English cue looked
+like a strong candidate for Arabic's flat Global-MMLU. Measured directly on
+`ar-fair`, same 2000 documents, localized `الإجابة:` vs English `Answer:`:
+
+| | acc_norm | null | over null |
+|---|---|---|---|
+| localized cue | .267 | .251 | +0.016 |
+| English cue | .267 | .251 | +0.016 |
+
+**Identical.** The distinction is *what* is in the wrong language:
+
+* SIB-200's control swapped the **candidates being ranked** into English — the
+  model had to score English label strings against non-English text. Large.
+* This swaps only the **scaffolding**; question and all four options stay in
+  the document's language. Nil.
+
+So Arabic Global-MMLU is at chance for real, not because of the prompt — and
+by the same logic the ARC scaffolding asymmetry above is probably minor rather
+than the explanation for ARC's English-only pattern. Do not quote it as one
+without measuring it; `gmmlu_cloze_encue_*` exists precisely so this class of
+question is answerable from stored data instead of costing a run.
+
+**Practice going forward:** any new multilingual task ships with a
+localized/English control pair, the way `sib200_*` / `sib200_enlab_*` already
+does. The first version of `gmmlu_probe` hardcoded `Answer:` for all five
+languages — this project's sixth format artifact, introduced while fixing the
+fifth.
+
+### Dataset identity: a benchmark can be "the same benchmark" in name only
+
+ARC exposed a defect no scoring fix could catch. §6d's C.5 table compares
+English `arc_easy` (**ARC-Easy**, n=2376) against `arc_{de,fr,ar,zh}`, which
+come from okapi's `alexandrainst/m_arc` and are **100% ARC-Challenge**
+(n=1169; verified by question matching -- 1169/1169 of m_arc's English rows
+appear in ARC-Challenge, 1/1169 in ARC-Easy). Easy and Challenge differ by
+~20 points at this scale. Scored like-for-like on ARC-Challenge, English is
+**.268-.285** against the others' .24-.26 -- a ~2-point gap, not the
+25-point one §6d reports as "a striking English-only pattern". **That claim
+is retracted**, and ARC-Challenge turns out to carry almost no signal in any
+language, English included (1.4-2.7σ), so ARC leaves the aggregate because it
+is too hard for a 1B/30B model rather than because non-English is weak.
+
+**Item-count audit of the whole C.5 suite** (equal counts across languages is
+the cheapest possible identity check, and it is what caught ARC):
+
+| family | counts | verdict |
+|---|---|---|
+| XNLI | 2490 x 5 | same pool |
+| Belebele-cloze | 900 x 5 | same pool |
+| XStoryCloze | 1511 x 3 | same pool (3 languages only) |
+| HellaSwag | en 10042, de 9368, fr 9338, ar 9176, zh 9266 | **mismatch** (probably okapi filtering, not a different pool -- unverified) |
+| XWinograd | en 2325, fr **83**, zh 504 | **severe mismatch** -- at n=83 French SE is ~5.5 points, so §6d's `fr/fair xwinograd` delta `+0.072 [-0.048, +0.181]` was never measurable |
+| ARC | en 2376 vs others 1169 | **Easy vs Challenge** |
+
+**Standing rule:** before comparing a benchmark across languages, verify the
+non-English version renders the same pool as the English one. Check item
+counts first (free), then match questions against the English original.
+`scripts/external_bench/verify_mubench.py` does this for the MuBench tasks and
+is the template for any new multilingual benchmark.
+
+### MuBench: same items in every language, by construction
+
+`aialt/MuBench` ships 12 benchmarks x 61 languages aligned by `_id`, which
+removes this failure mode structurally. Verified before use: ARC-Easy 100% in
+real ARC-Easy, HellaSwag 100% in real HellaSwag, MNLI 100% in real MNLI
+validation, SNLI 100% in real SNLI -- with `_id` sequences identical across
+en/de/fr/ar/zh and every gold index in range.
+
+What it is and is not good for. It **fixes** ARC (Easy in all five languages),
+gives StoryCloze and WinoGrande the de/fr coverage they never had (XWinograd's
+French n=83 becomes 1213 x 5), and adds MNLI/SNLI/BMLAMA. It does **not**
+improve translation quality -- the dataset ships no README, so provenance is
+undocumented, which is weaker than MMMLU's professional translation and no
+better than okapi. XNLI and Belebele gain nothing from it and stay as they are.
+
+Two traps found while wiring it up, both silent:
+
+* **Use `local_template`, not `en_template`.** MuBench ships both; the former
+  localizes the instructions, the latter leaves English scaffolding around
+  translated content.
+* **The option markers are localized too** -- Arabic writes `الخيار A:`,
+  Chinese `选项 A:` or `选项A:`, while ARC-Easy and BMLAMA use a bare `A:`. A
+  parser matching the English `Option `/`Choice ` prefixes silently yields
+  **zero rows** for ar/zh on StoryCloze, WinoGrande and MMLU. `mubench/utils.py`
+  instead requires a single Latin capital immediately before a colon (ASCII or
+  full-width) with any prefix, and requires the recovered letters to run
+  A, B, C, ... consecutively -- the ordering constraint is what makes the loose
+  prefix safe. On `en_template` the English-only regex worked, so this bug
+  would have produced plausible numbers and never raised an error.
+
+**NLI triple-counting.** XNLI, MNLI and SNLI are the same task (3-way
+entailment) on disjoint item sets -- verified: 0% premise overlap pairwise,
+and XNLI's dev/test were newly collected under MNLI's protocol rather than
+taken from MNLI's splits (XNLI ∩ MNLI-val = 1/2499). Domains differ (SNLI is
+Flickr30k captions with strong hypothesis-only artifacts; MNLI spans 10
+genres) and only XNLI is professionally translated. A plain mean over
+benchmarks would therefore weight NLI 3x, and NLI is already the
+strongest-signal family. Weight by task family for the aggregate, and treat
+XNLI as the representative with MNLI/SNLI as robustness checks.
+
+### What to quote now
+
+- `acc_cal` for SIB-200 / Taxi-1500 / XNLI; `acc_norm` for cloze Global-MMLU;
+  unchanged estimators for HellaSwag / ARC / Belebele-cloze / XStoryCloze /
+  XWinograd, which have per-document choices and whose trajectories were
+  already monotone (HellaSwag backwards-movement ratio 0.00 vs XNLI's 0.55).
+- Always report `acc − null` and prediction entropy alongside, never accuracy
+  alone.
+- Untouched by all of this: §6 BPB/BTS (per-token NLL), §6b alignment
+  (embeddings), §6c LAPE (activations). None use multiple-choice scoring.
+
+---
+
+## 6f. State of play — read this before continuing the evaluation
+
+Written 2026-07-31 at the end of the recalibration session (§6e). Everything
+below is what a fresh agent needs and cannot infer from the code.
+
+### What is measured, and with what
+
+| benchmark | status | estimator to quote | in the cross-language aggregate? |
+|---|---|---|---|
+| SIB-200 | ✅ 41 ckpts, raw stored | `acc_cal` | **yes** |
+| XNLI | ✅ 41 ckpts, raw stored | `acc_cal` | **yes** |
+| Taxi-1500 | ✅ 41 ckpts, raw stored | `acc_cal` | **no — within-language only** (1865 Arabic edition vs 20-21C de/fr/en) |
+| native MMLU (ArabicMMLU/CMMLU) | ✅ ar/zh finals, raw | `acc_norm` | **no — knowledge panel, per-language instrument** |
+| Belebele-cloze | ⚠️ hit lists only, **no raw** | `acc_norm` | yes, but on nominal chance until raw is captured |
+| HellaSwag | ⚠️ hit lists only, **no raw**; pool identity unverified (en 10042 vs okapi 9176-9368) | `acc_norm` | yes, same caveat |
+| ARC-Easy / StoryCloze / WinoGrande / BMLAMA (MuBench) | 🔄 sweep running | `acc_norm` | candidates |
+| ARC (okapi) | ❌ retired | — | no — Easy-vs-Challenge mismatch (§6e) |
+| translated MMLU (Global-MMLU / MMMLU) | ✅ finals | `acc_norm` | **no** — ar has no signal, so a delta on it is undefined |
+| MNLI / SNLI | dropped | — | no — same task as XNLI, would weight NLI 3x |
+
+### Design decisions and why
+
+* **`--own-langs` everywhere.** Only trained-language cells are scored. Every
+  transfer cell pairs trained-language scores, so nothing needed is lost; the
+  zero-shot cross-lingual readout is given up deliberately.
+* **A benchmark enters the cross-language aggregate only if EVERY language
+  clears its own empirical null** at the largest budget. This drops ARC,
+  XStoryCloze and XWinograd (the last two also on coverage: 3 of 5 languages).
+* **Aggregate in headroom units** `(acc − null)/(1 − null)`, not percentage
+  points above nominal chance — benchmarks have different chance levels
+  (SIB-200 .143, XNLI .333, ArabicMMLU .272) and different ceilings.
+* **Always use the per-cell empirical null**, `Σ_c P(pred c)·P(gold c)`, not
+  nominal chance. They differ exactly where it matters.
+* **Knowledge is a separate panel, never pooled.** Translated MMLU asks about
+  Anglocentric facts and cannot detect ar/zh knowledge; native exams can
+  (ar-fair: +0.011 on MMMLU vs **+0.102 on ArabicMMLU**). Per-language best
+  instrument, used for within-language contrasts only.
+* **Only ONE NLI benchmark in the mean.** XNLI, MNLI and SNLI are the same
+  task on disjoint item sets (verified 0% pairwise premise overlap); XNLI is
+  the only professionally-translated one.
+
+### Where the data lives — and what dies with the box
+
+    /home/ubuntu/xscript_bench/results/{extra_bench,appendix_c5}/
+        <run>_final.json        scores + metrics + per-example hit lists
+        raw/<run>_raw.json      per-candidate loglikelihoods  <-- 86 MB, NOT in git
+
+**The raw sidecars are the artifact that makes every future scoring change a
+pure-CPU re-derivation.** They exist only on the eval box. Copy them off or
+push them next to `jvonrad/xscript-embeddings` before the instance is torn
+down; regenerating costs a full re-run (~14h on a trn2.3xlarge's two
+core-pairs). `results/recalibrated/` in git holds the per-model JSONs only.
+`archive_n14042/` holds the full-n Global-MMLU record for `en-fair` before it
+was re-scored at n=2000.
+
+### Open work, in priority order
+
+1. **Backfill raw for Belebele + HellaSwag** (~1.5h for the 23 own-language
+   finals cells). Without it those two are the only aggregate members without
+   an empirical null, and HellaSwag's pool identity stays unverified — run
+   MuBench's HellaSwag alongside okapi's to settle it.
+2. **Rewrite §6d's tables** with calibrated numbers. They currently print the
+   pre-calibration `acc` figures under warning banners; the banners were left
+   because the running sweep will change them again.
+3. **Extend to the low-budget series** (68 checkpoints, 1B–15B) for curves
+   rather than single-budget snapshots — the lesson §6's ATLAS-BTS
+   anchor-sensitivity already taught.
+4. **`ar/starved` still needs a second training run.** Calibrated it is −0.037
+   with `ar/fair` at −0.040, so it no longer carries an interaction — but the
+   Arabic transfer effect itself is one run per cell and XNLI reverses its
+   sign.
+5. **Delete `c5_tasks/arc_pmi/` and `c5_tasks/mubench_arc/`** and their
+   `FAMILIES` entries — dead, superseded by `mubench/`.
+
+### Operational notes that cost real time
+
+* **Anchor every `pgrep -f`/`pkill -f` pattern** (`^bash /path/...`). An
+  unanchored pattern matches the shell that invokes it: it killed three shells
+  in this session, and two waiters each matching the other's pattern
+  deadlocked a chained sweep for 3.7h.
+* `run_extra_bench.py --require-raw` (default on) treats a task scored before
+  the raw sidecar existed as **not done**, so a resumed sweep backfills it.
+* Long-prompt tasks (Global-MMLU, MMMLU) need `--batch-size 8` or lower;
+  batch 16 fails with `NCC_EOOM002` because `_score_active_xla`'s one-hot
+  materializes a `[batch, width, 65536]` float tensor.
 
 ---
 
@@ -1258,10 +1723,24 @@ over-read even when LR-matched — the fix is the curve, as with ATLAS-BTS.
   flagged as not quotable. On SIB-200 that confound flipped `ar/starved` from
   +0.004 to −0.110, so re-deriving is not cosmetic. `run_appendix_c5.py` and
   `run_alignment.py` both accept the new run names already.
-- **`ar/starved` needs a second run before its −0.110 is load-bearing.** It is
-  the single cell carrying §6d's same-vs-cross-script gap, and its bilingual is
-  worse than the monolingual on *both* languages — interference or one weak run
-  cannot be told apart with n=1.
+- **Extend the Global-MMLU cloze probe** (§6e) to de/fr/ar/zh and to
+  `en-starved` before the "+6 points of world knowledge" is quoted as a
+  general property; it currently rests on `en-fair`/English alone. ~2.5h per
+  model-language on a 3xlarge core-pair.
+- **Re-run the low-budget trajectory points under `acc_cal`.** §6e covers the
+  41 checkpoints carrying the headline tables; the 1B/2B/5B/8B/10B/15B series
+  (68 more) is still on the old scoring, so the *curves* in §6d/§6 are mixed
+  estimators. Cheap with `--own-langs` + `--only xnli` / `--families sib200`.
+- ~~**`ar/starved` needs a second run before its −0.110 is load-bearing.**~~
+  **MOOT (§6e):** calibrated it is −0.037, `ar/fair` is −0.040, and the two
+  are statistically identical — so the cell was never carrying an interaction.
+  What now needs a second run is the *Arabic* effect as a whole, since XNLI
+  reverses its sign (+0.018).
+  (Original wording, kept for the record: "It is the single cell carrying §6d's
+  same-vs-cross-script gap, and its bilingual is worse than the monolingual on
+  *both* languages — interference or one weak run cannot be told apart with
+  n=1." The both-languages observation does survive calibration: −0.037 on
+  Arabic and −0.041 on English.)
 - **Fill the ZH-HellaSwag column for the rest of the C.5 roster (§6d).** Only
   the 8 Chinese-relevant checkpoints were scored on `hellaswag_zh`; the other
   18 in §6's per-model table still show `n/a` there. ~10 min/model on one

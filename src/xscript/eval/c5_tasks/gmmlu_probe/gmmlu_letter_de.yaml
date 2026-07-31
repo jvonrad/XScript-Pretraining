@@ -1,0 +1,15 @@
+task: gmmlu_letter_de
+custom_dataset: !function utils.build_de
+output_type: multiple_choice
+training_split: null
+validation_split: null
+test_split: test
+doc_to_text: !function utils.letter_text
+doc_to_choice: !function utils.letter_choice
+doc_to_target: label
+metric_list:
+  - metric: acc
+    aggregation: mean
+    higher_is_better: true
+metadata:
+  version: 0.0

@@ -61,8 +61,14 @@ import sys
 from pathlib import Path
 
 C5_TASKS = {
-    "en": ["xnli_en", "belebele_cloze_eng_Latn", "arc_easy", "hellaswag",
-           "xstorycloze_en", "xwinograd_en"],
+    # arc_challenge is here because okapi's m_arc -- the source of arc_{de,fr,
+    # ar,zh} -- is 100% ARC-Challenge (verified by question matching: 1169/1169
+    # in ARC-Challenge, 1/1169 in ARC-Easy). Pairing those against English
+    # arc_easy compares two different pools that differ by ~15-25 points at
+    # this scale, which is what produced 6d's "ARC is English-only" claim.
+    # arc_easy is kept so the older numbers stay reproducible.
+    "en": ["xnli_en", "belebele_cloze_eng_Latn", "arc_easy", "arc_challenge",
+           "hellaswag", "xstorycloze_en", "xwinograd_en"],
     "de": ["xnli_de", "belebele_cloze_deu_Latn", "arc_de", "hellaswag_de"],
     "fr": ["xnli_fr", "belebele_cloze_fra_Latn", "arc_fr", "hellaswag_fr",
            "xwinograd_fr"],
@@ -99,8 +105,55 @@ def main() -> None:
                     help="cuda / cpu / xla (Neuron). Default: auto (cuda else cpu).")
     ap.add_argument("--keep-checkpoints", action="store_true",
                     help="keep each 4GB checkpoint after eval (default: delete to save disk)")
+    ap.add_argument("--own-langs", action="store_true",
+                    help="score each model only on ITS OWN training languages "
+                         "(models.json `langs`) instead of all five, cutting ~72%% "
+                         "of the work. Safe for the bilingual-vs-monolingual "
+                         "comparisons, which only ever pair trained-language "
+                         "scores; it gives up the zero-shot cross-lingual "
+                         "transfer readout this script was also serving. See "
+                         "run_extra_bench.py's --own-langs for the full argument.")
+    ap.add_argument("--only", nargs="*", default=None,
+                    help="score only these task FAMILIES (xnli / belebele_cloze / "
+                         "arc / hellaswag / xstorycloze / xwinograd). Results are "
+                         "MERGED into any existing per-model JSON rather than "
+                         "replacing it, so re-scoring one family does not discard "
+                         "the rest -- the same merge semantics run_extra_bench.py "
+                         "already uses.")
+    ap.add_argument("--xnli-raw-all-langs", action="store_true",
+                    help="route xnli_{en,de,fr} through _xnli_debiased() too, so "
+                         "the per-candidate loglikelihoods are stored and the "
+                         "connective-prior bias can be calibrated out offline "
+                         "(see eval/rawscores.py). Same connective strings and "
+                         "same raw-loglikelihood rule as lm-eval's registered "
+                         "task, but NOT bit-identical to it: lm-eval prepends "
+                         "its target_delimiter (a space) to each candidate and "
+                         "this path does not, which can flip a near-tie. Compare "
+                         "the reported acc against the previous sweep rather than "
+                         "assuming it is unchanged. Off by default.")
     args = ap.parse_args()
-    langs = args.langs or list(C5_TASKS)
+    c5_tasks = {l: list(ts) for l, ts in C5_TASKS.items()}
+    langs = args.langs or list(c5_tasks)
+
+    def _family(task: str) -> str:
+        """Task -> benchmark family, e.g. `xnli_de` / `arc_easy` -> xnli / arc."""
+        for fam in ("belebele_cloze", "xstorycloze", "xwinograd", "hellaswag",
+                    "xnli", "arc"):
+            if task.startswith(fam):
+                return fam
+        return task
+
+    if args.only:
+        known = {_family(t) for ts in c5_tasks.values() for t in ts}
+        unknown = [f for f in args.only if f not in known]
+        if unknown:
+            sys.exit(f"unknown task families {unknown}; known: {sorted(known)}")
+        c5_tasks = {l: [t for t in ts if _family(t) in args.only]
+                    for l, ts in c5_tasks.items()}
+        c5_tasks = {l: ts for l, ts in c5_tasks.items() if ts}
+        langs = [l for l in langs if l in c5_tasks]
+        if not langs:
+            sys.exit(f"no tasks left for families={args.only} langs={args.langs}")
 
     from huggingface_hub import hf_hub_download, list_repo_files
 
@@ -246,7 +299,9 @@ def main() -> None:
     from xscript.model import ModelConfig, Transformer
     from xscript.tok.wrapper import Tok
     from xscript.paths import tokenizer_dir, ensure
-    from xscript.eval.bench import _make_lm, XNLI_DEBIAS_METHOD, _xnli_debiased
+    from xscript.eval.bench import (_make_lm, XNLI_DEBIAS_METHOD,
+                                    XNLI_CONNECTIVES, _xnli_debiased)
+    from xscript.eval.rawscores import extract_raw, has_shared_choices
 
     task_manager = TaskManager(include_path=str(c5_tasks_dir))
 
@@ -272,7 +327,17 @@ def main() -> None:
         # carry both metrics as direct float fields on each sample dict.
         return [int(round(s.get("acc_norm", s.get("acc")))) for s in samples]
 
+    def _merge2(prev: dict, key: str, new: dict) -> dict:
+        """Two-level merge of {lang: {task: value}}, new values winning -- so
+        `--only xnli` re-scores XNLI without discarding the other families
+        already in the file (same semantics as run_extra_bench.py's merge)."""
+        out = {lang: dict(ts) for lang, ts in prev.get(key, {}).items()}
+        for lang, ts in new.items():
+            out.setdefault(lang, {}).update(ts)
+        return out
+
     out_dir = ensure(Path(work / "results" / "appendix_c5"))
+    raw_dir = ensure(Path(work / "results" / "appendix_c5" / "raw"))
     for i, run in enumerate(runs, 1):
         tok_name = models[run]["tok"]
         print(f"\n===== [{i}/{len(runs)}] {run} (tok={tok_name}) =====")
@@ -290,11 +355,25 @@ def main() -> None:
             tok = Tok(tokenizer_dir(tok_name))
             adapter = _make_lm(model, tok, device, model.cfg.max_seq_len)
 
-            debiased_langs = [lang for lang in langs
-                              if lang in XNLI_DEBIAS_METHOD
-                              and f"xnli_{lang}" in C5_TASKS[lang]]
+            run_langs = ([l for l in langs if l in set(models[run]["langs"])]
+                         if args.own_langs else langs)
+            if not run_langs:
+                print(f"[c5] {run}: no requested language is in its training set "
+                      f"{models[run]['langs']}, skipping")
+                continue
+
+            # ar/zh always; en/de/fr too under --xnli-raw-all-langs, where the
+            # published number is unchanged (method="standard" == what
+            # lm-eval's registered task computes) but the raw per-candidate
+            # loglikelihoods are kept so the connective prior can be
+            # calibrated out offline.
+            _xnli_langs = (set(XNLI_DEBIAS_METHOD) | set(XNLI_CONNECTIVES)
+                           if args.xnli_raw_all_langs else set(XNLI_DEBIAS_METHOD))
+            debiased_langs = [lang for lang in run_langs
+                              if lang in _xnli_langs
+                              and f"xnli_{lang}" in c5_tasks[lang]]
             debiased_tasks = {f"xnli_{lang}" for lang in debiased_langs}
-            all_tasks = [t for lang in langs for t in C5_TASKS[lang]]
+            all_tasks = [t for lang in run_langs for t in c5_tasks[lang]]
             harness_tasks = [t for t in all_tasks if t not in debiased_tasks]
             # Belebele's long passages set the per-graph HBM ceiling on
             # --device xla (see NEURON.md sec 4/5); every other task's
@@ -323,33 +402,90 @@ def main() -> None:
                 subtasks.update(results.get("results", {}))
                 samples.update(results.get("samples", {}))
 
+            # The debiased-XNLI calls below score through the adapter directly,
+            # not through simple_evaluate, so they use whatever batch_size the
+            # loop above happened to leave set. With `--only xnli` that loop
+            # never runs and the adapter would silently fall back to
+            # XScriptLM's default of 4 -- an 8x slowdown, and a different
+            # fixed-shape graph to compile. Set it explicitly.
+            adapter.batch_size = args.batch_size_short
+
             scores = {}
             correct = {}
-            for lang in langs:
+            raw = {}
+            for lang in run_langs:
                 lang_scores = {}
                 lang_correct = {}
-                for t in C5_TASKS[lang]:
+                lang_raw = {}
+                for t in c5_tasks[lang]:
                     if lang in debiased_langs and t == f"xnli_{lang}":
-                        acc, hits = _xnli_debiased(adapter, lang, args.limit, return_correct=True)
+                        acc, hits, block = _xnli_debiased(
+                            adapter, lang, args.limit,
+                            return_correct=True, return_raw=True)
                         lang_scores[t] = acc
                         lang_correct[t] = hits
+                        block["shared_choices"] = has_shared_choices(t)
+                        lang_raw[t] = block
                     else:
                         rec = groups.get(t, subtasks.get(t, {}))
                         lang_scores[t] = _accuracy(rec)
                         if t in samples:
                             lang_correct[t] = _per_example_hits(samples[t])
+                            reported = {k.split(",")[0] for k in rec}
+                            try:
+                                lang_raw[t] = extract_raw(samples[t], reported, tok=tok)
+                                lang_raw[t]["shared_choices"] = has_shared_choices(t)
+                            except (KeyError, ValueError) as exc:
+                                print(f"[c5] raw capture skipped for {t}: "
+                                      f"{type(exc).__name__}: {exc}", flush=True)
                 scores[lang] = lang_scores
                 correct[lang] = lang_correct
+                raw[lang] = lang_raw
                 print(f"[c5] {run} / {lang}: " +
                      ", ".join(f"{k}={v:.4f}" for k, v in lang_scores.items() if v is not None))
 
+            out_path = out_dir / f"{run}_final.json"
+            prev = {}
+            if out_path.exists():
+                try:
+                    _p = json.loads(out_path.read_text())
+                    prev = {} if "error" in _p else _p
+                except json.JSONDecodeError:
+                    prev = {}
             payload = {
                 "run": run, "tokenizer": tok_name, "limit": args.limit,
-                "langs": langs, "tasks": {l: C5_TASKS[l] for l in langs},
-                "xnli_debiased": {l: XNLI_DEBIAS_METHOD[l] for l in debiased_langs},
-                "scores": scores, "correct": correct,
+                "langs": sorted(set(prev.get("langs", [])) | set(run_langs)),
+                "tasks": _merge2({"tasks": {l: {t: 1 for t in ts}
+                                            for l, ts in prev.get("tasks", {}).items()}},
+                                 "tasks", {l: {t: 1 for t in c5_tasks[l]} for l in run_langs}),
+                "xnli_debiased": {l: XNLI_DEBIAS_METHOD.get(l, "standard")
+                                  for l in debiased_langs},
+                "scores": _merge2(prev, "scores", scores),
+                "correct": _merge2(prev, "correct", correct),
             }
-            (out_dir / f"{run}_final.json").write_text(json.dumps(payload, indent=2))
+            payload["tasks"] = {l: sorted(ts) for l, ts in payload["tasks"].items()}
+            tmp = out_path.with_suffix(f".tmp.{os.getpid()}")
+            tmp.write_text(json.dumps(payload, indent=2))
+            os.replace(tmp, out_path)
+
+            # Raw per-candidate loglikelihoods -> sidecar (see run_extra_bench.py).
+            raw = {l: ts for l, ts in raw.items() if ts}
+            if raw:
+                raw_path = raw_dir / f"{run}_raw.json"
+                prev_raw = {}
+                if raw_path.exists():
+                    try:
+                        prev_raw = json.loads(raw_path.read_text())
+                    except json.JSONDecodeError:
+                        prev_raw = {}
+                merged = {l: dict(ts) for l, ts in prev_raw.get("raw", {}).items()}
+                for l, ts in raw.items():
+                    merged.setdefault(l, {}).update(ts)
+                tmp = raw_path.with_suffix(f".tmp.{os.getpid()}")
+                tmp.write_text(json.dumps(
+                    {"run": run, "tokenizer": tok_name, "raw": merged},
+                    separators=(",", ":")))
+                os.replace(tmp, raw_path)
         except Exception as exc:
             print(f"[c5] {run} FAILED: {type(exc).__name__}: {exc}")
             (out_dir / f"{run}_final.json").write_text(
