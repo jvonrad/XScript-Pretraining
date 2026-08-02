@@ -17,6 +17,18 @@ across both files, so cross-references still resolve — **§3, §6, §6b, §6c,
 
 ## TL;DR
 
+- ⛔ **READ §6g FIRST** (then §6e). The trajectory sweep is **done**: 100
+  checkpoints x 1B-30B on SIB-200, XNLI and four MuBench families, 792 cells,
+  0 anomalies. It overturns two of §6f's own rules. (1) **`acc_norm` is not
+  the right estimator for MuBench** — plain `acc` discriminates better and is
+  more monotone on ARC-Easy and BMLAMA; use the per-family table in §6g.
+  (2) **`acc_tokennorm` must never be used** — it is algebraically guaranteed
+  to favour the more fragmented candidate, and the starved tokenizer fragments
+  1.14-1.32x more, so it would manufacture a fair-vs-starved effect from
+  arithmetic alone. Headline science: the same-vs-cross-script transfer gap is
+  **+0.014** and stable across all four LR-matched budget tiers, but it is
+  carried by **French**, not by script (German sits with ar/zh) — the mirror
+  image of §6e's "cross-script is really Arabic".
 - ⛔ **READ §6e FIRST.** A fifth format artifact was found and fixed: SIB-200,
   Taxi-1500 and XNLI(en/de/fr) were scored by estimators whose argmax is
   decided by a per-candidate constant rather than by the document (SIB-200's
@@ -1600,6 +1612,12 @@ XNLI as the representative with MNLI/SNLI as robustness checks.
 Written 2026-07-31 at the end of the recalibration session (§6e). Everything
 below is what a fresh agent needs and cannot infer from the code.
 
+> ⚠️ **Superseded in part by §6g** (2026-08-02). Specifically: the estimator
+> column below says `acc_norm` for the MuBench families — that is **wrong for
+> ARC-Easy and BMLAMA**, use §6g's per-family table. Open items 1 and 3 are
+> **done**. The Belebele/HellaSwag "no raw" rows are still accurate for the
+> *okapi* HellaSwag; MuBench's HellaSwag now has raw for 100 checkpoints.
+
 ### What is measured, and with what
 
 | benchmark | status | estimator to quote | in the cross-language aggregate? |
@@ -1640,7 +1658,12 @@ below is what a fresh agent needs and cannot infer from the code.
 
     /home/ubuntu/xscript_bench/results/{extra_bench,appendix_c5}/
         <run>_final.json        scores + metrics + per-example hit lists
-        raw/<run>_raw.json      per-candidate loglikelihoods  <-- 86 MB, NOT in git
+        raw/<run>_raw.json      per-candidate loglikelihoods  <-- NOT in git
+
+⚠️ **As of §6g the raw sidecars cover 100 checkpoints / 792 cells** and are
+what made that session's entire estimator investigation (acc vs acc_norm vs
+tokennorm vs acc_cal, the fertility proof, every re-derivation) cost **zero**
+accelerator time. They are still ONLY on the eval box.
 
 **The raw sidecars are the artifact that makes every future scoring change a
 pure-CPU re-derivation.** They exist only on the eval box. Copy them off or
@@ -1652,22 +1675,27 @@ was re-scored at n=2000.
 
 ### Open work, in priority order
 
-1. **Backfill raw for Belebele + HellaSwag** (~1.5h for the 23 own-language
-   finals cells). Without it those two are the only aggregate members without
-   an empirical null, and HellaSwag's pool identity stays unverified — run
-   MuBench's HellaSwag alongside okapi's to settle it.
-2. **Rewrite §6d's tables** with calibrated numbers. They currently print the
-   pre-calibration `acc` figures under warning banners; the banners were left
-   because the running sweep will change them again.
-3. **Extend to the low-budget series** (68 checkpoints, 1B–15B) for curves
-   rather than single-budget snapshots — the lesson §6's ATLAS-BTS
-   anchor-sensitivity already taught.
+*(updated 2026-08-02 — items 1 and 3 are DONE, see §6g)*
+
+1. ~~Backfill raw for Belebele + HellaSwag~~ **DONE for MuBench HellaSwag**
+   (100 checkpoints, raw stored) and the pool-identity question is **closed**:
+   `mub_hellaswag` is 100% inside real HellaSwag and `_id`-aligned (§6g).
+   *Belebele* still has no raw and was deliberately not re-run.
+2. **Score the 9 `*-15b` monolinguals on the four MuBench families**
+   (9 cells, ~2h). This is now the single highest-value missing number: the
+   mono/bilingual budget rosters intersect only at 2B/5B/30B, so **there is no
+   large mid-stable matched-total tier**, and 15B is the only one that is
+   trainable-matched. It is the direct test of whether §6g's −.044 English
+   dilution cost at 30B survives without the cooldown.
+3. ~~Extend to the low-budget series~~ **DONE** — 68 checkpoints, §6g.
 4. **`ar/starved` still needs a second training run.** Calibrated it is −0.037
    with `ar/fair` at −0.040, so it no longer carries an interaction — but the
    Arabic transfer effect itself is one run per cell and XNLI reverses its
-   sign.
+   sign. §6g adds that the *same-script* side has the mirror problem: the
+   advantage is carried by French alone, and `de-starved` still does not exist.
 5. **Delete `c5_tasks/arc_pmi/` and `c5_tasks/mubench_arc/`** and their
    `FAMILIES` entries — dead, superseded by `mubench/`.
+6. **Rewrite §6d's tables** with calibrated numbers (was item 2; still open).
 
 ### Operational notes that cost real time
 
@@ -1680,6 +1708,222 @@ was re-scored at n=2000.
 * Long-prompt tasks (Global-MMLU, MMMLU) need `--batch-size 8` or lower;
   batch 16 fails with `NCC_EOOM002` because `_score_active_xla`'s one-hot
   materializes a `[batch, width, 65536]` float tensor.
+
+---
+
+## 6g. The 100-checkpoint trajectory sweep — and two estimator rules it overturns
+
+Written 2026-08-02. Closes §6f's open items 1 and 3. **Where §6f and §6g
+disagree, §6g wins**: it is measured on 792 cells against §6f's 23.
+
+### What exists now
+
+| | checkpoints | cells |
+|---|---|---|
+| low-budget series 1b/2b/5b/8b/10b/15b | 68 | 100 |
+| `*-12b` mono + `en-*-23b` bilingual | 17 | 25 |
+| cooled 30B finals | 15 | 23 |
+
+Families: `sib200`, `xnli` (with `--xnli-raw-all-langs`), `mub_arceasy`,
+`mub_storycloze`, `mub_hellaswag`, `mub_bmlama`. `--own-langs` throughout;
+**raw sidecars stored for every cell**. Belebele and Taxi-1500 deliberately
+not re-run. Readable output: `results/mubench_sweep/accuracy_table.md`
+(one accuracy per model x language x benchmark); `per_cell_table.md` adds
+null / pp / headroom / entropy.
+
+### ⛔ Estimator, per family — §6f's blanket "`acc_norm` for MuBench" is wrong
+
+Judged on §6e's own criteria (discrimination over the **empirical null**,
+prediction entropy, trajectory monotonicity), never on gold accuracy:
+
+| benchmark | estimator | over-null | entropy | backwards |
+|---|---|---|---|---|
+| **arceasy** | **`acc`** | **.182** | .846 | **.000** |
+| | `acc_norm` | .152 | .854 | .005 |
+| **bmlama** | **`acc`** | **.389** | .999 | **.033** |
+| | `acc_norm` | .269 | .999 | .083 |
+| **hellaswag** | **`acc_norm`** | **.068** | 1.000 | .000 |
+| **storycloze** | **`acc_norm`** | **.071** | 1.000 | .092 |
+| **sib200** | `acc_norm` | .066 | **.143** ⚠ | .673 |
+| | **`acc_cal`** | **.535** | .987 | .593 |
+| **xnli** | **`acc_cal`** | **.108** | .995 | .063 |
+
+The split is predictable from candidate structure, so it is not
+selection-on-the-metric: `acc_norm` wins where candidates are **long
+free-form continuations** (HellaSwag ~139 chars, StoryCloze ~39) and loses
+where they are **short fixed phrases** (ARC-Easy ~23 chars, BMLAMA bare
+entity names). `acc` is `argmax P(c|x)` — Bayes-correct when candidates are a
+priori exchangeable; `acc_norm` is a heuristic proxy for the candidate prior
+with no probabilistic derivation (the principled correction is PMI). Note
+`acc_norm` on SIB-200 reproduces §6e's collapse exactly (entropy .143).
+
+### ⛔ NEVER use `acc_tokennorm` in this project
+
+Dividing by token count is **tokenizer-dependent**, and this project's whole
+contrast is a tokenizer. Whenever `acc_norm` and `acc_tokennorm` disagree,
+tokennorm's pick provably has more tokens per character:
+
+    ll_i/nc_i > ll_j/nc_j  and  ll_j/nt_j > ll_i/nt_i
+      =>  nt_i/nt_j < nc_i/nc_j  =>  nt_i/nc_i < nt_j/nc_j
+
+Confirmed empirically at **100.0% of disagreements in all five languages** —
+it is a theorem, not a tendency. Measured fertility (tokens/char) on the eval
+text, starved/fair: **en 1.14, de 1.24, fr 1.22, ar 1.32, zh 1.18**. So
+tokennorm inflates starved models most in Arabic, i.e. exactly the cell the
+thesis predicts an effect in. Character- and byte-normalisation are the
+tokenizer-invariant choices — the same reason §6 measures **BPB**.
+
+### Units: `pp` vs `headroom` — report pp as primary
+
+`headroom = (acc - null)/(1 - null) = pp / (1 - null)`, i.e. a per-benchmark
+**amplifier**: storycloze **2.00x**, xnli 1.50x, arceasy/hellaswag 1.33x,
+sib200 1.18x, bmlama 1.11x. Within one benchmark the two give identical
+orderings; across benchmarks headroom reweights. Use **pp for headline
+numbers** and headroom only for the pooled aggregate — headroom assumes a
+ceiling of 1.0, which is least true on StoryCloze, exactly where it amplifies
+most. On a 2-way task headroom literally doubles the gap, which is how
+Arabic StoryCloze's ".112 vs .262" turned out to be **.556 vs .631 accuracy**.
+
+### SIB-200 is saturated; HellaSwag is the trajectory instrument
+
+Bilinguals only (constant population), fraction of the 15B headroom already
+reached at 2B, and trajectory non-monotonicity over 150 series:
+
+| benchmark | solved @2B | backwards ratio |
+|---|---|---|
+| hellaswag | **33%** | **.000** |
+| arceasy | 60% | .010 |
+| bmlama | 74% | .051 |
+| xnli | 55% | .063 |
+| storycloze | 55% | .162 |
+| **sib200** | **98%** | **.601** |
+
+**SIB-200 is unusable for curves** — 98% solved at 2B, worst monotonicity by
+4x. It is still the right benchmark for fixed-budget capability and for
+continuity with §6d/§6e, but do not fit a trend through it. Its saturation is
+accuracy-only: mean `P(gold)` keeps rising ~3.5x faster than accuracy, though
+**all** estimators turn over at 15b, so a proper scoring rule makes the signal
+bigger without making it monotone.
+
+### Transfer: same-vs-cross is +0.014, stable — but it is French, not script
+
+Every 1b-15b checkpoint is mid-stable at peak LR 3.0e-3 (decay starts at 24B),
+so **these pairings are LR-matched by construction** — the confound §6/§6d
+call their biggest weakness does not apply. Paired bootstrap over documents,
+mono X B/lang vs bilingual 2X B total:
+
+| tier | same-script | cross-script | gap |
+|---|---|---|---|
+| mono 1B / bi 2B | +.033 | +.019 | +.014 |
+| mono 5B / bi 10B | +.018 | +.005 | +.013 |
+| mono 8B / bi 15B | +.019 | +.000 | +.019 |
+| mono 12B / bi 23B | +.020 | +.010 | +.010 |
+| **mean (pp)** | | | **+.0138** |
+| mean (headroom) | | | +.0177 |
+
+Stable across all four tiers and robust to the estimator choice. **But by
+language it is fr +.027 > de +.013 > ar +.009 > zh +.008** — German sits with
+the cross-script pair, not with French. Under an all-`acc_norm` sensitivity
+run de (+.015) is indistinguishable from zh (+.012) and ar (+.011). So
+"same-script advantage" is one language, in both tokenizer conditions, at
+every budget — structurally the same finding as §6e's "the cross-script
+effect is Arabic". **Cross-script transfer also decays with budget**
+(+.019 → +.005 → +.000) while same-script holds flat.
+
+### BTS on the benchmarks, split by which language is measured
+
+Repo-style BTS on capability instead of loss. ⚠️ **Use absolute deltas, not
+the ratio**: `(cap_bi - cap_mono)/cap_mono` explodes at low budgets because a
+1B monolingual is *at chance* on XNLI (denominator 1e-13) — the same "silent
+degeneration" defect §6 documents in `results/bts/`, reproduced independently.
+
+**MATCHED-LANG** (mono X B/lang vs bilingual 2X B total — equal exposure):
+
+| tier | same partner | same En | cross partner | cross En |
+|---|---|---|---|---|
+| mono 1B / bi 2B | +.042 | +.034 | +.025 | +.026 |
+| mono 5B / bi 10B | +.023 | −.009 | +.008 | −.015 |
+| mono 8B / bi 15B | +.026 | −.004 | +.000 | −.010 |
+| mono 12B / bi 23B | +.028 | −.017 | +.013 | −.016 |
+| **overall** | **+.0298** | **+.0026** | **+.0115** | **−.0027** |
+
+**MATCHED-TOTAL** (equal total tokens, bilingual sees half the language):
+
+| tier | same partner | same En | cross partner | cross En |
+|---|---|---|---|---|
+| 2B | −.020 | −.047 | −.033 | −.054 |
+| 5B | +.003 | −.037 | −.010 | −.039 |
+| 30B (cooled) | +.017 | −.045 | +.007 | −.044 |
+| **overall** | **−.0024** | **−.0424** | **−.0177** | **−.0461** |
+
+**English's cost is DILUTION, not interference.** It is ~0 when English
+tokens are held fixed (matched-lang, −.000 pooled) and ≈−.044 only when they
+are halved — at *every* budget including 30B, while the partner language
+recovers to positive. The partner gets most of its capability back from half
+the tokens; English does not. This does **not** support §6d's proposed
+mechanism (a starved tokenizer making English subsidise ~419 languages): the
+effect tracks token count, not tokenizer. Note the script gap lives almost
+entirely on the partner language — `gap(English)` is +.005/+.004 and decays
+to ~0 at the largest budget.
+
+Matched-total has only **three** tiers because the mono and bilingual budget
+rosters intersect at 2B/5B/30B only. **15B is trainable-matched and missing
+solely because the 9 15b monolinguals were never scored on MuBench** — that
+is the one remaining gap, and it is the only way to get a *large mid-stable*
+matched-total tier (the 30B row is cooled).
+
+### The cooldown reproduces on four benchmarks that had never been run
+
+Bilinguals only, headroom per B token: **15→23B gains +.0018/B; 23→30B gains
++.0088/B** — 4-5x more per token in the cooldown (arceasy +.062, bmlama +.055,
+hellaswag +.060 in absolute headroom). So the 30B finals extend the curves but
+are **not on the same curve**: never pair a cooled final against a mid-stable
+monolingual, and never fit a scaling trend through the 30B point.
+
+### No cross-script capability penalty; Arabic StoryCloze is real
+
+Own-language accuracy at 30B: Chinese **beats both Latin partners** on
+ARC-Easy (.401 vs de .333 / fr .335) and leads StoryCloze (.262 headroom).
+Within-model gaps put ar worst and zh best, with de/fr between — **within-script
+variation exceeds between-script variation**. §6d/§6e's "cross-script costs
+nothing in attained capability" is confirmed on four new benchmarks.
+
+Arabic StoryCloze (.556 acc vs .631 for zh) was checked hard and **is real**:
+the independent, professionally-translated **XStoryCloze corroborates**
+(ar .4815 vs en .5549 over 107 checkpoints), tokenization is clean (0.000%
+`<unk>`, 22.3 tok/segment vs English's 22.0), translations are faithful and
+`_id`-matched, and it is uniform across 24 checkpoints (sd .014). Not an
+artifact — but a ~6-point accuracy gap on a task where every language sits
+between .556 and .631 against a .500 floor.
+
+### Pool identity — §6f open item 1 is CLOSED
+
+`verify_mubench.py` (pure CPU, no accelerator): **`mub_arceasy` is 100% inside
+real ARC-Easy** (n=2359 x 5) and **`mub_hellaswag` is 100% inside real
+HellaSwag** (n=9044 x 5), both `_id`-aligned across all five languages. So
+MuBench's HellaSwag is a strict aligned subset where okapi's is 9176-9368 and
+unaligned. Two arity facts that matter for reading any degeneracy report:
+**ARC-Easy is ragged (3/4/5 options)** so its prediction-entropy ceiling is
+**0.863**, not 1.0; **BMLAMA is ragged 2-10** (91% ten-way), so nominal chance
+is meaningless there and `acc_cal` is correctly withheld for both.
+
+### Operational
+
+* **Never edit a shell script while it is running** — bash reads scripts
+  incrementally by byte offset, so an in-place edit can make a running worker
+  jump to a wrong offset. Write a new file instead (this is why
+  `run_finals_mubench.sh` duplicates `run_sweep68.sh` rather than
+  parameterising it).
+* `supervise_sweep.sh` counted only `run_sweep68.sh`/`chain_worker.sh`, so it
+  declared the sweep over and exited while `run_finals_mubench.sh` was still
+  running — the 12b/23b pass ran unmonitored for 4.5h. Fixed in
+  `supervise_sweep2.sh`; add any new worker script to that pattern list.
+* Throughput on a `trn2.3xlarge` (two core-pairs), all six families:
+  **5.8 min fixed per model + 21.8 min per own-language cell** (27.6 min for a
+  1-language model, 49.4 for a 2-language one). Predicted the full run to
+  within ±30 min over 14h.
+* `--keep-checkpoints` must be scoped to ONE model, not a whole sweep:
+  68 x 4 GB = 272 GB against this box's 190 GB root.
 
 ---
 
