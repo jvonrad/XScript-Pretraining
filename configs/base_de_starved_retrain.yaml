@@ -1,0 +1,104 @@
+# de__unigram_starved retrain (Isambard-AI / brics.u6sg, ~100 GH200 GPU-hours).
+#
+# WHY THIS RUN EXISTS
+# `de__unigram_starved` is the only monolingual missing at any budget. Its
+# absence blocks the same-script/starved cell everywhere: CLAUDE.md 6 has to
+# compute the content-matched interaction over same={fr} alone, and 6d/6e's
+# transfer table shows "n/a (no de-starved-12b)".
+#
+# WHY THE FIRST ATTEMPT DIED -- and why the schedule below is UNCHANGED
+# The original run did not crash on hardware. Its loss reached 2.68 at 0.73B,
+# then SPIKED to 3.61-3.79 across 1.5-2.6B, exactly as the WSD warmup handed it
+# the 3.0e-3 peak LR, and never rejoined its own trajectory (2.71 at 7.69B,
+# where the destarved twin was already at 2.70 having started WORSE). That is a
+# loss-spike divergence, not a config error: fr__unigram_starved and
+# de__unigram_destarved both survived this identical schedule.
+#
+# So `schedule:` and `optim:` are deliberately IDENTICAL to base_main.yaml.
+# Every cross-checkpoint comparison in this project rests on runs sharing an LR
+# state (CLAUDE.md 6's LR-state confound), so lowering peak_lr or stretching
+# warmup to buy stability would de-match this run from de-fair and from every
+# `-12b`/`-23b` pairing it exists to complete. Only `seed`/`data_seed` move --
+# they change init and the token stream (the loader is deterministic in
+# (data_seed, global slot)) without touching the optimization trajectory's
+# shape. If it spikes again in 1-3B, THEN fall back to warmup_tokens: 2.0e9 and
+# note the deviation.
+#
+# BUDGET
+# Measured on the prior GH200 runs: 218 M tokens per GPU-hour (7 runs, both
+# tokenizer conditions, world=4 and world=8, including in-loop eval and
+# checkpointing; zero in-allocation stalls). 100 GPU-h therefore buys ~21.8B
+# tokens gross. Target ~16.1B, which is the content-matched equivalent of
+# de-fair-12b (de starved/fair fertility 1.371) and leaves ~26 GPU-h for one
+# restart if the spike recurs.
+#
+# NO COOLDOWN. Training simply stops when the budget runs out; it is not cooled
+# to a 30B final. Every checkpoint is then mid-stable at peak LR 3.0e-3, which
+# is exactly the LR state de-fair-8b/-12b/-15b are in. Pairing a cooled final
+# against those is the confound CLAUDE.md 6 spends its length warning about.
+#
+# Usage:
+#   sbatch --account=brics.u6sg --partition=workq --nodes=2 \
+#     --job-name=de__unigram_starved \
+#     --export=ALL,RUN=de__unigram_starved,FLAVOR=unigram,BASE=configs/base_de_starved_retrain.yaml \
+#     slurm/30_train.sbatch
+seed: 1                 # was 0 -- changes init away from the diverged draw
+data_seed: 5678         # was 1234 -- changes the token stream order
+compile: true
+
+model:
+  vocab_size: 65536
+  dim: 2048
+  n_layers: 16
+  n_heads: 16
+  n_kv_heads: 16
+  ffn_dim: 5632
+  max_seq_len: 2048
+  rope_theta: 10000.0
+  norm_eps: 1.0e-5
+
+optim:
+  betas: [0.9, 0.95]
+  weight_decay: 0.1
+  eps: 1.0e-8
+  grad_clip: 1.0
+
+train:
+  micro_batch_size: 8
+  global_batch_tokens: 1.0e6
+  log_every: 20
+  eval_docs: 500
+  ckpt_schedule:
+    - [2.0e9, 2.5e8]
+    - [5.0e9, 5.0e8]
+    - [15.0e9, 1.0e9]
+    - [1.0e15, 2.0e9]
+  # Exact de-fair budgets, so the comparison is like-for-like rather than
+  # "nearest checkpoint on a 1B grid". de-fair's own intermediates landed at
+  # 7753M / 11754M / 14755M (results/models.json: de-fair-8b/-12b/-15b), and
+  # they are NOT on round boundaries -- that run mixed world=4 and world=8, so
+  # its step->token map drifted off the grid and cannot be reproduced by
+  # matching node counts. A mark fires at the first step past its threshold,
+  # i.e. within one step (~0.9M tokens, 0.008%) of the target.
+  stable_marks:
+    - 7.753e9     # pairs with de-fair-8b
+    - 11.754e9    # pairs with de-fair-12b  <- the LR-matched transfer cell
+    - 14.755e9    # pairs with de-fair-15b
+    - 16.100e9    # content-matched to de-fair-12b (x1.371 fertility)
+  # Hard stop, so the grant cannot be overspent by the loop simply continuing
+  # to the schedule's 30B. Caps the token counter only -- `schedule:` below is
+  # untouched, so LR stays at peak 3.0e-3 throughout and every checkpoint
+  # remains directly comparable to de-fair's mid-stable intermediates.
+  # 16.1B at the measured 218 Mtok/GPU-h = ~74 GPU-h of the ~100 available.
+  # Raise toward 20.2e9 (the content-match of de-fair-15b, ~93 GPU-h) only if
+  # the run is clean past 3B and you accept leaving no restart reserve.
+  max_tokens: 16.1e9
+
+# IDENTICAL to base_main.yaml. Do not touch -- see the header.
+schedule:
+  peak_lr: 3.0e-3
+  min_lr: 3.0e-4
+  warmup_tokens: 1.0e9
+  stable_tokens: 23.0e9
+  decay_tokens: 6.0e9
+  decay_shape: 1-sqrt

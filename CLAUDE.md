@@ -17,6 +17,20 @@ across both files, so cross-references still resolve — **§3, §6, §6b, §6c,
 
 ## TL;DR
 
+- ✅ **`de-starved` EXISTS now (§6h)** — the missing monolingual every other
+  section had to work around. 16.10B tokens, 9h36m, 76.8 of ~100 GPU-hours.
+  The original did **not** collapse: it diverged at the warmup/peak-LR seam
+  (BPB floor 1.2804 @0.75B, then monotonic rise as the LR pinned at 3.0e-3).
+  Fixed by changing **only** `seed`/`data_seed` — the LR schedule is untouched,
+  because softening it would de-match the run from de-fair and defeat its
+  purpose. Checkpoints at **7.753B / 11.754B / 14.755B** land *step-for-step*
+  on de-fair-8b/-12b/-15b, plus **16.100B** as the content-match of de-fair-12b
+  (x1.371 fertility). The same-script starved penalty is a **flat ~+0.05 BPB**
+  across all three matched budgets (not shrinking — the 7.753B point is an
+  outlier). Also in §6h: **218 M tokens/GPU-hour** on GH200 (so 30B ≈ 138
+  GPU-h — the number to budget with), a `train.max_tokens` cap that stops a run
+  early *without* perturbing the LR, and ⛔ its `final.pt` is **mid-stable, not
+  cooled** — upload it as `de-starved-16b`, never bare `de-starved`.
 - ⛔ **READ §6g FIRST** (then §6e). The trajectory sweep is **done**: 100
   checkpoints x 1B-30B on SIB-200, XNLI and four MuBench families, 792 cells,
   0 anomalies. It overturns two of §6f's own rules. (1) **`acc_norm` is not
@@ -90,13 +104,20 @@ across both files, so cross-references still resolve — **§3, §6, §6b, §6c,
 
 ## 3. The models & sharded checkpoints
 
-`jvonrad/xscript-eval` (private) has **15 models**, friendly names in `models.json`:
+`jvonrad/xscript-eval` (private) holds **116 entries** in `models.json` — the
+15 headline models plus their token-budget intermediates:
 
-- mono: `en-{fair,starved}`, `fr-{fair,starved}`, `ar-{fair,starved}`, `de-fair`
+- mono: `en-{fair,starved}`, `fr-{fair,starved}`, `ar-{fair,starved}`, `de-fair`,
+  and 🆕 **`de-starved-{1,2,5,8,12,15,16}b`** (§6h retrain, 2026-08-03)
 - bilingual: `en-{ar,de,fr,zh}-{fair,starved}`
 
 `fair` = `unigram_destarved` tokenizer, `starved` = `unigram_starved`. Each model
 maps to its tokenizer + training languages in `models.json`.
+
+⛔ **There is deliberately no bare `de-starved`.** That run has no cooled 30B
+final — it stops at 16.1B mid-stable — so the name would silently pair a cooled
+30B de-fair against an uncooled 16B de-starved. Its largest checkpoint is
+`de-starved-16b`. See §6h.
 
 **Checkpoints are uploaded split into 5 parts** (`final.pt.part000..004` +
 `n_parts.txt`) because they couldn't be pushed whole from the training cluster.
@@ -231,9 +252,12 @@ tokens as `step x tokens_per_step` (the relation is exactly linear; take the
 median ratio over rows that do have both). `bts_from_wandb.py`'s puller
 asserts recovered-records == eval-rows for every run.
 
-The only genuinely missing monolingual is `de` starved, which collapsed
-mid-run (confirmed by live monitoring; visible as anchor BPB ~1.72 vs the
-destarved twin's ~1.06 — it is in `EXCLUDE_RUNS`) and is being retrained. `fr`
+~~The only genuinely missing monolingual is `de` starved~~ — ✅ **retrained
+2026-08-03 to 16.10B (§6h); it is no longer missing.** The original run
+(still in `EXCLUDE_RUNS`, and still the one this puller sees) did not
+"collapse" as stated here — it **diverged at the warmup/peak-LR seam**, see
+§6h for the curve. Its anchor BPB ~1.72 vs the
+destarved twin's ~1.06 is the symptom, not the diagnosis. `fr`
 has both conditions, so **the interaction is computable** — see below.
 
 Also note the non-English-anchor bilinguals (`de-ar`, `de-fr`, `de-zh`,
@@ -301,13 +325,20 @@ quality being measured. **Quote the content-matched interaction, not the
 token-matched one.**
 
 Caveats, none small: the same-script group is **one language** (`fr`) because
-de/starved collapsed, so the penalty is really "fr vs {ar,zh}"; there are **no
+de/starved diverged (not "collapsed" — §6h has the diagnosis), so the penalty
+is really "fr vs {ar,zh}"; there are **no
 confidence intervals** (one training run per cell, and unlike the downstream
 deltas there is no per-example data to bootstrap); fertility is measured on
 FLORES as a proxy for the training pools; and cells are compared at the
 largest budget each supports (fr 7.75B, ar/zh ~11.2B), so the penalty mixes
 budgets. Landing `de-starved` fixes the first and is the single highest-value
-run remaining.
+run remaining. ✅ **DONE — the retrain landed 2026-08-03 (§6h)** with
+checkpoints pinned to de-fair's exact budgets, so this table can now have a
+second same-script language at 7.753B, and a properly content-matched `de`
+cell at 16.100B (= 11.754 x 1.371). **This table has not yet been
+recomputed** — that is the single highest-value remaining analysis. Note §6h
+measures de's pool fertility at **3.291 B/tok**, so the FLORES-proxy caveat
+above can also be retired for `de`.
 
 ### ~~Only XNLI discriminates; MMLU & Belebele are at chance~~ (RETRACTED, §6e)
 Kept for the record; every headline in this subsection is superseded.
@@ -1692,7 +1723,13 @@ was re-scored at n=2000.
    with `ar/fair` at −0.040, so it no longer carries an interaction — but the
    Arabic transfer effect itself is one run per cell and XNLI reverses its
    sign. §6g adds that the *same-script* side has the mirror problem: the
-   advantage is carried by French alone, and `de-starved` still does not exist.
+   advantage is carried by French alone, and ~~`de-starved` still does not
+   exist~~ — ✅ **`de-starved` was retrained 2026-08-03 (§6h)**, 16.10B with
+   checkpoints at de-fair's exact 7.753B/11.754B/14.755B budgets. The
+   *training* half of the same-script problem is solved (French no longer has
+   to carry it alone), but **the analyses have not been re-run** — §6's
+   content-matched interaction and §6d/§6e's transfer table still print the
+   old `fr`-only / `n/a` values. The Arabic half of this item stands unchanged.
 5. **Delete `c5_tasks/arc_pmi/` and `c5_tasks/mubench_arc/`** and their
    `FAMILIES` entries — dead, superseded by `mubench/`.
 6. **Rewrite §6d's tables** with calibrated numbers (was item 2; still open).
@@ -1924,6 +1961,253 @@ is meaningless there and `acc_cal` is correctly withheld for both.
   within ±30 min over 14h.
 * `--keep-checkpoints` must be scoped to ONE model, not a whole sweep:
   68 x 4 GB = 272 GB against this box's 190 GB root.
+
+---
+
+## 6h. The `de-starved` retrain (2026-08-02/03, Isambard-AI, new allocation)
+
+Closes the hole every other section has to apologise for: **`de__unigram_starved`
+did not exist at any budget**, so §6's content-matched interaction had to average
+same-script over `{fr}` alone, and §6d/§6e's transfer table prints
+`n/a (no de-starved-12b)`. Run `de__unigram_starved`, job 5879754, on ~100
+GH200 GPU-hours (25 node-hours) under project `brics.u6sg`.
+
+### The original run did NOT "collapse" — it diverged at the warmup/peak-LR seam
+
+§6's `EXCLUDE_RUNS` note calls it "collapsed mid-run", inferred from an anchor
+BPB of ~1.72 against the destarved twin's ~1.06. The W&B curve is sharper than
+that and identifies a specific, ordinary failure:
+
+| tokens | flores_de BPB | |
+|---|---|---|
+| 0.75B | **1.2804** | its floor |
+| 1.00B | 1.2902 | turns upward, exactly as warmup (1B) ends |
+| 1.25B | 1.3769 | |
+| 1.50B | 1.5642 | |
+| 1.75B | 1.6759 | |
+
+Training loss shows the same thing: min 2.6806 @0.73B, then 3.61-3.79 across
+1.5-2.6B, recovering only to 2.71 by 7.69B — still behind the destarved twin's
+2.70 despite having started *better*. So it is a **loss-spike divergence when
+the LR pins at peak 3.0e-3**, not hardware, not data, not a collapse. `fr`
+starved and `de` destarved survived the identical schedule; it was bad luck in
+the (init, data-order) draw.
+
+**The fix must not touch the LR schedule.** Lowering `peak_lr` or stretching
+warmup would buy stability at the cost of de-matching this run from de-fair and
+from every `-12b`/`-23b` pairing it exists to complete — §6's LR-state confound,
+self-inflicted. `configs/base_de_starved_retrain.yaml` therefore changes
+**only** `seed` 0->1 and `data_seed` 1234->5678. Verified by config diff:
+model 9/9, optim 4/4, schedule 6/6 keys byte-identical to `base_main`.
+
+**It worked.** Retrain vs the diverged original, flores_de BPB at matched
+tokens: 1.00B **1.2595** (vs 1.2902, and *descending* where the original
+turned), 1.25B **1.2216** (vs 1.3769), 1.50B **1.1889** (vs 1.5642), 1.75B
+**1.1726** (vs 1.6759). The gap to de-fair holds flat at 0.088 -> 0.081 ->
+0.082 — parallel tracking, which is the shape a sound run has. A 0.147 deficit
+at the first eval (0.25B) closed to +0.011 by 0.75B: that was an init offset,
+not a data problem, and the descent *rate* diagnosed it two evals before the
+level did.
+
+### RESULT: the run completed — 16.10B tokens, 9h36m, 76.8 GPU-hours
+
+`COMPLETED 0:0`, 2 nodes, no restarts, no in-allocation stalls. All four marks
+written (`stable_{7753,11754,14755,16100}M.pt`, 13.1GB each with optimizer
+state, plus 4.4GB model-only `step*` checkpoints). **76.8 of the ~100 GPU-hours,
+leaving 23.2 unspent** — the reserve held for a re-seed that was not needed.
+
+Effective rate **209.7 Mtok/GPU-h** against the 218 predicted from the historical
+runs (−3.8%). The shortfall is the four extra 13.1GB `stable_*` saves this run
+adds and which no historical run paid for; 218 remains the right number for
+budgeting an ordinary run, 210 for one with dense full-state marks.
+
+The two token-matched marks landed on de-fair's checkpoints **step-for-step**:
+`step8451_7753M` and `step12811_11754M` are byte-identical in name to
+`de__unigram_destarved__step8451_7753M` / `step12811_11754M`. Same step, same
+token count, same LR state — as clean a matched pair as this project can make.
+
+**The same-script starved penalty on BPB, LR-matched, both mid-stable @3.0e-3:**
+
+| budget | de-fair flores | de-starved flores | gap | holdout gap |
+|---|---|---|---|---|
+| 7.753B | 1.0068 | 1.0803 | +0.0735 | +0.0538 |
+| 11.754B | 0.9989 | 1.0543 | +0.0554 | +0.0505 |
+| 14.755B | 0.9907 | 1.0472 | **+0.0565** | **+0.0506** |
+| 16.100B | — | 1.0466 (final) | — | — (0.9421) |
+
+**Read this as a flat ~+0.05 BPB penalty, not a shrinking one.** The gap drops
+once between 7.753B and 11.754B and then stops; holdout is flat throughout
+(+0.054 / +0.051 / +0.051). 7.753B is the outlier, not the start of a trend —
+an intermediate reading at 11.754B that looked like "narrowing with scale" did
+not survive the third point. Note this is a *token-matched* penalty and so
+still carries the content confound §6 documents: at equal tokens the starved
+run has seen ~24% fewer bytes of German (3.291 vs 4.594 B/tok). The
+content-matched comparison is what §6 wants, and `stable_16100M` is the
+checkpoint for it (16.100 = 11.754 x 1.371).
+
+**Still to do with these checkpoints:** recompute §6's content-matched
+interaction with `de` as a second same-script language (it currently averages
+over `fr` alone); fill §6d/§6e's `de/starved` transfer row by pairing
+`step12811_11754M` against `en-de-starved-23b` (11.379B German, ~3% match);
+and re-run §6b alignment / §6c LAPE on the new checkpoints if those tables are
+to include the cell.
+
+### Throughput: 218 M tokens per GPU-hour — use this to budget
+
+Measured by integrating `tok_per_s` over 7 prior runs (both tokenizer
+conditions, both world sizes, incl. in-loop eval + checkpointing):
+
+| run | B tok | GPU-h | Mtok/GPU-h |
+|---|---|---|---|
+| ar-starved | 29.97 | 138.9 | 215.8 |
+| de-destarved | 29.96 | 136.6 | 219.4 |
+| en-destarved | 29.98 | 137.1 | 218.6 |
+| fr-starved | 29.96 | 136.3 | 219.9 |
+
+~61k tok/s per GPU either way: **1 node = 248k tok/s (983,040 tok/step), 2
+nodes = 480k (917,504 tok/step)**. One node is ~1.5% cheaper per GPU-hour (no
+inter-node collectives); two halve the wall-clock. Confirmed live on the
+retrain at 473-478k. So **30B costs ~138 GPU-h** and 100 GPU-h buys ~21.8B.
+
+Duty cycle inside an allocation is ~100% — every gap in the historical
+timelines is >15min and sits at an allocation boundary, none inside one.
+NEURON.md §9's "GH200 ... 61,750 tok/s per accelerator" is consistent with
+this; it just never states the per-GPU-hour figure, which is what budgets need.
+
+### `train.max_tokens` — stop early without perturbing the LR
+
+`target_tokens` was hardwired to `total_tokens(sched)`, i.e. 30B, so a
+fixed-grant run had no way to stop short except walltime. Added
+`train.max_tokens`, which caps the loop counter and **deliberately does not
+touch `self.sched`**: LR stays at peak and every checkpoint remains mid-stable,
+directly comparable to de-fair's intermediates. Shortening `stable_tokens`
+instead would start the decay early and reintroduce the LR-state confound.
+`scripts/test_max_tokens.py` verifies all three properties on the real Trainer
+(uncapped run reaches the schedule total; capped stops at the cap; LR at the
+capped stop is still 3.000e-03).
+
+Note `scripts/smoke.py` cannot run in the container: it trains the `pa`
+parity-aware BPE tokenizer, whose learner is the optional `[tok]` git
+dependency, and it writes a pool `stats.json` without the `budget_bytes` key
+`pack()` requires. `pa` is analysis-only and no model is trained with it.
+
+### Uploaded: 7 checkpoints, `models.json` 109 -> 116 entries
+
+`scripts/external_bench/upload_de_starved.py` (+ `slurm/23_upload_de_starved.sbatch`)
+put the whole series on `jvonrad/xscript-eval`, mirroring de-fair's roster so
+every `de-fair-Xb` has a `de-starved-Xb` counterpart:
+
+| friendly | from | vs de-fair |
+|---|---|---|
+| `de-starved-1b` | `step1092_1001M` | **same step + tokens** |
+| `de-starved-2b` | `step2456_2253M` | **same step + tokens** |
+| `de-starved-5b` | `step5181_4753M` | **same step + tokens** |
+| `de-starved-8b` | `step8451_7753M` | **same step + tokens** |
+| `de-starved-12b` | `step12811_11754M` | **same step + tokens** |
+| `de-starved-15b` | `step16081_14754M` | 14754M vs 14755M (0.007%) |
+| `de-starved-16b` | `final.pt` | content-match of de-fair-12b |
+
+Five of seven are step-for-step identical to de-fair's uploaded checkpoint
+names, so the same-script contrast is LR-matched by construction at every
+budget rather than by interpolation. Same layout as the other 109 dirs
+(`final.pt.part000..004` + `n_parts.txt`; 900MB parts). Verified after upload:
+all 7 have 5 parts and the right `n_parts.txt`, sizes match de-fair's byte for
+byte, and `de-starved-12b` was re-downloaded, reassembled and confirmed
+**SHA256-identical** to the local checkpoint.
+
+Two upload gotchas worth keeping:
+* **`models.json` is NOT sorted** — it groups the 15 originals before the
+  intermediates, indent 2, no trailing newline. Writing it back with
+  `sort_keys=True` turns a 7-entry addition into a 109-entry diff. The
+  uploader appends and re-serialises with `json.dumps(mj, indent=2)` only;
+  verified as +49 lines / −0.
+* `upload_chunked.py`'s 900MB chunking exists because "this login node kills
+  any single process after a few minutes" — that is the §6h Linger=no
+  teardown, not an HF limit. From a compute node the chunking is unnecessary
+  (`fetch_checkpoint` checks for a whole `final.pt` *before* looking for
+  parts), but the parts layout is kept for consistency with the other dirs.
+
+### ⛔ `final.pt` here is NOT a cooled final — name the upload `de-starved-16b`
+
+The run stops at 16.1B with **no cooldown**, so its `final.pt` is a mid-stable
+checkpoint at peak LR. Every other run's `final.pt` is a **cooled 30B final at
+3.0e-4**. Same filename, opposite LR state. If this lands in `models.json` as
+bare `de-starved`, anything comparing "de-fair vs de-starved finals" silently
+pits a cooled 30B model against an uncooled 16B one — precisely the confound
+§6 spends its length warning about. Upload as **`de-starved-16b`**, alongside
+`-8b`/`-12b`/`-15b`.
+
+### Budget targets and what the run delivers
+
+de starved/fair fertility is **1.371**, so content-matching needs
+`starved = fair x 1.371`. `stable_marks` pins checkpoints to de-fair's exact
+budgets (`results/models.json`: 7753M / 11754M / 14755M — note these are *not*
+round numbers, because that run mixed world=4 and world=8 and its step->token
+map drifted off the grid):
+
+| mark | pairs with |
+|---|---|
+| 7.753B | de-fair-8b (token-matched) — gives §6 a *second* same-script language |
+| 11.754B | de-fair-12b — **the LR-matched transfer cell §6d lists as n/a** |
+| 14.755B | de-fair-15b |
+| 16.100B | content-match of de-fair-12b (11.754 x 1.371) |
+
+20.2B would content-match de-fair-15b but costs ~93 GPU-h, leaving no reserve
+for a re-seed; 16.1B costs ~74.
+
+### Operational findings — three of these contradict the current docs
+
+* **⛔ Compute nodes DO have internet.** README.md says data prep runs on a
+  login node "(internet)", implying otherwise. Verified (job 5878501,
+  nid010882): a compute node listed all 570 FineWeb2-HQ `deu_Latn` parquet
+  files. This matters because —
+* **⛔ The login node CANNOT hold a long background job.**
+  `loginctl show-user` reports `Linger=no` and `enable-linger` is
+  "Access denied", so systemd kills every user process when the last session
+  closes — `nohup`/`setsid`/`disown` do not help. Two attempts died this way
+  (pool at ~24GB, container mid-build). Anything measured in hours must be a
+  batch job: `slurm/22_pool_and_pack_de.sbatch`, `slurm/01_pull_container.sbatch`.
+* **⛔ Authenticate to HF even for public datasets.** FineWeb2-HQ is public, so
+  the first pool job ran anonymously — and HF 429'd every worker after ~8GB
+  despite the documented-safe 8 workers. It had been sustaining 33.9MB/s.
+  Authenticated, it ran 72.6GB start to finish with zero 429s. Put the token in
+  `$HF_HOME/token` (mode 600); `huggingface_hub` picks it up, so no credential
+  reaches a script, the environment, or job stdout.
+* **Container build is ~4x faster as a job.** `00_pull_container.sh`'s
+  `mksquashfs -processors 4 -mem 1G` throttling exists only to fit the 4GiB /
+  500-task interactive cgroup. On a compute node with defaults: **6 min** vs
+  25+ min and a death on the login node.
+* **Anchor `pgrep -f` patterns** (§6g says this for the eval box; it bites
+  here too — `pgrep -f "xscript pool"` matched the very shell that ran it).
+
+### Data had to be rebuilt, and that is not optional
+
+The previous allocation's scratch is unreachable: `/scratch/u6jh` and
+`/scratch/u6sg` are both **root-owned, mode 750**, group `brics.<project>`.
+Neither account can traverse the other's, and the parent is root-owned so no
+`chmod` by either user helps. **There is no cluster-internal path between
+allocations** — a transfer would mean an HF round-trip of the packed uint16
+shards, which are the least compressible form of the data and larger than the
+parquet source they came from.
+
+Rebuilding is also provably equivalent: the manifest is `sorted()`, the holdout
+is the first parquet file's first 30MB, and the pool is `files[1:]`, so the
+holdout that `eval/holdout_de_bpb` is computed on comes out byte-identical.
+`fast_pool.py` interleaves writes across threads, so pool *document order* is
+not reproducible — harmless, since `pack` reshuffles within shards and the
+seeds changed anyway.
+
+**Measured fertility on real training text, not FLORES:** `unigram_starved` on
+FineWeb2-HQ German is **3.291 bytes/token** (FLORES says 3.350 — 1.8% off).
+Predicted from a 40k-doc sample as 3.292 before packing; the full 74-shard pack
+returned 3.291. Use pool-measured fertility for sizing, FLORES for the
+published fertility table.
+
+Result: 72.60GB text / 19.8M docs -> **22.063B tokens in 74 shards**, 5.96B
+above the 16.1B target, so no epoching. Do not resume an interrupted
+`fast_pool` run without deleting shards past `stats.json`'s `shard_idx`: its
+resume does not validate the last shard boundary, and in-flight worker files
+get re-fetched, duplicating ~5% of documents.
 
 ---
 

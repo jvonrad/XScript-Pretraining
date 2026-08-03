@@ -8,11 +8,18 @@
 set -euo pipefail
 
 # --- project / accounting ---
-export XS_ACCOUNT="${XS_ACCOUNT:-brics.u6jh}"
+# Derived from the login name so the same checkout works across project
+# allocations. Isambard usernames are "<name>.<project>" and both the Slurm
+# account and the scratch tree are named after the project part, so a move to
+# a new allocation (u6jh -> u6sg) needs no edit here. Note the two projects'
+# scratch trees are /scratch/<project>, root-owned and mode 750, so neither
+# account can read the other's -- data does not migrate, it is rebuilt.
+_XS_PROJECT="${USER##*.}"
+export XS_ACCOUNT="${XS_ACCOUNT:-brics.$_XS_PROJECT}"
 export XS_PARTITION="${XS_PARTITION:-workq}"
 
 # --- storage (5TB Lustre scratch) ---
-export XSCRIPT_SCRATCH="${XSCRIPT_SCRATCH:-/scratch/u6jh/jvonrad.u6jh/xscript}"
+export XSCRIPT_SCRATCH="${XSCRIPT_SCRATCH:-/scratch/$_XS_PROJECT/$USER/xscript}"
 export REPO_DIR="${REPO_DIR:-$HOME/XScript-Pretraining}"
 export HF_HOME="${HF_HOME:-$XSCRIPT_SCRATCH/hf_cache}"
 export XSCRIPT_RUNTIME="${XSCRIPT_RUNTIME:-$XSCRIPT_SCRATCH/runtime_py312/xscript_lmeval_0.4.12_hf0}"

@@ -100,6 +100,16 @@ class Trainer:
             self.sched["warmup_tokens"] = 0
             self.sched["stable_tokens"] = 0
         self.target_tokens = total_tokens(self.sched)
+        # Optional hard stop BELOW the schedule's own total. Deliberately does
+        # not touch `self.sched`, so the LR trajectory is bit-identical to an
+        # uncapped run of the same config -- the run just ends early, leaving
+        # every checkpoint mid-stable at peak LR. That is the right way to
+        # spend a fixed GPU-hour grant: shortening `stable_tokens` instead
+        # would start the decay early and de-match this run's checkpoints from
+        # every other run's (the LR-state confound in CLAUDE.md 6).
+        cap = cfg["train"].get("max_tokens")
+        if cap:
+            self.target_tokens = min(self.target_tokens, float(cap))
         self.ckpt_table = cfg["train"].get("ckpt_schedule",
                                            [[2e9, 250e6], [5e9, 500e6],
                                             [15e9, 1e9], [1e15, 2e9]])
