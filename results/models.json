@@ -809,5 +809,54 @@
     "langs": [
       "zh"
     ]
+  },
+  "de-starved-1b": {
+    "orig_run": "de__unigram_starved__step1092_1001M",
+    "tok": "unigram_starved",
+    "langs": [
+      "de"
+    ]
+  },
+  "de-starved-2b": {
+    "orig_run": "de__unigram_starved__step2456_2253M",
+    "tok": "unigram_starved",
+    "langs": [
+      "de"
+    ]
+  },
+  "de-starved-5b": {
+    "orig_run": "de__unigram_starved__step5181_4753M",
+    "tok": "unigram_starved",
+    "langs": [
+      "de"
+    ]
+  },
+  "de-starved-8b": {
+    "orig_run": "de__unigram_starved__step8451_7753M",
+    "tok": "unigram_starved",
+    "langs": [
+      "de"
+    ]
+  },
+  "de-starved-12b": {
+    "orig_run": "de__unigram_starved__step12811_11754M",
+    "tok": "unigram_starved",
+    "langs": [
+      "de"
+    ]
+  },
+  "de-starved-15b": {
+    "orig_run": "de__unigram_starved__step16081_14754M",
+    "tok": "unigram_starved",
+    "langs": [
+      "de"
+    ]
+  },
+  "de-starved-16b": {
+    "orig_run": "de__unigram_starved",
+    "tok": "unigram_starved",
+    "langs": [
+      "de"
+    ]
   }
 }
