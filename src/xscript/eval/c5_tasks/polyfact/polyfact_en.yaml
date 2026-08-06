@@ -1,0 +1,4 @@
+include: _polyfact_template.yaml
+task: polyfact_en
+custom_dataset: !function utils.build_en
+doc_to_text: !function utils.doc_to_text_en

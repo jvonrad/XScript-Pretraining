@@ -75,6 +75,19 @@ from pathlib import Path
 # hellaswag_zh) simply has one entry.
 FAMILIES = {
     "hellaswag_zh": {"zh": ["hellaswag_zh"]},
+    # PolyFact (jvonrad/PolyFact) -- parallel Wikidata-grounded 4-way MCQ,
+    # 2039 test facts, all five languages, verified _id-aligned with the gold
+    # QID identical across languages (see c5_tasks/polyfact/utils.py). Cloze,
+    # because 6e showed these models cannot do A/B/C/D at all.
+    #   polyfact_*        localized question + localized answer cue (primary)
+    #   polyfact_encue_*  English cue control -- 6e measured the cue effect at
+    #                     0.000, so this exists to keep that falsifiable.
+    # A KNOWLEDGE instrument: per 6f, never pooled into the capability
+    # aggregate, used for within-language contrasts only.
+    "polyfact": {lang: [f"polyfact_{lang}"]
+                 for lang in ("en", "de", "fr", "ar", "zh")},
+    "polyfact_encue": {lang: [f"polyfact_encue_{lang}"]
+                       for lang in ("de", "fr", "ar", "zh")},
     "sib200": {
         "en": ["sib200_eng_Latn"],
         "de": ["sib200_deu_Latn"],

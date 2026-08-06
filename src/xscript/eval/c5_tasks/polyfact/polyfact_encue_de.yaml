@@ -1,0 +1,4 @@
+include: _polyfact_template.yaml
+task: polyfact_encue_de
+custom_dataset: !function utils.build_de
+doc_to_text: !function utils.doc_to_text_encue

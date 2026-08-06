@@ -44,9 +44,19 @@ sys.path.insert(0, str(REPO / "src"))
 OUT = REPO / "results" / "mubench_sweep" / "accuracy_table.md"
 COLS = [("SIB200", "sib200"), ("XNLI", "xnli"), ("ARC-E", "mub_arceasy"),
         ("Story", "mub_storycloze"), ("HSwag", "mub_hellaswag"),
-        ("BMLAMA", "mub_bmlama")]
+        ("BMLAMA", "mub_bmlama"), ("PolyFact", "polyfact")]
+# PolyFact reads lm-eval's own `acc_mutual_info`, which rawscores' acc_pmi
+# reproduces exactly (0.374203 both ways on ar-fair-12b). PMI won the 6g
+# estimator comparison over all 164 PolyFact cells -- mean over-null .200
+# against acc's .166 and acc_norm's .115, the last of which puts one cell
+# BELOW its own null. That is what the structural rule predicts: the
+# candidates are real-world entity names whose unconditional frequencies span
+# orders of magnitude ("London" vs "Ivry-sur-Seine"), so subtracting the prior
+# does real work. acc_cal is unavailable here BY CONSTRUCTION -- the choices
+# are per-document entities (c5_tasks/polyfact/utils.py, CLAUDE.md 6e).
 EST = {"mub_arceasy": "acc", "mub_bmlama": "acc", "mub_storycloze": "acc_norm",
-       "mub_hellaswag": "acc_norm", "sib200": "acc_cal", "xnli": "acc_cal"}
+       "mub_hellaswag": "acc_norm", "sib200": "acc_cal", "xnli": "acc_cal",
+       "polyfact": "acc_mutual_info"}
 LANGS = ["en", "de", "fr", "ar", "zh"]
 CODE = {"en": "eng_Latn", "de": "deu_Latn", "fr": "fra_Latn",
         "ar": "arb_Arab", "zh": "zho_Hans"}
@@ -58,6 +68,8 @@ def fam_of(task: str):
         return "sib200"
     if task.startswith("xnli_"):
         return "xnli"
+    if task.startswith("polyfact_") and "encue" not in task:
+        return "polyfact"
     for f in ("mub_arceasy", "mub_storycloze", "mub_hellaswag", "mub_bmlama"):
         if task.startswith(f + "_"):
             return f
@@ -78,9 +90,16 @@ def from_table(cells, langs, path=OUT):
             continue
         if line.startswith("| ") and "|---" not in line and not line.startswith("| model"):
             c = [x.strip() for x in line.strip().strip("|").split("|")]
-            if len(c) == 8 and c[1].isdigit():
+            # Width-aware: the file on disk may predate a column being added
+            # (it carried 6 benchmarks before PolyFact). Columns are only ever
+            # APPENDED to COLS, so zipping against the leading prefix maps an
+            # older row correctly and keeps this script idempotent against its
+            # own output -- a fixed `len(c) == 8` silently parsed nothing once
+            # the 7th column existed, dropping all 100 legacy rows.
+            ncol = len(c) - 2
+            if ncol in (6, len(COLS)) and c[1].isdigit():
                 langs.setdefault(c[0], set()).add(sec)
-                for (_, fam), v in zip(COLS, c[2:]):
+                for (_, fam), v in zip(COLS[:ncol], c[2:]):
                     if re.match(r"^[0-9.]+$", v):
                         cells.setdefault((c[0], sec, fam), float(v))
 
@@ -114,7 +133,7 @@ def from_new(cells, langs, newdir: Path):
             for lang, ts in (json.loads(f.read_text()).get("metrics") or {}).items():
                 for task, m in ts.items():
                     fam = fam_of(task)
-                    if fam and fam.startswith("mub_"):
+                    if fam and (fam.startswith("mub_") or fam == "polyfact"):
                         cells[(run, lang, fam)] = m[EST[fam]]
                         langs.setdefault(run, set()).add(lang)
             raw_f = d / "raw" / f"{run}_raw.json"
@@ -142,9 +161,11 @@ def render(cells, langs) -> str:
            "their own training languages (`--own-langs`), so a model has rows only for",
            "the languages it trained on.", "",
            "Estimator per family (CLAUDE.md §6g): ARC-E/BMLAMA `acc` | Story/HSwag",
-           "`acc_norm` | SIB-200/XNLI `acc_cal`. Never `acc_tokennorm` — it is",
-           "tokenizer-dependent and this project's whole contrast is a tokenizer.", "",
-           "Chance: SIB200 .143 | XNLI .333 | ARC-E .25 | Story .50 | HSwag .25 | BMLAMA ~.10", "",
+           "`acc_norm` | SIB-200/XNLI `acc_cal` | PolyFact `acc_mutual_info` (PMI).",
+           "Never `acc_tokennorm` — it is tokenizer-dependent and this project's whole",
+           "contrast is a tokenizer.", "",
+           "Chance: SIB200 .143 | XNLI .333 | ARC-E .25 | Story .50 | HSwag .25 |",
+           "BMLAMA ~.10 | PolyFact .25", "",
            "⚠️ 30B rows are COOLED (LR 3.0e-4); 1b-23b are mid-stable (3.0e-3).",
            "Do not pair across that boundary (CLAUDE.md §6/§6d).", "",
            "Regenerate with `scripts/external_bench/build_tables.py`.", ""]

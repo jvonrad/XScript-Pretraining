@@ -1,0 +1,35 @@
+# Shared stanza for every polyfact_* task. No `task:` key, so lm-eval's task
+# collector skips it and it is only ever pulled in via `include:`.
+#
+# 0-shot cloze: the answer ENTITY'S OWN NAME is the scored continuation, never
+# a letter -- CLAUDE.md 6e showed these checkpoints cannot do the A/B/C/D
+# indirection at all (Global-MMLU letter format stays at chance even after
+# calibration) while the cloze form of the same items clears its null by 15σ.
+#
+# Three metrics, deliberately -- the choice between them is made on over-null
+# and prediction entropy (CLAUDE.md 6g), not assumed:
+#   acc              raw summed loglikelihood over the entity name
+#   acc_norm         character-length-normalized (lm-eval's completion_len)
+#   acc_mutual_info  PMI, log P(ans|q) - log P(ans)
+# acc_cal is NOT available and must not be: choices are per-document entities,
+# so the choice index means nothing in common across documents (6e).
+output_type: multiple_choice
+training_split: null
+validation_split: null
+test_split: test
+doc_to_target: label
+doc_to_choice: !function utils.doc_to_choice
+should_decontaminate: true
+doc_to_decontamination_query: "{{question}}"
+metric_list:
+  - metric: acc
+    aggregation: mean
+    higher_is_better: true
+  - metric: acc_norm
+    aggregation: mean
+    higher_is_better: true
+  - metric: acc_mutual_info
+    aggregation: mean
+    higher_is_better: true
+metadata:
+  version: 0.0
