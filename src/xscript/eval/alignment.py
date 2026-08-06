@@ -70,6 +70,22 @@ REF_LAYER_FRAC = 0.75
 
 VARIANTS = ("raw", "centered")
 
+# Sentence poolings. ``mean`` is this repo's historical estimator and the only
+# one the committed results/alignment_v2_107/* were produced with; the other
+# three exist to test whether its findings are a property of the models or of
+# the pooling rule (CLAUDE.md section 6b addendum).
+#
+#   mean        unweighted mean over all real tokens, BOS included  [historical]
+#   mean_nobos  same, BOS excluded -- isolates the attention-sink/BOS term,
+#               whose weight under ``mean`` is 1/T and therefore moves with
+#               tokenizer fertility
+#   weighted    MEXA's default (arXiv 2410.05873): w_t = t / sum_k k, t = 1..L
+#               over real tokens, so late (contextualised) tokens dominate and
+#               BOS carries only ~2/L^2
+#   last        hidden state at the final real token -- MEXA's comparison
+#               baseline; zero weight on BOS and on sentence-initial tokens
+POOLINGS = ("mean", "mean_nobos", "weighted", "last")
+
 
 # --------------------------------------------------------------------------
 # embedding
@@ -79,9 +95,47 @@ def _encode(tok, sentences, seq_len):
     return [tok.encode(t, bos=True)[:seq_len] for t in sentences]
 
 
+def _pool_weight(name, lengths, nrow, width):
+    """Host-built ``(nrow, width)`` fp32 pooling weights, one row per sentence.
+
+    Built on the HOST and moved to the device once: a per-row in-place scatter
+    on an XLA tensor trips ``NRT_EXEC_OOB`` (NEURON.md section 4). ``last`` is a
+    one-hot multiply rather than an index/gather because ``torch.gather``
+    silently returns ZEROS on this Neuron build (NEURON.md section 4, trap 1).
+
+    Weights need not sum to 1: every pooling is L2-normalised afterwards, so any
+    positive per-row scale cancels. ``mean``'s weight matrix is exactly the
+    0/1 length mask, which is what keeps the ``mean`` path bit-identical to the
+    pre-patch code.
+    """
+    w = np.zeros((nrow, width), dtype=np.float32)
+    for i, L in enumerate(lengths):
+        if name == "mean":
+            w[i, :L] = 1.0
+        elif name == "mean_nobos":
+            # BOS is always index 0 (_encode passes bos=True). A 1-token
+            # sentence would leave an all-zero row -> a zero embedding, which
+            # would silently corrupt retrieval; fall back to including BOS.
+            w[i, 1:L] = 1.0
+            if L <= 1:
+                w[i, :L] = 1.0
+        elif name == "weighted":
+            t = np.arange(1, L + 1, dtype=np.float32)
+            w[i, :L] = t / (L * (L + 1) / 2.0)
+        elif name == "last":
+            w[i, L - 1] = 1.0
+        else:
+            raise ValueError(f"unknown pooling {name!r}")
+    return w
+
+
 @torch.no_grad()
-def _embed(model, seqs, device, batch=16, fixed_width=None):
-    """(n_layers+1, N, dim) L2-normalised mean-pooled embeddings.
+def _embed(model, seqs, device, batch=16, fixed_width=None, poolings=("mean",)):
+    """``{pooling: (n_layers+1, N, dim)}`` L2-normalised pooled embeddings.
+
+    All requested poolings come from ONE forward pass -- ``model.layer_reps``
+    already returns the full ``(n_layers+1, B, T, d)`` stack, so the extra
+    poolings cost only a masked reduction each and no extra accelerator time.
 
     With ``fixed_width`` set (the XLA/Neuron path) every forward uses one
     constant ``[batch, fixed_width]`` shape so the whole run compiles a single
@@ -91,7 +145,7 @@ def _embed(model, seqs, device, batch=16, fixed_width=None):
     """
     model.eval()
     N = len(seqs)
-    out = None
+    out = {p: None for p in poolings}
     for s0 in range(0, N, batch):
         chunk = seqs[s0:s0 + batch]
         rows = len(chunk)
@@ -106,18 +160,25 @@ def _embed(model, seqs, device, batch=16, fixed_width=None):
         for i, s in enumerate(chunk):
             arr[i, :len(s)] = s
             msk[i, :len(s)] = 1.0
+        lengths = [len(s) for s in chunk] + [1] * (nrow - rows)   # pad rows: inert
         idx = torch.from_numpy(arr).to(device)
-        mask = torch.from_numpy(msk).to(device)[None, :, :, None]
         reps = model.layer_reps(idx).float()                  # (Lr, nrow, W, d)
-        pooled = (reps * mask).sum(2) / mask.sum(2).clamp(min=1)
-        pooled = torch.nn.functional.normalize(pooled, dim=-1)
+        pooled = {}
+        for p in poolings:
+            wnp = msk if p == "mean" else _pool_weight(p, lengths, nrow, width)
+            mask = torch.from_numpy(wnp).to(device)[None, :, :, None]
+            # Identical expression to the pre-patch code; for p == "mean" the
+            # weight matrix IS the length mask, so this reproduces it exactly.
+            q = (reps * mask).sum(2) / mask.sum(2).clamp(min=1)
+            pooled[p] = torch.nn.functional.normalize(q, dim=-1)
         if device.type == "xla":
             import torch_xla.core.xla_model as xm
             xm.mark_step()
-        pooled = pooled.cpu().numpy()                          # (Lr, nrow, d)
-        if out is None:
-            out = np.zeros((pooled.shape[0], N, pooled.shape[-1]), dtype=np.float32)
-        out[:, s0:s0 + rows] = pooled[:, :rows]
+        for p in poolings:
+            q = pooled[p].cpu().numpy()                        # (Lr, nrow, d)
+            if out[p] is None:
+                out[p] = np.zeros((q.shape[0], N, q.shape[-1]), dtype=np.float32)
+            out[p][:, s0:s0 + rows] = q[:, :rows]
     return out
 
 
@@ -324,7 +385,7 @@ def compute(run_name: str, tok_name: str, split: str = "dev",
             model=None, device=None, seq_len: int = 2048,
             langs: list[str] | None = None, batch: int = 16,
             max_tokens: int = 256, limit: int | None = None,
-            emb_dir=None) -> dict:
+            emb_dir=None, poolings: tuple[str, ...] = ("mean",)) -> dict:
     """Alignment for every unordered pair among ``langs``.
 
     ``langs=None`` falls back to the checkpoint's own training mixture (the
@@ -360,28 +421,51 @@ def compute(run_name: str, tok_name: str, split: str = "dev",
     tok = Tok(tokenizer_dir(tok_name))
     encoded = {l: _encode(tok, par[l], min(seq_len, max_tokens)) for l in eval_langs}
     width = _fixed_width(encoded) if dev.type == "xla" else None
-    emb = {l: _embed(model, encoded[l], dev, batch=batch, fixed_width=width)
-           for l in eval_langs}
+    per_lang = {l: _embed(model, encoded[l], dev, batch=batch, fixed_width=width,
+                          poolings=tuple(poolings)) for l in eval_langs}
+    emb_by_pool = {p: {l: per_lang[l][p] for l in eval_langs} for p in poolings}
 
-    n_layers = emb[eval_langs[0]].shape[0]
+    n_layers = emb_by_pool[poolings[0]][eval_langs[0]].shape[0]
     ref_layer = min(n_layers - 1, max(0, round(REF_LAYER_FRAC * (n_layers - 1))))
+    base = {**meta, "n_layers": n_layers, "ref_layer": ref_layer,
+            "n_sentences": len(par[eval_langs[0]]),
+            "max_tokens": max_tokens, "dtype": "float32"}
     if emb_dir:
-        p = save_embeddings(emb_dir, run_name,
-                            {**meta, "n_layers": n_layers, "ref_layer": ref_layer,
-                             "n_sentences": len(par[eval_langs[0]]),
-                             "max_tokens": max_tokens, "dtype": "float32"}, emb)
-        print(f"[align] cached embeddings -> {p}")
-    pairs = {}
-    for a, b in combinations(eval_langs, 2):
-        same_script = LANGS[a].script == LANGS[b].script
-        pairs[f"{a}-{b}"] = {
-            "a": a, "b": b, "same_script": same_script,
-            "trained_pair": bool(train_langs and a in train_langs and b in train_langs),
-            **_pair_layers(emb[a], emb[b], ref_layer),
-        }
-    return {**meta, "n_layers": n_layers, "ref_layer": ref_layer,
-            "n_sentences": len(par[eval_langs[0]]), "fixed_width": width,
-            "lexical_baseline": lexical_baseline(encoded), "pairs": pairs}
+        for p in poolings:
+            name = run_name if p == "mean" and tuple(poolings) == ("mean",) \
+                else f"{run_name}__{p}"
+            path = save_embeddings(emb_dir, name, {**base, "pooling": p},
+                                   emb_by_pool[p])
+            print(f"[align] cached embeddings ({p}) -> {path}")
+
+    def _pairs_for(emb):
+        out = {}
+        for a, b in combinations(eval_langs, 2):
+            out[f"{a}-{b}"] = {
+                "a": a, "b": b,
+                "same_script": LANGS[a].script == LANGS[b].script,
+                "trained_pair": bool(train_langs and a in train_langs
+                                     and b in train_langs),
+                **_pair_layers(emb[a], emb[b], ref_layer),
+            }
+        return out
+
+    res = {**meta, "n_layers": n_layers, "ref_layer": ref_layer,
+           "n_sentences": len(par[eval_langs[0]]), "fixed_width": width,
+           "lexical_baseline": lexical_baseline(encoded)}
+    # Per-sentence token counts: the length control (T4) needs to restrict the
+    # comparison to sentences whose starved-minus-fair token-count difference is
+    # smallest, and that must be doable on CPU from stored data rather than by
+    # re-running the accelerator.
+    res["token_counts"] = {l: [len(s) for s in encoded[l]] for l in eval_langs}
+    if tuple(poolings) == ("mean",):
+        # Legacy schema, byte-for-byte the shape the committed
+        # results/alignment_v2_107/*.json use -- existing readers keep working.
+        res["pairs"] = _pairs_for(emb_by_pool["mean"])
+    else:
+        res["poolings"] = {p: {"pairs": _pairs_for(emb_by_pool[p])}
+                           for p in poolings}
+    return res
 
 
 def save_embeddings(emb_dir, run_name, meta: dict, emb: dict) -> Path:
@@ -456,12 +540,20 @@ def run(run_name: str, tok_name: str, split: str = "dev",
     (out_dir / f"{run_name}.json").write_text(json.dumps(res))
     md = [f"# Alignment: {run_name} (FLORES+ {split}, "
           f"n={res.get('n_sentences', 0)})", ""]
-    if res["pairs"]:
+    # Either the legacy single-pooling schema (top-level "pairs") or the
+    # multi-pooling one ({"poolings": {name: {"pairs": ...}}}).
+    blocks = ({p: v["pairs"] for p, v in res["poolings"].items()}
+              if "poolings" in res else {None: res.get("pairs", {})})
+    if any(blocks.values()):
         md += [f"Languages embedded: {', '.join(res['eval_langs'])}; "
                f"trained on: {', '.join(res['train_langs'] or ['?'])}.", ""]
-        for variant in VARIANTS:
-            md += _table(res, variant, "ref")
-            md += _table(res, variant, "best")
+        for pool, pairs in blocks.items():
+            if pool:
+                md += [f"## pooling: {pool}", ""]
+            sub = {**res, "pairs": pairs}
+            for variant in VARIANTS:
+                md += _table(sub, variant, "ref")
+                md += _table(sub, variant, "best")
     else:
         md += ["Fewer than two languages to pair."]
     (out_dir / f"{run_name}.md").write_text("\n".join(md) + "\n")

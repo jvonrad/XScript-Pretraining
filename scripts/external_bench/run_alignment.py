@@ -58,6 +58,16 @@ def main() -> None:
                          "without re-downloading checkpoints or re-running the "
                          "forward pass (84%% of runtime).")
     ap.add_argument("--keep-checkpoints", action="store_true")
+    ap.add_argument("--poolings", nargs="*", default=["mean"],
+                    help="sentence poolings to emit from the SINGLE forward "
+                         "pass (default: mean = the historical estimator). "
+                         "Choices: mean mean_nobos weighted last. Passing more "
+                         "than one switches the JSON to the multi-pooling "
+                         "schema {'poolings': {name: {'pairs': ...}}}.")
+    ap.add_argument("--out-subdir", default="alignment",
+                    help="write to $WORKDIR/results/<subdir> (default: "
+                         "alignment). Use a fresh name so a pooling experiment "
+                         "cannot overwrite the committed sweep.")
     args = ap.parse_args()
 
     from huggingface_hub import hf_hub_download, list_repo_files
@@ -199,7 +209,10 @@ def main() -> None:
     splits = ("dev", "devtest") if args.split == "both" else (args.split,)
     flores.download(args.langs, splits=splits, token=os.environ.get("HF_TOKEN"))
 
-    out_dir = work / "results" / "alignment"
+    bad_pool = [p for p in args.poolings if p not in alignment.POOLINGS]
+    if bad_pool:
+        sys.exit(f"unknown pooling {bad_pool}; choose from {list(alignment.POOLINGS)}")
+    out_dir = work / "results" / args.out_subdir
     for i, run in enumerate(runs, 1):
         tok = models[run]["tok"]
         print(f"\n===== [{i}/{len(runs)}] {run} (tok={tok}, device={device}) =====",
@@ -214,7 +227,7 @@ def main() -> None:
             alignment.run(run, tok, split=args.split, out_dir=out_dir,
                           device=dev, langs=args.langs, batch=args.batch_size,
                           max_tokens=args.max_tokens, limit=args.limit,
-                          emb_dir=args.emb_dir)
+                          emb_dir=args.emb_dir, poolings=tuple(args.poolings))
         except Exception as exc:
             import traceback
             print(f"[align] {run} FAILED: {type(exc).__name__}: {exc}")
