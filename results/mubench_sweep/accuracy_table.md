@@ -14,6 +14,8 @@ contrast is a tokenizer.
 Chance: SIB200 .143 | XNLI .333 | ARC-E .25 | Story .50 | HSwag .25 |
 BMLAMA ~.10 | PolyFact .25 | X-CSQA .20
 
+⚠️ SIB-200 is saturated do **not** put into benchmark aggregate!
+
 ⚠️ 30B rows are COOLED (LR 3.0e-4); 1b-23b are mid-stable (3.0e-3).
 Do not pair across that boundary (CLAUDE.md §6/§6d).
 
