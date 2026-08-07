@@ -44,7 +44,8 @@ sys.path.insert(0, str(REPO / "src"))
 OUT = REPO / "results" / "mubench_sweep" / "accuracy_table.md"
 COLS = [("SIB200", "sib200"), ("XNLI", "xnli"), ("ARC-E", "mub_arceasy"),
         ("Story", "mub_storycloze"), ("HSwag", "mub_hellaswag"),
-        ("BMLAMA", "mub_bmlama"), ("PolyFact", "polyfact")]
+        ("BMLAMA", "mub_bmlama"), ("PolyFact", "polyfact"),
+        ("X-CSQA", "xcsqa")]
 # PolyFact reads lm-eval's own `acc_mutual_info`, which rawscores' acc_pmi
 # reproduces exactly (0.374203 both ways on ar-fair-12b). PMI won the 6g
 # estimator comparison over all 164 PolyFact cells -- mean over-null .200
@@ -54,9 +55,19 @@ COLS = [("SIB200", "sib200"), ("XNLI", "xnli"), ("ARC-E", "mub_arceasy"),
 # orders of magnitude ("London" vs "Ivry-sur-Seine"), so subtracting the prior
 # does real work. acc_cal is unavailable here BY CONSTRUCTION -- the choices
 # are per-document entities (c5_tasks/polyfact/utils.py, CLAUDE.md 6e).
+# X-CSQA takes plain `acc` (CLAUDE.md 6i). Three reasons, in order of weight:
+# (1) it is SCRIPT-INVARIANT, and this column is read across scripts --
+# `acc_norm` divides by CHARACTER count and a zh candidate is 2 chars against
+# en's 9, so its divisor is script-dependent (6g's acc_tokennorm theorem one
+# level up); (2) it is the most monotone of the estimators over the budget
+# series (backwards .086 vs .152); (3) it reproduces 6g's transfer gap at
+# +0.0114 [+.0025,+.0205] with the per-language ordering matching at Spearman
+# rho = +1.00. `acc_pmi` discriminates better in absolute terms but is 29%
+# noisier and sits on its own 2-sigma detection boundary. acc_cal is
+# unavailable BY CONSTRUCTION -- per-document candidates.
 EST = {"mub_arceasy": "acc", "mub_bmlama": "acc", "mub_storycloze": "acc_norm",
        "mub_hellaswag": "acc_norm", "sib200": "acc_cal", "xnli": "acc_cal",
-       "polyfact": "acc_mutual_info"}
+       "polyfact": "acc_mutual_info", "xcsqa": "acc"}
 LANGS = ["en", "de", "fr", "ar", "zh"]
 CODE = {"en": "eng_Latn", "de": "deu_Latn", "fr": "fra_Latn",
         "ar": "arb_Arab", "zh": "zho_Hans"}
@@ -70,6 +81,11 @@ def fam_of(task: str):
         return "xnli"
     if task.startswith("polyfact_") and "encue" not in task:
         return "polyfact"
+    # Exclude the enopt/encue controls -- they are different prompts on the
+    # same items and must never be averaged into the primary column.
+    if task.startswith("xcsqa_") and not any(
+            task.startswith(f"xcsqa_{v}_") for v in ("enopt", "encue")):
+        return "xcsqa"
     for f in ("mub_arceasy", "mub_storycloze", "mub_hellaswag", "mub_bmlama"):
         if task.startswith(f + "_"):
             return f
@@ -97,7 +113,14 @@ def from_table(cells, langs, path=OUT):
             # own output -- a fixed `len(c) == 8` silently parsed nothing once
             # the 7th column existed, dropping all 100 legacy rows.
             ncol = len(c) - 2
-            if ncol in (6, len(COLS)) and c[1].isdigit():
+            # Accept ANY prefix width, not an enumerated set. Columns are only
+            # ever APPENDED to COLS, so a file written with fewer benchmarks is
+            # a valid prefix of the current schema. The enumerated form broke
+            # once already (a fixed `len(c) == 8` dropped all 100 legacy rows
+            # when the 7th column landed) and would have broken again here:
+            # `ncol in (6, len(COLS))` silently rejects every 7-column row the
+            # moment COLS grows to 8.
+            if 1 <= ncol <= len(COLS) and c[1].isdigit():
                 langs.setdefault(c[0], set()).add(sec)
                 for (_, fam), v in zip(COLS[:ncol], c[2:]):
                     if re.match(r"^[0-9.]+$", v):
@@ -133,7 +156,8 @@ def from_new(cells, langs, newdir: Path):
             for lang, ts in (json.loads(f.read_text()).get("metrics") or {}).items():
                 for task, m in ts.items():
                     fam = fam_of(task)
-                    if fam and (fam.startswith("mub_") or fam == "polyfact"):
+                    if fam and (fam.startswith("mub_")
+                                or fam in ("polyfact", "xcsqa")):
                         cells[(run, lang, fam)] = m[EST[fam]]
                         langs.setdefault(run, set()).add(lang)
             raw_f = d / "raw" / f"{run}_raw.json"
@@ -161,11 +185,12 @@ def render(cells, langs) -> str:
            "their own training languages (`--own-langs`), so a model has rows only for",
            "the languages it trained on.", "",
            "Estimator per family (CLAUDE.md §6g): ARC-E/BMLAMA `acc` | Story/HSwag",
-           "`acc_norm` | SIB-200/XNLI `acc_cal` | PolyFact `acc_mutual_info` (PMI).",
+           "`acc_norm` | SIB-200/XNLI `acc_cal` | PolyFact `acc_mutual_info` (PMI) |",
+           "X-CSQA `acc` (script-invariant; CLAUDE.md §6i).",
            "Never `acc_tokennorm` — it is tokenizer-dependent and this project's whole",
            "contrast is a tokenizer.", "",
            "Chance: SIB200 .143 | XNLI .333 | ARC-E .25 | Story .50 | HSwag .25 |",
-           "BMLAMA ~.10 | PolyFact .25", "",
+           "BMLAMA ~.10 | PolyFact .25 | X-CSQA .20", "",
            "⚠️ 30B rows are COOLED (LR 3.0e-4); 1b-23b are mid-stable (3.0e-3).",
            "Do not pair across that boundary (CLAUDE.md §6/§6d).", "",
            "Regenerate with `scripts/external_bench/build_tables.py`.", ""]

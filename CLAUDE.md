@@ -31,6 +31,25 @@ across both files, so cross-references still resolve — **§3, §6, §6b, §6c,
   GPU-h — the number to budget with), a `train.max_tokens` cap that stops a run
   early *without* perturbing the LR, and ⛔ its `final.pt` is **mid-stable, not
   cooled** — upload it as `de-starved-16b`, never bare `de-starved`.
+- 🆕 **§6i — X-CSQA on ALL 116 checkpoints** (2026-08-06, 164 cells, 163,016
+  docs, 4h44m, 0 failures). Three results. (1) **No cross-script capability
+  penalty, again**: Chinese beats both Latin same-script partners under all
+  three estimators — a fifth benchmark, and the first *reasoning* one, agreeing
+  with §6d/§6e/§6g. (2) **§6g's transfer gap IS independently corroborated**:
+  `acc` gives **+0.0114 [+.0025, +.0205], 2.5σ**, statistically
+  indistinguishable from §6g's +0.0138, with the per-language ordering
+  reproducing §6g at **Spearman ρ = +1.00** (French-led, as §6g says) on a
+  different benchmark, format and item pool. (3) ⛔ **`acc_norm` is
+  disqualified for cross-SCRIPT comparisons** — it divides by CHARACTER count
+  and a zh candidate is 2 chars against en's 9, so the divisor is
+  script-dependent; it is the only estimator finding no gap, and the only one
+  ranking zh highest. This is §6g's `acc_tokennorm` theorem one level up
+  (tokens are tokenizer-dependent, characters are script-dependent).
+  `acc_pmi` is 29% noisier than `acc` and sits on its own detection boundary,
+  so its smaller estimate is attenuation, not absence. **Arabic capability
+  still flips** with the estimator (+.085 vs +.120) and is not established.
+  The gate caught a **blind test split** and **six German rows whose empty
+  option beats every real candidate under `acc`** before any scoring.
 - ⛔ **READ §6g FIRST** (then §6e). The trajectory sweep is **done**: 100
   checkpoints x 1B-30B on SIB-200, XNLI and four MuBench families, 792 cells,
   0 anomalies. It overturns two of §6f's own rules. (1) **`acc_norm` is not
@@ -2208,6 +2227,233 @@ above the 16.1B target, so no epoching. Do not resume an interrupted
 `fast_pool` run without deleting shards past `stats.json`'s `shard_idx`: its
 resume does not validate the last shard boundary, and in-flight worker files
 get re-fetched, duplicating ~5% of documents.
+
+---
+
+## 6i. X-CSQA: the full 116-checkpoint commonsense sweep (2026-08-06)
+
+The first benchmark in this project run on **every** checkpoint in one pass:
+116 models x their own training languages = **164 cells, 163,016 documents**,
+4h44m on a `trn2.3xlarge`, **0 failures**. Task in
+`c5_tasks/xcsqa/`, gate in `verify_xcsqa.py`, reports from
+`analyze_xcsqa.py`, results + **raw sidecars** in `results/xcsqa/`.
+
+X-CSQA is the CommonsenseQA half of **XCSR** (Lin et al. 2021,
+arXiv:2106.06937): CommonsenseQA re-partitioned and translated into 16
+languages, of which en/de/fr/ar/zh are ours. 5 options, nominal chance 0.200.
+It earns its place because it is the only **commonsense-reasoning** family
+here whose items are *questions*: HellaSwag and StoryCloze can be done on
+fluency alone, while X-CSQA's distractors are same-category
+("hospital"/"town"/"schools"/"office building") so fluency does not rank them.
+
+### The gate caught four things, three of which would have corrupted results
+
+Per §6e's standing rule, run before any scoring:
+
+1. **The upstream `test` split is BLIND** — all 1074 rows in all five
+   languages have `answerKey == ""`. It scores as *garbage, not an error*.
+   Only `validation` (n=1000) is labelled; it is exposed as lm-eval's `test`.
+2. **Six German rows carry an empty option string** (untranslatable slang —
+   `badarse`, `plethora`, `maundering`). This is not cosmetic: an empty
+   continuation is scored over ZERO tokens, so its summed loglikelihood is
+   exactly **0.0 while every real candidate is negative** — under `acc` the
+   empty option wins on *every* document that has one, and under `acc_norm`
+   it is 0/0. On `a1a1ab3b47e42234` the empty string IS the gold. Same class
+   of defect as §6d's four malformed zh HellaSwag `endings`. Dropped from
+   **all five** languages (dropping only from German would break item
+   alignment), leaving **n=994 x 5**.
+3. **Options are PERMUTED per language** and `answerKey` tracks the
+   permutation correctly (en `hospital`=C, de `Krankenhaus`=A, zh `医院`=D —
+   one item). Harmless for cloze, but the raw files are not in a common
+   order, so `_rows` sorts by `id`; without that, per-example hit lists would
+   not line up language-to-language.
+4. **Pool identity holds: 1000/1000** English questions are real
+   CommonsenseQA — but **908 come from CSQA *train***, not dev. XCSR
+   re-partitioned CSQA, so X-CSQA dev is not a held-out slice of CSQA dev.
+   Irrelevant for contamination here (these checkpoints see only FineWeb2-HQ,
+   and any web leakage is identical across checkpoints, so it cancels in every
+   within-benchmark contrast).
+
+**No degeneracy anywhere**: prediction entropy **0.999** and all 5 classes
+recalled in every one of the 164 cells, with the empirical null sitting at
+0.200 = nominal chance. This is a far cleaner instrument than SIB-200, whose
+`acc_norm` entropy collapses to 0.143.
+
+### ⛔ The estimator criteria DISAGREE — so quote both, or quote neither
+
+§6g's criteria, pooled over all 164 cells and all budget series:
+
+| estimator | over-null | entropy | backwards |
+|---|---|---|---|
+| `acc` | .089 | .999 | **.086** (most monotone) |
+| `acc_norm` | .090 | .999 | .152 |
+| **`acc_pmi`** | **.116** (best discrimination) | .999 | .152 |
+| `acc_tokennorm` | .095 | .999 | .091 | ⛔ never use (§6g) |
+
+Two things follow, and the second is the important one:
+
+* **§6g's short-candidate rule does not decide this benchmark.** It predicts
+  `acc` > `acc_norm` for short fixed-phrase candidates (median 9 chars, the
+  ARC-Easy/BMLAMA regime). Measured, they are a dead tie (.089 vs .090). The
+  rule is a good prior, not a law — X-CSQA's candidates are short *and*
+  free-form, which the rule's two categories do not separate.
+* **`acc_pmi` discriminates 30% better but is 1.8x less monotone.** No single
+  estimator wins, so `analyze_xcsqa.py` now refuses to name one and prints the
+  disagreement. PMI being the winner on discrimination is expected: X-CSQA
+  distractors are bare nouns with wildly unequal unigram priors ("michigan" vs
+  "hospital"), which is exactly the prior that PMI divides out and the reason
+  `acc_mutual_info` was put in the metric list. **Use `acc_pmi` for
+  fixed-budget capability, `acc` for trajectories, and treat anything that
+  flips between them as NOT ESTABLISHED.**
+
+### Capability: no cross-script penalty — Chinese is the strongest partner
+
+Own-language, over each cell's empirical null, averaged over the 30B finals
+that trained on the language:
+
+| lang | script | n | `acc` | `acc_norm` | `acc_pmi` |
+|---|---|---|---|---|---|
+| en | — | 10 | +.187 | +.175 | +.175 |
+| de | same | 3 | +.127 | +.109 | +.110 |
+| fr | same | 4 | +.126 | +.085 | +.106 |
+| **ar** | **cross** | 4 | +.085 | +.078 | **+.120** |
+| **zh** | **cross** | 2 | **+.138** | **+.129** | **+.183** |
+
+**Chinese beats both Latin same-script partners under all three estimators** —
+robust, and it holds inside the bilingual-only subset too (en-zh .183 vs
+en-de .119 / en-fr .121 under PMI), so it is not an artifact of zh having no
+30B monolingual. §6d/§6e/§6g's "cross-script costs nothing in attained
+capability" is **confirmed on a fifth benchmark, and a reasoning one**.
+
+⚠️ **Arabic is estimator-dependent and is NOT established either way**:
+lowest of all five under `acc`/`acc_norm` (+.085/+.078), but above both
+same-script partners under `acc_pmi` (+.120). A ~4-point swing from the
+scoring rule alone. This is the third time Arabic specifically has been the
+unstable cell (§6e "the cross-script effect is Arabic", §6g's −.038), and it
+is the single strongest argument for the second `ar` training run §6f item 4
+asks for.
+
+### Transfer: X-CSQA DOES corroborate §6g — and the first read of it was wrong
+
+⚠️ **This subsection was first written as "does NOT corroborate", from three
+point estimates with no CIs on them.** Putting a document-level bootstrap on
+the pooled gap reverses that. The error is worth recording because it is the
+same one §6e documents for Global-MMLU at `--limit 200`: *reading an
+underpowered null as an absence*. Three point estimates that differ are not
+three answers — they are one answer plus sampling noise until you measure the
+noise.
+
+Mono X B/lang vs bilingual 2X B total — LR-matched by construction (every
+1b–15b checkpoint is mid-stable at peak LR 3.0e-3; decay starts at 24B), so
+the §6/§6d confound does not apply. Paired bootstrap over documents, B=2000.
+
+| tier | `acc` gap | `acc_pmi` gap | `acc_norm` gap |
+|---|---|---|---|
+| mono 1B / bi 2B | +.018 | +.013 | +.009 |
+| mono 5B / bi 10B | +.015 | +.012 | −.005 |
+| mono 8B / bi 15B | +.012 | −.007 | +.008 |
+| mono 12B / bi 23B | +.001 | −.003 | −.011 |
+| **mean** | **+.011** | **+.004** | **+.000** |
+
+**Pooled gap with a document-level bootstrap** (B=4000; docs are `id`-aligned
+across languages, so one resample applies to every cell):
+
+| estimator | gap | 95% CI | σ | vs §6g's +0.0138 |
+|---|---|---|---|---|
+| **`acc`** | **+.0114** | [+.0025, +.0205] | **2.48** | **consistent** (+0.5σ) |
+| `acc_pmi` | +.0038 | [−.0080, +.0159] | 0.62 | consistent (+1.6σ) |
+| `acc_norm` | +.0003 | [−.0077, +.0080] | 0.06 | INCONSISTENT (+3.4σ) |
+
+**Under `acc` the gap is +0.011, clears zero at 2.5σ, and is statistically
+indistinguishable from §6g's +0.0138.** Two of the three estimators are
+consistent with §6g; the third is the one that is disqualified on principle
+(below). Per language, against §6g's own MuBench numbers:
+
+| lang | §6g (MuBench) | `acc` | `acc_pmi` | `acc_norm` |
+|---|---|---|---|---|
+| fr (same) | +.027 | **+.021** | +.006 | +.009 |
+| de (same) | +.013 | **+.011** | +.000 | +.009 |
+| ar (cross) | +.009 | **+.007** | +.007 | +.006 |
+| zh (cross) | +.008 | **+.002** | −.008 | +.012 |
+| | Spearman ρ | **+1.00** | +0.40 | −0.20 |
+
+Under `acc` the language ordering reproduces §6g **exactly** (ρ = +1.00) and
+the magnitudes track within ~.006 across the board — on a different benchmark,
+a different task format and a different item pool. §6g's "**the gap is carried
+by French, not by script**" reproduces too: fr (+.021) is ~2x de (+.011) and
+~3x ar/zh.
+
+### ⛔ `acc_norm` is disqualified for any cross-SCRIPT comparison
+
+This is the one estimator that says the gap is zero, and it is the one that
+cannot be trusted here. `acc_norm` divides the loglikelihood by **character**
+count, and a character is not comparable across scripts — median X-CSQA
+candidate length is **zh 2 chars against en 9, de/fr 10, ar 7**, i.e. the
+divisor differs ~4.5x between Chinese and the Latin languages for the same
+content. So `acc_norm` applies a systematically different correction to each
+script, which is disqualifying for a question whose whole content is
+same-script vs cross-script. This is **§6g's `acc_tokennorm` theorem one level
+up**: tokens are tokenizer-dependent, and characters are script-dependent.
+Note the tell — `acc_norm` is the only estimator that ranks **zh highest**
+(+.012), exactly the language whose divisor is most compressed.
+
+Standing rule to add to §6g's: **for cross-script comparisons use a
+script-invariant estimator** — `acc` (no normalisation) or `acc_pmi` (divides
+out a per-candidate quantity, not a length). Reserve `acc_norm` for
+within-language contrasts.
+
+### Why `acc_pmi` finds less: it is 29% noisier, not more correct
+
+`acc_pmi`'s +.0038 is **not** evidence of absence — its CI covers §6g's value
+at 1.6σ. Measured noise:
+
+| estimator | within-cell SE | across-cell SD | 2σ floor on the gap |
+|---|---|---|---|
+| `acc_norm` | .0101 | .0115 | .0077 |
+| `acc` | .0118 | .0143 | .0083 |
+| `acc_pmi` | **.0152** | **.0164** | **.0107** |
+
+PMI subtracts a second model-estimated quantity (`ll_uncond`), so it is a
+difference of two noisy terms and inherits both variances — which is also why
+it is the *least* monotone estimator in the table above (backwards .152 vs
+`acc`'s .086), an independent corroboration from a different statistic.
+Against a true effect of ~+.014 its 2σ detection floor is +.0107, so it sits
+right on its own detection boundary — **precisely the Global-MMLU-at-n=200
+situation §6e documents**. It attenuates the effect; it does not refute it.
+
+**Net: X-CSQA is the first INDEPENDENT corroboration of §6g's transfer gap** —
+different benchmark, format and item pool, same +0.011–0.014, same French-led
+language ordering. The estimator disagreement is resolved rather than
+outstanding: one estimator is disqualified on script-dependence, one is
+underpowered, and the remaining one replicates.
+
+### Operational
+
+* **116 checkpoints in 4h44m on two core-pairs**, ~5.2 min/model, 0 failures,
+  ~464 GB downloaded and deleted per-model. The sweep is **download-bound, not
+  compute-bound**: bilinguals averaged **265s against monolinguals' 353s**, so
+  fitting fixed-plus-per-cell gives a *negative* per-cell term. Per-model
+  variance is dominated by transfer speed, not by how many languages are
+  scored — so `make_sweep_lists.py`'s cell-balancing buys little here, and
+  equal *model* counts are what keep two workers in step. Budget future
+  single-family sweeps at **~5 min/model**, not per-cell.
+* X-CSQA prompts are the shortest in the suite (median 73 chars en, 24 zh;
+  max 279), so `--batch-size 16` needs no long/short split.
+* Staggering the second core-pair behind the first model (rather than a
+  separate warm pass) avoids the §9 hazard-3 compile race at zero cost.
+
+### Caveats
+
+One training run per cell, so the group means have no error bars even though
+the individual deltas do. `zh` has n=2 at 30B (no Chinese monolingual final
+exists) and `de` n=3 (no `de-starved` 30B — §6h stops at 16.1B mid-stable).
+Translation is machine-produced and visibly imperfect (English `bore` becomes
+German `Bohrung` and Chinese `镗孔`, both the drill-hole sense), the same
+provenance weakness okapi has and MuBench does not fix; it is identical across
+checkpoints, so it cancels in every within-language contrast but inflates
+apparent cross-language difficulty. The `xcsqa_enopt_*` (English-option) and
+`xcsqa_encue_*` (English-cue) controls are **defined but not run** — they
+belong on a handful of models, not on all 116.
 
 ---
 

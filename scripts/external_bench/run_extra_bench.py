@@ -161,6 +161,32 @@ FAMILIES = {
     # to the primary.
     "gmmlu_cloze_encue": {lang: [f"gmmlu_cloze_encue_{lang}"]
                           for lang in ("de", "fr", "ar", "zh")},
+    # X-CSQA: CommonsenseQA re-partitioned and translated into 16 languages
+    # (XCSR, Lin et al. 2021, arXiv:2106.06937), of which en/de/fr/ar/zh are
+    # ours. n=994 x 5 after dropping 6 ids (see c5_tasks/xcsqa/utils._drop_ids),
+    # 5 options, nominal chance 0.200. The only COMMONSENSE-REASONING family
+    # in the suite whose items are questions rather than continuations:
+    # HellaSwag/StoryCloze can be done on fluency alone, X-CSQA's distractors
+    # are same-category ("hospital"/"town"/"schools") so they cannot.
+    #
+    # Per-document candidates, so acc_cal does NOT apply (deliberately absent
+    # from rawscores.SHARED_CHOICE_TASKS) and short fixed-phrase candidates
+    # (~10 chars) put it in 6g's ARC-Easy/BMLAMA regime, where `acc` beats
+    # `acc_norm` -- a prediction to check against the raw sidecars, not a
+    # setting. acc_mutual_info is in the metric list so `ll_uncond` is stored
+    # and acc_pmi stays a pure-CPU re-derivation.
+    #
+    # Verify pool identity FIRST: python verify_xcsqa.py --csqa
+    "xcsqa": {l: [f"xcsqa_{l}"] for l in ("en", "de", "fr", "ar", "zh")},
+    # Controls, mirroring sib200_* vs sib200_enlab_*. Neither is in the
+    # default sweep -- run them on a handful of models, not all 116.
+    #   enopt: localized stem + ENGLISH options. The LABEL-language control,
+    #          i.e. the one that moved ~14 points on SIB-200 (CLAUDE.md 6d).
+    #   encue: localized stem/options + ENGLISH "Answer:" cue. The SCAFFOLDING
+    #          control, which measured exactly 0.000 on Global-MMLU (6e).
+    # No `en` entry for either: both would be identical to the primary.
+    "xcsqa_enopt": {l: [f"xcsqa_enopt_{l}"] for l in ("de", "fr", "ar", "zh")},
+    "xcsqa_encue": {l: [f"xcsqa_encue_{l}"] for l in ("de", "fr", "ar", "zh")},
     "taxi1500": {
         "en": ["taxi1500_eng_Latn"],
         "de": ["taxi1500_deu_Latn"],

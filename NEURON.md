@@ -436,6 +436,39 @@ tr '\0' '\n' < /proc/<training-pid>/environ | grep NEURON_RT_VISIBLE_CORES
   mid-script. That mistake cost this session three shells and ~3.7h of wall
   clock (two waiters each matched the other's pattern and deadlocked, so a
   chained sweep never launched).
+- `src/xscript/eval/c5_tasks/xcsqa/` — **new**; X-CSQA (`INK-USC/xcsr`), the
+  CommonsenseQA half of XCSR, as localized 0-shot CLOZE for all five
+  languages (CLAUDE.md §6i). Three traps, all silent: the upstream **`test`
+  split is BLIND** (every `answerKey` is `""`, so it scores as garbage rather
+  than erroring — only `validation` is labelled); **six German rows carry an
+  empty option string**, and an empty continuation scores `ll = 0.0`, beating
+  every real negative candidate under `acc`, so `_drop_ids` removes those ids
+  from **all five** languages to keep the item set aligned (n=994 x 5); and
+  the **options are permuted per language**, so `_rows` sorts by `id` or
+  per-example hit lists do not line up across languages. `_rows` is the
+  pure-python builder `verify_xcsqa.py` checks, kept separate from `_load` so
+  the gate never constructs a `datasets.Dataset`. Ships `xcsqa_enopt_*`
+  (English options — the ~14-point label-language control) and
+  `xcsqa_encue_*` (English cue) alongside, per §6e's rule that any new
+  multilingual task ships with a control pair.
+- `scripts/external_bench/verify_xcsqa.py` — **new**; the X-CSQA pool-identity
+  gate, pure CPU. Checks blind-split detection, equal item counts, identical
+  `id` sets AND doc order, candidate/gold validity, the expected per-language
+  permutation, control self-consistency, and (`--csqa`) that all 1000 English
+  questions are real CommonsenseQA. Run before any X-CSQA sweep.
+- `scripts/external_bench/analyze_xcsqa.py` — **new**; pure-stdlib estimator
+  comparison, capability tables and paired-bootstrap transfer deltas off the
+  raw sidecars. Notably it **refuses to name a single estimator when §6g's
+  criteria disagree** (they do here) and prints the disagreement instead.
+- `scripts/external_bench/run_xcsqa_sweep.sh` — **new**; per-core-pair X-CSQA
+  worker. Resumable via `.xcsqa.done` markers, deletes each 4GB checkpoint
+  after its model, batch 16 (X-CSQA prompts are the shortest in the suite).
+  A separate file rather than a parameterisation of `run_finals_mubench.sh`,
+  per §6g's warning about editing a script bash is mid-execution.
+- `scripts/external_bench/make_sweep_lists.py` — **new**; splits models.json
+  into balanced per-core-pair lists. ⚠️ It balances on own-language *cell*
+  count, which §6i measured to be the wrong cost model for a single-family
+  sweep — that is download-bound, so equal *model* counts matter more.
 - `scripts/external_bench/verify_bucketing.py` — **new**; re-scores a task with
   the current code and diffs the per-candidate loglikelihoods against those
   stored by an earlier sweep. Used to certify the length-bucketed batching in

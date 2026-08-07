@@ -1,0 +1,30 @@
+# Shared config for every X-CSQA variant. Cloze (the option TEXT is the scored
+# continuation, never a letter) per Messmer et al. 2025 Appendix D and this
+# project's repeated finding that these checkpoints sit at chance on any
+# letter format and stay there after calibration (CLAUDE.md 6e).
+#
+# The labelled split is the file the source calls `validation`; the real test
+# split is blind. utils._load exposes the labelled one, so `test_split: test`
+# here is lm-eval's name for it, NOT the upstream test set.
+#
+# acc_mutual_info issues the unconditional requests, which is what puts
+# `ll_uncond` in the raw sidecar and makes acc_pmi derivable on CPU forever.
+output_type: multiple_choice
+training_split: null
+validation_split: null
+test_split: test
+doc_to_text: !function utils.text
+doc_to_choice: !function utils.choices
+doc_to_target: label
+metric_list:
+  - metric: acc
+    aggregation: mean
+    higher_is_better: true
+  - metric: acc_norm
+    aggregation: mean
+    higher_is_better: true
+  - metric: acc_mutual_info
+    aggregation: mean
+    higher_is_better: true
+metadata:
+  version: 0.0

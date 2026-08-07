@@ -1,0 +1,3 @@
+include: _xcsqa_template.yaml
+task: xcsqa_fr
+custom_dataset: !function utils.build_fr
