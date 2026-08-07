@@ -39,6 +39,7 @@ the monolingual curve by default.
 import argparse
 import json
 import math
+import sys
 from pathlib import Path
 
 WARMUP_END_B = 1.0    # WSD: LR reaches peak here
@@ -47,11 +48,40 @@ DECAY_START_B = 24.0  # WSD: cooldown begins here -- everything after is
 SAME_SCRIPT = {"de": True, "fr": True, "ar": False, "zh": False}
 TOKS = {"destarved": "destarved", "starved": "starved"}
 
-# Runs excluded as known-bad. `de__unigram_starved` collapsed partway through
-# (confirmed by the run's owner from live monitoring); the collapse is visible
-# in the curve as an anchor BPB of ~1.72 where the destarved twin sits at
-# ~1.06. It is being retrained -- re-include once the new run lands.
-EXCLUDE_RUNS = {"de__unigram_starved"}
+# Runs excluded as known-bad.
+#
+# `de__unigram_starved` USED to be excluded: the original run diverged at the
+# warmup/peak-LR seam (CLAUDE.md 6h -- not "collapsed", as this comment said;
+# the curve identifies a loss-spike divergence when the LR pins at peak) and
+# showed an anchor BPB of ~1.72 against the destarved twin's ~1.06.
+#
+# It is now INCLUDED, because the 2026-08-03 retrain has landed. One caveat
+# that is easy to miss: the retrain resumed the SAME W&B id, so that single
+# run contains both trainings spliced together, with BPB dropping 1.3012 ->
+# 1.0803 in one eval interval at the seam. `pull_wandb_curves.py`'s
+# RUN_MIN_STEP cuts everything below step 8451, so what reaches this script is
+# the retrain alone. If you re-pull with a different tool, apply that cut or
+# every de/starved number here silently mixes two models.
+#
+# NOTE the retrain only covers 7.75B-14.75B, so de/starved has no curve below
+# 7.75B and any anchor earlier than that is not computable for this cell.
+EXCLUDE_RUNS: set[str] = set()
+
+# Token floor per run, applied in load(). This exists because a W&B run id is
+# NOT guaranteed to hold one training.
+#
+# `de__unigram_starved` holds TWO: the original, which diverged at the
+# warmup/peak-LR seam (CLAUDE.md 6h), and the 2026-08-03 retrain, which
+# resumed the SAME id. The retrain's early points collided with existing steps
+# and were dropped by W&B, so what survives is the original up to step 7361
+# (6.75B) followed by the retrain from step 8451 (7.75B) -- with BPB falling
+# 1.3012 -> 1.0803 across the seam. That 0.221 drop in one eval interval is
+# not learning; it is the model changing identity. Averaged or interpolated
+# together the two produce a curve belonging to no model that ever existed.
+#
+# 7.5B sits inside the gap (6.75B .. 7.75B), so it cuts the original entirely
+# and keeps every retrain point.
+RUN_MIN_TOKENS_B = {"de__unigram_starved": 7.5}
 
 
 def load(path, source):
@@ -73,8 +103,17 @@ def load(path, source):
         if len(parts) > 2:
             continue
         cur = out.setdefault((mix, tok), {})
+        floor = RUN_MIN_TOKENS_B.get(name, 0.0)
+        n_dropped = 0
         for rec in r["history"]:
             t = rec["tokens_b"]
+            # Defence in depth against the splice described at RUN_MIN_TOKENS_B.
+            # pull_wandb_curves.py already cuts this at the source, but that
+            # only protects pulls made with THAT tool; this protects the
+            # analysis itself, which is what actually has to be right.
+            if t < floor:
+                n_dropped += 1
+                continue
             for k, v in rec.items():
                 if not k.startswith("eval/") or not k.endswith("_bpb"):
                     continue
@@ -82,6 +121,9 @@ def load(path, source):
                 if src != source:
                     continue
                 cur.setdefault(lang, []).append((t, v))
+        if n_dropped:
+            print(f"[bts] {name}: dropped {n_dropped} pre-seam eval point(s) "
+                  f"below {floor}B (see RUN_MIN_TOKENS_B)", file=sys.stderr)
     # de-duplicate (repeated run names) keeping the lowest bpb per token point,
     # and sort
     for cell in out.values():
