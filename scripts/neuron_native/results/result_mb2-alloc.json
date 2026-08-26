@@ -1,0 +1,19 @@
+{
+  "tag": "mb2-alloc",
+  "world": 1,
+  "micro_bsz": 2,
+  "grad_accum": 2,
+  "ckpt": true,
+  "ce_chunk": 512,
+  "zero": false,
+  "compile": true,
+  "steps": 3,
+  "tokens_per_step": 8192,
+  "seconds": 49.18,
+  "tok_per_s": 500,
+  "model_tflops": 3.3,
+  "hw_tflops": 4.4,
+  "mfu_vs_chip": 0.0049,
+  "hfu_vs_chip": 0.0065,
+  "note": "per-chip MFU valid when all ranks are on one chip (world<=4); world=1 uses 1/4 of the chip"
+}

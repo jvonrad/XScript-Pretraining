@@ -1,9 +1,11 @@
 # NEURON.md
 
-Everything about **running this repo on AWS Trainium (Neuron)**: environment
-setup, dependency pins, the XLA scoring adaptation and its silent traps, how to
-fan the eval sweeps out across cores, how the **training** port works, and the
-Neuron-specific bugs that cost real time.
+Everything about **running this repo on AWS Trainium (Neuron)**. Two stacks
+(see the ⛔ note in §1): the public **XLA stack** used for every evaluation
+(§1–§7: setup, pins, the fixed-shape scoring adaptation and its silent traps,
+eval fan-out), and the **TorchNeuron Native beta** used for training (§10: a
+recipe that reaches 47k tok/s/chip, 46% MFU — above GH200 — plus the ledger
+of everything that does not work). §9 is the superseded XLA training port.
 
 [CLAUDE.md](CLAUDE.md) is the companion file and holds the **scientific
 results**. Section numbers are preserved across both files so existing
@@ -19,11 +21,23 @@ cross-references still resolve:
 | §6 / §6b Scientific findings | CLAUDE.md |
 | §7 Files (vs the training-cluster export) | **NEURON.md** |
 | §8 Open / next steps | CLAUDE.md |
-| §9 Training on Neuron | **NEURON.md** |
+| §9 Training on Neuron — XLA hand-port (SUPERSEDED by §10, kept for the XLA eval stack) | **NEURON.md** |
+| §10 TorchNeuron Native: the training recipe (47k tok/s/chip, 46% MFU), setup, and what does NOT work | **NEURON.md** |
 
 ---
 
 ## 1. Hardware / environment
+
+⛔ **Two incompatible stacks exist in this project — check which one a box
+has before doing anything.** §1–§5 describe the **public XLA stack**
+(`~/neuron_venv`, `torch 2.9.1 + torch-xla`, public driver) that every eval
+in CLAUDE.md was run on. §10 describes the **TorchNeuron Native private
+beta** (Docker container `neuron-native`, torch 2.12, beta driver) that all
+training throughput work was done on. They cannot coexist on one instance:
+the beta driver replaces the public one. **The current box
+(`i-02a7b8a80604f7640`) runs the beta stack and has NO `~/neuron_venv`**; to
+run evals, set up a fresh instance per §1 or port `bench.py` to the native
+device (untested).
 
 Verified on `trn2.3xlarge`, Ubuntu 26.04, kernel `7.0.0-1006-aws`.
 
@@ -559,232 +573,479 @@ tr '\0' '\n' < /proc/<training-pid>/environ | grep NEURON_RT_VISIBLE_CORES
   Editions are pinned in `EDITIONS`, chosen for full coverage of all 1077
   labelled verses and the most modern register available.
 
+- `scripts/neuron_native/` — **new** (§10); the TorchNeuron-Native (beta)
+  training replica `bench_train.py` (every recipe flag and every dead-end
+  flag), the bitwise-identical rope rewrite `rope_fix.py`, the roofline /
+  component / shape timers (`comp_bench.py`, `block_bench.py`, `block_mb.py`,
+  `block_shapes.py`, `subblock_bench.py`, `chunk_bench.py`, `glue_bench.py`,
+  `head_bench*.py`, `accum_bench.py`, `emb_bench.py`, `transpose_bench.py`),
+  the diagnostics (`graph_diag.py`, `profile_step.py`), the custom NKI
+  kernels and fused modules that were measured and rejected (`nki_rope.py`,
+  `nki_rmsnorm.py`, `nki_ce.py`, `fast_modules.py`, `fused_shadow.py`,
+  `flat_zero.py`, `sdpa_patch.py`), and `results/*.json` for every
+  configuration run. Runs only inside the `neuron-native` container.
+
 Neuron writes stray `*PostSPMDPassesExecutionDuration.txt` files into the cwd —
 gitignore them.
 
 ---
 
-## 9. Training on Neuron (`train_neuron.py`)
+## 9. Training on Neuron — the XLA hand-port (`train_neuron.py`) — SUPERSEDED
 
-The eval sections above are about *scoring* existing checkpoints. This section is
-about **training new ones** on Trainium — used to finish the models that were
-missing from the Isambard (GH200/CUDA) matrix.
+**Status: superseded by §10.** The TorchNeuron Native beta runs the same
+trainer replica at **47k tok/s/chip vs this hand-port's 23.5k**, with
+`model.py` needing only two numerically-identical edits. Use §10 for any new
+training. This section is kept because (a) the XLA stack is what the public
+SDK ships and the eval pipeline runs on, and (b) several of its findings are
+reusable.
 
-### Why not AWS's own training framework
+### What was wrong with the original reasoning (still worth knowing)
 
-NeuronX Distributed Training (NxDT) is the sanctioned, optimized path, and it was
-**deliberately not used**: it ships its own Llama implementation with
-**split-half RoPE** (HuggingFace convention), whereas `model.py` uses
-**interleaved RoPE** (GPT-NeoX convention), plus a different init scheme and its
-own data/optimizer plumbing. Training with it would have made the new
-checkpoints architecturally different from the 15 already trained on Isambard —
-exactly the comparability the cross-script comparison cannot afford. It also
-depends on NVIDIA **NeMo**, which is not installed here.
-
-**That reasoning is correct for NxDT and was wrongly generalised to everything
-else AWS ships.** It is not a reason to hand-roll a trainer. Three lighter
-options existed, and all three were missed:
-
-| option | what it would have given us | status |
-|---|---|---|
-| **NxD** (`neuronx-distributed`) | ZeRO-1 + TP + activation ckpt around our **unmodified** `model.py`; no NeMo | **available and installed**; verified working at world=32 |
-| **XLA FSDP** (`torch_xla.distributed.fsdp.XlaFullyShardedDataParallel`) | sharding without writing our own | **importable in this very venv** |
-| **TorchNeuron Native** | eager execution, `torch.compile`, standard `DDP`/`FSDP`/`DTensor`/TP — i.e. our CUDA trainer nearly as-is | **not in this build** (torch_neuronx 2.9.0.2.15 exposes only the `xla` path); AWS now lists it as the *recommended* PyTorch path in newer SDKs — **unverified here** |
-
-The distinction that was missed for weeks: **NxD is a model-agnostic parallelism
-library, NxDT is a framework that replaces your model.** Only the latter has the
-RoPE/init problem. NxD contains no Megatron code at all — the Megatron-derived
-model implementation lives in NxDT (ported from `neuronx-nemo-megatron`).
-
-AWS also supports JAX (`jax-neuronx`), **AXLearn**, **TorchTitan**, HF **Optimum
-Neuron** and PyTorch Lightning — see
-<https://awsdocs-neuron.readthedocs-hosted.com/en/latest/frameworks/index.html>.
-
-**Cost of the miss:** the hand-rolled ZeRO-1 crashed at world=16
-(`NRT_INVALID ... invalid send/recv targets`), capping every run to 8 of 64
-cores. NxD has no such limit. See "The world>8 collective limit" below.
-
-**If you touch this again, evaluate TorchNeuron Native first** — if it really
-offers eager + DDP, the entire XLA hand-port (fixed shapes, `mark_step`
-placement, the silent `bool.sum()` and `gather` bugs below) becomes unnecessary,
-and `xscript.train` may run nearly unchanged.
-
-So `src/xscript/train_neuron.py` is a hand-port that keeps `model.py`, the data
-pipeline, tokenizers, schedule and checkpoint format **byte-identical** to the
-CUDA trainer (`xscript.train`, which is untouched and still runs on GH200). Only
-the execution mechanics differ. Everything below is the cost of that choice.
-
-### The memory picture — it is the OPTIMIZER and the VOCAB, not activations
-
-Measured from Neuron's own allocation ledger (`nrt_mem_log_*.csv`), at
-micro_batch=1 the persistent "tensor" bucket is **~19.5GB** (fp32 master weights
-4.06 + fp32 grads 4.06 + AdamW m 4.06 + v 4.06 + bf16 autocast copies 2.03) plus
-~8.25GB compiler scratchpad → ~28GB against a **24GB** per-core budget. The
-`act` (activations) bucket is only **~0.08GB** once checkpointed.
-
-That is why shrinking `micro_batch_size` from 8→1 barely moved the number: it
-only touches the 0.08GB bucket while ~27GB is **batch-independent**. Levers that
-actually work, all opt-in via `cfg["train"]`:
-
-| knob | what it does | when to use |
-|---|---|---|
-| ZeRO-1 (`zero`, auto when world>1) | shards AdamW m/v + fp32 master across replicas | always for world>1 |
-| `bf16_params: true` | bf16 forward weights/grads, **fp32 master kept by ZeRO** (`optimizer_dtype` defaults fp32) | to halve fwd/bwd weight I/O |
-| `fused_ce_chunk: N` | `_ChunkedLMHeadCE`: chunks lm_head+cross_entropy over the token dim, recomputes logits in backward | to raise micro_batch past ~2 |
-| activation checkpointing (`_checkpointed_forward`) | recomputes each Block in backward | always (it is unconditional) |
-
-**The real micro_batch ceiling is the vocabulary projection.** With
-`vocab_size=65536` at seq 2048, the logits tensor is `mb*seq*vocab`; at mb=8 the
-cross-entropy over it alone needs **~23GB** of compiler scratchpad
-(`NCC_EOOM002`, 29GB peak) regardless of ZeRO or bf16. `fused_ce_chunk` is what
-unlocks mb≥8. Note the chunk size trades memory against compile time: chunk=2048
-(8 chunks) compiles very slowly because the loop unrolls and the backward nests
-autograd per chunk; prefer a larger chunk (fewer unrolls).
-
-### Silent numerical bugs found here (CLAUDE.md §4 class — these do NOT crash)
-
-- **A bool `.sum()` returns `-1`** on this build instead of the count.
-  `n_valid = (targets != -100).sum()` gave −1, which silently **negated and
-  un-normalized the loss** (reported −188243 instead of ~11.5, i.e. `−sum`).
-  Fix: cast to float *before* reducing —
-  `(targets != -100).to(torch.float32).sum().clamp(min=1.0)`. CPU never
-  reproduces it, so the CPU unit test passed while the device was wrong.
-- `torch.gather` over the vocab dim returns zeros (see §4).
-
-**Verify any new loss/reduction against CPU before trusting a run.**
-
-### Launch mechanics — `xmp.spawn`, NOT `torchrun`
-
-`torchrun` **cannot** pin a job to a subset of cores. `torch_neuronx`'s
-`Initializer` overwrites `NEURON_RT_VISIBLE_CORES` with `LOCAL_RANK` via
-`__set_envvar_defaulted_and_save("NEURON_RT_VISIBLE_CORES", key_from="LOCAL_RANK",
-default=<your cores>)` — and since `os.environ.get(key_from, default)` finds
-`LOCAL_RANK`, your value is ignored. Every torchrun job therefore lands on cores
-`0..nproc-1` and collides with anything already there (`NRT_FAILURE ... lnc0
-Available:0, cores busy`).
-
-`xmp.spawn` **does** honor it (`Initializer.reset()` early-returns when
-`is_torchelastic_launched()` is False, and the xmp path remaps via
-`cores_list[local_rank]`). Recipe:
-
-```bash
-export NEURON_RT_VISIBLE_CORES="8,9,10,11,12,13,14,15"  # one core id per replica
-export NEURONCORE_NUM_DEVICES=8        # xmp.spawn accepts nprocs=1 or None only
-export NEURON_RT_ROOT_COMM_ID=127.0.0.1:48711   # DISTINCT per concurrent job
-export MASTER_ADDR=localhost MASTER_PORT=48811  # DISTINCT per concurrent job
-python3 your_entry.py                  # entry calls xmp.spawn(fn, args=())
-```
-
-Core ids are the **same physical ids** `neuron-ls` / `free_cores.py` report
-(0-63; each device = 4 consecutive ids) — not a separate logical space.
-
-### Concurrency hazards (each one cost hours)
-
-1. **Rendezvous port collision → silent hang.** Every job defaults to the same
-   port for `dist.init_process_group("xla", init_method="xla://")` (12355), so
-   the **2nd job hangs forever at init with no error**. Set a distinct
-   `MASTER_PORT` per job. This was the single worst time-sink; with it fixed,
-   three world=8 jobs coexist with almost no contention.
-2. **Distinct `NEURON_RT_ROOT_COMM_ID` per job**, or collectives cross-talk →
-   `CCOM WARN Timeout waiting for RX (waited 240 sec)`.
-3. **Parallel compile-cache race.** Launching N jobs at once that compile the
-   same graph can deadlock them. Launch **staggered** — let one compile and
-   reach a step (warming the cache) before starting the next.
-4. **Stale compile-cache locks.** Killing a job mid-compile leaves
-   `MODULE_*/model.hlo_module.pb.lock`; other jobs then wait forever on
-   "Another process must be compiling…". Recover: kill all workers, then
-   `find $CACHE -name '*.lock' -delete` and `rm -rf` the locked MODULE_* dirs.
-   A clean *runtime* OOM does NOT corrupt the cache — only mid-compile kills do.
-5. **xmp workers are `neuron_venv/bin/python3 -c from multiprocessing.spawn…`**,
-   not your script name, so `pkill -f your_script.py` kills only the parent and
-   orphans workers that keep holding cores. Kill by PID from
-   `neuron-ls --show-all-procs`, or `pkill -9 -f "neuron_venv/bin/python3 -c from"`.
-6. **Core-release lag** (~5-10s) after SIGKILL — relaunching immediately gives
-   "cores busy". Verify with `neuron-ls` first.
-7. **Failures present as HANGS, not errors.** A watchdog that restarts when no
-   step has been logged for N minutes is mandatory for unattended runs.
-
-### The world>8 collective limit (the main throughput cap)
-
-A single job at **world=16 fails** at the first ZeRO collective:
-`NRT_INVALID ... invalid execution input, such as incorrect number of inputs or
-invalid send/recv targets`. **world=8 works.** This caps one model to 8 of 64
-cores (2 of 16 devices) at **~47k tok/s**, i.e. ~7 days for a 30B-token run.
-EFA/libfabric is *not* the fix (that is inter-node; single-node collectives use
-on-chip NeuronLink).
-
-**RESOLVED — the limit was ours, not the platform's.** `scripts/neuron_train/
-nxd_test.py` runs **world=32 to completion** using `neuronx-distributed`'s
-ZeRO-1, with **no** `invalid send/recv targets`. So the wall is a defect in the
-hand-rolled `torch_xla` ZeRO path in `train_neuron.py`, not a Trainium or
-collective-library limit.
-
-The key correction to §9's opening: **NxD (`neuronx-distributed`) is not NxDT**.
-NxDT ships its own Llama (split-half RoPE) and needs NeMo — that is what was
-correctly rejected. NxD is a bring-your-own-model library that wraps an
-*arbitrary* `nn.Module`, needs no NeMo, and preserves our interleaved RoPE:
+NeuronX Distributed **Training** (NxDT) was correctly rejected: it ships its
+own Llama with split-half RoPE and its own init, needs NeMo, and would have
+made new checkpoints architecturally different from the 15 Isambard ones.
+But that reasoning was wrongly generalised to everything AWS ships.
+**NxD (`neuronx-distributed`) is a model-agnostic parallelism library** (ZeRO-1
++ TP + activation checkpointing around an *unmodified* `nn.Module`, no
+NeMo, no Megatron code); NxDT is a framework that replaces your model. NxD
+runs our model at world=32 (`scripts/neuron_train/nxd_test.py`); the
+hand-rolled ZeRO in `train_neuron.py` fails at world=16 (`NRT_INVALID ...
+invalid send/recv targets`) — a defect in our code, not the platform.
 
 ```python
 nxd_config = neuronx_distributed_config(
-    tensor_parallel_size=1,          # our model uses plain nn.Linear; TP would need edits
+    tensor_parallel_size=1,
     optimizer_config={"zero_one_enabled": True, "grad_clipping": True, "max_grad_norm": 1.0},
-    activation_checkpoint_config=Block,   # a module CLASS is the supported path
-)
-model = initialize_parallel_model(nxd_config, model_fn)          # model_fn() -> our Transformer
+    activation_checkpoint_config=Block)
+model = initialize_parallel_model(nxd_config, model_fn)
 optim = initialize_parallel_optimizer(nxd_config, torch.optim.AdamW, model.parameters(), lr=...)
 ```
-Launch with **torchrun** here: its rank-i→core-i pinning is *correct* when you
-take the whole box; the pinning problem above only bites for a core subset.
+Open issue with NxD: the 1B model at world=32 fails to *compile* (27.6 GB
+scratchpad) because NxD fuses fwd+bwd+optimizer into one graph — memory
+tuning (mb=1, `mark_step`s, `fused_ce_chunk`), not a wall.
 
-Still open: the **1B** model at world=32 fails to *compile* — 36.75GB peak,
-**27.63GB scratchpad**, because NxD fuses fwd+bwd+optimizer into one graph
-where our own trainer's `mark_step` boundaries kept the full-vocab CE at ~8GB.
-That is memory tuning (mb=1, added `mark_step`s, or the existing
-`fused_ce_chunk`), not a wall. Note NxD's ZeRO also sets `use_fp32_grad_acc`,
-adding a full fp32 grad buffer our implementation did not have.
+### Facts that still apply on the XLA stack
 
-### Measured throughput vs GH200 (for MFU comparisons)
+* **Memory is the optimizer and the vocab, not activations.** At mb=1 the
+  persistent bucket is ~19.5 GB (fp32 master 4.06 + fp32 grads 4.06 + AdamW
+  m 4.06 + v 4.06 + bf16 autocast copies 2.03) + ~8 GB compiler scratchpad
+  against a 24 GB core; checkpointed activations are ~0.08 GB. Levers in
+  `cfg["train"]`: ZeRO-1 (`zero`), `bf16_params`, `fused_ce_chunk: N`
+  (chunked lm_head+CE with recompute — unlocks mb>=8), per-Block
+  checkpointing (unconditional). The full-vocab CE alone needs ~23 GB of
+  scratchpad at mb=8 (`NCC_EOOM002`).
+* **Silent numeric bugs on this XLA build (no crash, wrong numbers):** a bool
+  `.sum()` returns `-1` (negates and un-normalises the loss — cast to float
+  before reducing); `torch.gather` over the vocab dim returns zeros (§4).
+  Verify any new reduction against CPU.
+* **Launch with `xmp.spawn`, not torchrun, to pin a core subset**: torchrun's
+  `Initializer` overwrites `NEURON_RT_VISIBLE_CORES` with `LOCAL_RANK`.
+  `xmp.spawn` honours it. Per concurrent job set distinct `MASTER_PORT`
+  (default 12355 collides -> silent hang at init) and
+  `NEURON_RT_ROOT_COMM_ID` (else `CCOM WARN Timeout waiting for RX`). Core
+  ids are the physical ids `neuron-ls` shows (0-63, 4 per device).
+* **Concurrency hazards:** launch staggered (parallel first-compiles of one
+  graph deadlock); a mid-compile kill leaves `MODULE_*/*.lock` files that
+  block every later job (`find $CACHE -name '*.lock' -delete`); xmp workers
+  are `python3 -c from multiprocessing.spawn...`, so kill by PID from
+  `neuron-ls --show-all-procs`; cores take 5-10 s to free after SIGKILL;
+  failures present as hangs — a step-timeout watchdog is mandatory.
+* **Compiler flags:** `--optlevel=2/3` ballooned the scratchpad 8 -> 23 GB
+  (OOM where O1 fit); `--auto-cast=none` also grew it. Keep `-O1`.
+* **Measured:** world=8 (2 chips) = 47k tok/s = **23,500 tok/s/chip, MFU
+  23.1% (HFU 29.8%)** at 6.54 GF/token (+1.91 GF ckpt recompute) vs 667
+  TF/s; GH200 = 61,750 tok/s/GPU, MFU 40.9%.
+* **`warm_start`** (`cfg["warm_start"]["from"]`) loads model weights only and
+  sets the token/step counter so the WSD schedule continues; applied before
+  the optimizer is built. ZeRO saves per-rank `<tag>.optim.rank<r>.pt`
+  sidecars; resume needs the same world size; model-only saves stay
+  byte-compatible with the CUDA trainer.
+* Production launcher (outside the repo, holds a wandb key):
+  `/home/ubuntu/xscript_prod/` — `prod_train.py`, `run_prod.sh`,
+  `orchestrate_zh15.sh` (staggered launch + restart-on-hang), `STATUS.md`.
+  Proven config: fp32 params, mb=2, ZeRO-1, full CE, `-O1`, world=8.
 
-Model FLOPs/token = **6.54 GF** (fwd+bwd over body+head+attention); activation
-checkpointing adds **1.91 GF** of recompute on Neuron that the CUDA trainer does
-not pay (it has no checkpointing), hence MFU vs HFU below.
+---
 
-| | tok/s per accelerator | model TF/s | MFU |
+## 10. TorchNeuron Native (private beta): the training recipe, setup, and what does NOT work
+
+Native-PyTorch backend for Trainium (`torch.device("neuron")`, eager +
+`torch.compile`, standard `torch.distributed`), set up 2026-08-25 on this
+`trn2.3xlarge` and tuned over ~50 measured experiments (2026-08-25/26).
+
+**Bottom line: the recipe below trains the de-starved 1B model at
+47,079 tok/s per chip, MFU 46.2% (47,225 / 46.3% with an optional runtime
+flag) — 2.0x the XLA hand-port (§9) and above GH200's 40.9% MFU. It
+generalises unchanged to 1.7B (44.9% vs 44.8% per Block). The search is
+converged: hardware counters show the device 98% busy with the remaining
+gap inside the compiler's kernels, and every framework-level lever has been
+A/B'd (§10f).** Every number here is in `scripts/neuron_native/results/`.
+
+### 10a. Quick start (3 commands, ~6 min; ~2.5 min more on a cold NEFF cache)
+
+On a fresh instance do §10h first (bare box -> container with the repo
+mounted); on this box the container already exists.
+
+```bash
+sudo docker exec -it neuron-native bash                 # repo is mounted at /repo
+cd /repo/scripts/neuron_native
+export TORCH_NEURONX_SEGMENT_ALLOCATOR_CONFIG='kMaxSplitSizeBytes=268435456,kMaxNonSplitRoundingBytes=67108864'
+NEURON_RT_NUM_CORES=4 torchrun --nproc_per_node 4 --rdzv_backend c10d \
+    --rdzv_endpoint localhost:29500 bench_train.py \
+    --micro-bsz 2 --compile --ce-compile --tail-compile --bf16-shadow-hooks --zero \
+    --steps 4 --warmup 1
+```
+
+Expected `[bench] RESULT {... "tok_per_s": ~47100, "mfu_vs_chip": ~0.46}`,
+and — because the synthetic data is seeded — a **deterministic loss trace:
+step 1 = 11.4956, step 2 = 11.3108**. A different loss means different
+numerics, not noise; a different tok/s beyond +-0.5% means a contaminated
+measurement (see the benchmarking trap in §10g). Add
+`NEURON_RT_DISABLE_EXECUTION_BARRIER=1` for +0.3% (optional; it removes a
+runtime safety barrier — validate on the real trainer first). `--accum 8`
+is a ~2-min smoke run (~41k; per-step overhead amortised over 8 micros).
+
+### 10b. The recipe — every item is load-bearing and was measured
+
+| # | what | why / what happens without it |
+|---|---|---|
+| 1 | **`torch.compile(backend="neuron", dynamic=False)` on each Block, plus a compiled embedding graph and a compiled (final-norm + lm_head + CE) tail graph** (`--compile --ce-compile --tail-compile`) | eager runs at 200-500 tok/s/core. Granularity is settled in both directions (ms per 2048 tokens at mb=2): whole Block **9.14**, norm+attn \| norm+ffn 9.26, attn \| ffn with eager norms 12.93, 4-way split 12.88, group-of-4 slightly worse; and the WHOLE forward+loss as one graph is fine at mb=1 (37.1k) but pathologically slow at mb=2 (11k) even with memory to spare. Compiled tail vs eager norm/embedding: +1.1% |
+| 2 | **Rewrite `model.py`'s `_apply_rope` view-based** (`rope_fix.apply_rope_viewbased`; `x.view(...,D//2,2)` + `stack`) — verified **bitwise identical** fwd and bwd | the strided even/odd slice-assign lowers to kernels ~60x slower than bandwidth-bound: 13.5 of every Block's 22 ms. This single edit was worth +76% (20.4k -> 35.9k) |
+| 3 | **`.contiguous()` after each `transpose(1,2)` in `Attention.forward`** | required for `torch.compile` to lower the Block at all (`failed to legalize 'torch.constant.int'` on the non-contiguous view). Free: the compiler elides the copies (9.13-9.14 ms with or without) |
+| 4 | **CE head as `logsumexp(logits) - gather(logits, target)`** (default; `--ce-fce` restores `F.cross_entropy`) | same value to 1e-6 and same gradient, but the compiler skips materialising the (N, 65536) fp32 log-softmax: 22.8 vs 30.5 ms fwd+bwd. Every other form loses (one-hot, manual max/exp, bf16-kept gather, in-graph chunking, AWS's `nkilib` CE kernel) |
+| 5 | **micro-batch 2, no activation checkpointing** | Block ms per 2048 tokens: mb=1 **11.20**, mb=2 **9.11**, mb=4 8.72, mb=8 8.54 — the curve is flat past 2, and mb>=3 OOMs at 24 GiB (5.1 GiB of saved activations per unit of mb; per-Block graphs keep the backward transient at 1.2 GiB vs 4 GiB whole-graph, which is what lets mb=2 fit at all: peak 21.0 GiB, 0 OOM events) |
+| 6 | **bf16 shadow copies of the Linear weights, refreshed once per optimizer step; fp32 master params in the optimizer; each parameter's bf16 grad added into the fp32 `.grad` from a post-accumulate-grad hook** (`--bf16-shadow-hooks`) | +4.8% (44.9k -> 47.1k). Removes ~6 GB/micro of autocast weight casts and halves the fresh-grad write. Numerically the same bf16 matmul outputs autocast produces (fp32 weights are cast to the identical bf16 values every forward). Costs 2.8 GiB — the first thing to drop when memory binds (§10d) |
+| 7 | **world = 4 = one process per LNC2 logical core (a Trainium2 chip = 8 physical cores = 4 logical x 24 GB); ZeRO-1 via `torch.distributed.optim.ZeroRedundancyOptimizer`; one explicit `all_reduce(AVG)` per parameter per step, no DDP wrapper** | fp32 AdamW needs 17.4 GB/rank unsharded and nothing else fits. `NEURON_RT_VIRTUAL_CORE_SIZE` / `NEURON_LOGICAL_NC_CONFIG=1` do not change the 4 x 24 GB layout |
+| 8 | **`TORCH_NEURONX_SEGMENT_ALLOCATOR_CONFIG='kMaxSplitSizeBytes=268435456,kMaxNonSplitRoundingBytes=67108864'`** | the caching allocator fragments and OOMs on iteration 2+ even when iteration 1 fits (largest free chunk 6-46 MB vs the 512 MB `[65536,2048]` tensors); this is the CUDA `max_split_size` analogue |
+| 9 | Compiler at `-O1` (torch_neuronx's default); int32 token ids; `dist.init_process_group(backend="neuron")`; device `neuron:{torch_neuronx.current_device()}` | `-O2`/`-O3` are 4x slower whole-graph and neutral per-Block; int64 is auto-cast with a warning every run |
+
+`scripts/neuron_native/` (mounted at `/repo/scripts/neuron_native`):
+`bench_train.py` is the trainer replica with every flag above and every
+dead-end flag below; `rope_fix.py` the rope rewrite + bitwise test;
+`block_mb.py` / `block_shapes.py` / `comp_bench.py` / `block_bench.py` the
+roofline and component timers; `profile_step.py` the profiler harness;
+`results/*.json` every configuration ever run.
+
+### 10c. Results
+
+| stack (all: same `model.py`, AdamW 0.9/0.95 wd 0.1, bf16 autocast + fp32 master, clip 1.0, 999,424-token steps) | tok/s per accelerator | MFU |
+|---|---|---|
+| GH200 (CUDA `train.py`) | 61,750 | 40.9% |
+| **Trn2 native beta — the recipe** | **47,079 /chip** | **46.2%** |
+| … + `NEURON_RT_DISABLE_EXECUTION_BARRIER=1` | 47,225 | 46.3% |
+| … without bf16 shadow weights (fp32 weights cast in-graph) | 44,905 | 44.0% |
+| … mb=1 instead of 2 | 37,096 | 36.4% |
+| Trn2 XLA hand-port (§9) | 23,500 | 23.1% (HFU 29.8%) |
+| native, whole-graph compile, `model.py` rope as-is | 20,428 | 20.0% |
+| native, first attempt (per-Block + checkpointing + eager chunked CE) | 6,958 | 6.8% |
+| native, eager | ~200-500 /core | — |
+
+MFU = tok/s x 6.54 GF/token / 667 TF/s (dense bf16 chip peak); tok/s is
+wall-clock over full optimizer steps including all-reduce, clip and ZeRO
+step, `torch_neuronx.synchronize()`d. Synthetic data (throughput is
+data-independent; the packed shards are on Isambard).
+
+**Why it stops at ~46% — the hardware counters.** `neuron-explorer` (the
+replacement for the removed `neuron-profile`) on the compiled Block NEFF:
+
+```bash
+find /tmp/neff_cache -name '*.neff' -printf '%s %p\n' | sort -rn | head    # biggest = Block graphs
+neuron-explorer capture -n <neff> -s p.ntff        # device must be otherwise idle
+neuron-explorer view -s p.ntff -n <neff> --output-format summary-text
+```
+
+| counter | value | reading |
+|---|---|---|
+| `neuroncore_utilization` (`neuron-monitor`, live, all 4 ranks) | **~98%** | the device is saturated — there is no idle time to reclaim |
+| `tensor_engine_active_time_percent` | **0.229** | …but the PE array is active only 23% of it |
+| `scalar_engine_active_time_percent` | **0.872** | the scalar engine (softmax, silu, norms, casts) is the busy one |
+| `transpose_flops / hardware_flops` | **17.7%** | nearly a fifth of PE work is transposes |
+| `spill_reload_bytes` | **3.57 GB** | heavy SBUF -> HBM spilling per graph |
+| `throttle_avg_util_limit_nc*_percent` | **0.58** | the hardware caps utilisation to 50% for 83% of the time |
+
+Consistent with the roofline (`comp_bench.py`): pure matmuls reach 43% of
+peak at 2048^3 but 71% at N=5632 and 90% for the lm_head, and the Block is
+45.5% of peak at mb=2 vs only 48.5% at mb=8 (the batch asymptote). The
+ceiling is the compiler's instruction mix on **these shapes** — which is
+also why the 7B-shaped Block below reaches 54%. Host CPU is 99% idle,
+`torch._dynamo.explain` shows one graph with zero breaks per Block, and the
+`torch.profiler` trace has no inter-graph gaps: nothing framework-level is
+left (the ledger in §10f is the proof).
+
+### 10d. Other model sizes (1.7B) — compute generalises, memory is the constraint
+
+Per compiled Block at mb=2 (`block_shapes.py`; reproduces to +-0.2%):
+
+| shape | dim / ffn / heads (layers for ~1.7B) | TF/s | % of peak |
 |---|---|---|---|
-| GH200 (Isambard, 4/node, W&B `tok_per_s` 247k) | 61,750 | 404 | **40.9%** |
-| Trn2 (world=8 = 2 chips, 47k) | 23,500 | 154 | **23.1%** (HFU 29.8%) |
+| 1B (current) | 2048 / 5632 / 16 (16) | 74.7 | 44.8% |
+| **1.7B deep** | 2048 / 5632 / 16 (28) | 74.8 | **44.9%** |
+| **1.7B wide** | 2560 / 6912 / 20 (18) | 74.3 | **44.6%** |
+| 2.5B | 3072 / 8192 / 24 | 70.8 | 42.5% |
+| 7B-ish | 4096 / 11008 / 32 | 90.1 | **54.0%** |
 
-Peak bf16 dense assumed: GH200 989 TF/s, Trn2 667 TF/s. The per-accelerator gap
-is **2.63x**, of which **1.48x is raw peak** and **1.77x is efficiency** — so
-per-chip efficiency was never the main problem. At 23.5k tok/s/chip all 16 chips
-would give **376k tok/s, ~1.5x a 4xGH200 node**; the world=8 cap is what made it
-0.19x instead.
+Memory at 1.7B, MEASURED at world=4 (`--memprobe` peak of 24 GiB):
+mb=1 no ckpt with shadow — **OOM**; mb=1 + full ckpt with shadow — 20.4 GiB
+but still **OOM**; mb=1 + full ckpt, no shadow — **17.5 GiB, runs**. The
+persistent floor (fp32 master 6.4 + fp32 grads 6.4 + bf16 shadow 2.8 =
+15.6 GiB) does not shrink with world size under ZeRO-1; only Adam does
+(3.2 GiB at world=4 -> ~0.2 at world=64, so on the 16-chip box mb=1 fits
+without checkpointing). Prefer the **wide** geometry (same MFU, ~20% less
+activation memory).
 
-### Resuming from a foreign checkpoint (`warm_start`)
+Measured cost of each workaround (1B, isolated, 3 repeats, +-0.4%):
+activation checkpointing **-20%** (exactly its +29% FLOPs — it is only
+"3x slower" *inside* a whole-graph compile); dropping the shadow weights
+-4.8%; mb=2 -> 1 -23%. ZeRO-2 gradient sharding would free 6.4 GiB and is
+the way to keep mb=2 without checkpointing (untested on this beta; each
+world=64 shard is ~100 MB, well inside what worked).
 
-`cfg["warm_start"] = {"from": <path>}` loads *model weights only* from a
-checkpoint that has no optimizer state (e.g. the Isambard 12B partials) and sets
-the token/step counter so the WSD schedule continues from there. It is applied
-in `__init__` **before** the optimizer is built, so ZeRO's fp32 master is sharded
-from the loaded weights rather than the random init, and only on the first
-launch (later restarts resume from `last.pt` with real optimizer state).
-Verified exact: resumed at step 12820 / 11.76B with lr and loss continuing.
+**Planning numbers for four 1.7B x 100B-token runs on a trn2.48xlarge**
+(44.9% x 667 TF/s, 10.13 GF/token, linear scaling): mb=2 no ckpt (needs
+ZeRO-2) 29.6k tok/s/chip -> **~9.8 days**; mb=2 + ckpt 22.9k -> ~12.6 days;
+mb=1 no ckpt no shadow 21.7k -> ~13.4 days. Run them as four concurrent
+4-chip jobs (world=16, grad_accum 30) rather than sequentially on 16 chips
+(world=64, grad_accum 7): same chip-hours, 4x better all-reduce
+amortisation, failure isolation. ⚠ Multi-chip scaling is UNMEASURED —
+spend the first hour of any reservation on it (`bench_train.py` runs
+unchanged; that is also where `TORCH_NEURONX_ENABLE_HOST_CC=1` becomes
+worth testing).
 
-Checkpoint layout note: under ZeRO the optimizer state is **sharded per rank**,
-so `save()` writes `<tag>.optim.rank<r>.pt` sidecars (xm.save writes only the
-master ordinal). Resume requires the **same world size**. Model-only saves
-(`resumable=False`) are unaffected and stay byte-compatible with the CUDA
-trainer's checkpoints.
+### 10e. Porting `xscript.train` for real — the diff list
 
-### Production launcher
+`bench_train.py` already implements all of this; `train.py` needs:
 
-`/home/ubuntu/xscript_prod/` (outside the repo, holds a wandb key):
-`prod_train.py` (xmp entry, forces the proven config), `run_prod.sh` (per-model
-env + core pinning), `orchestrate_zh15.sh` (staggered launch + keep-alive that
-restarts on death **or** hang, resuming from `last.pt`), `STATUS.md`.
-Proven-stable config for unattended runs: **fp32 params, micro_batch=2, ZeRO-1,
-full cross-entropy, `--optlevel=1`, world=8**.
+1. `device = torch.device(f"neuron:{torch_neuronx.current_device()}")`,
+   `dist.init_process_group(backend="neuron")`, torchrun with
+   `NEURON_RT_NUM_CORES=<ranks>`; `torch.autocast("neuron", bfloat16)` works.
+2. `model.py`: `_apply_rope` -> `rope_fix.apply_rope_viewbased`; `.contiguous()`
+   after the three transposes in `Attention.forward`. Both numerically
+   identical, so safe to land for the CUDA trainer too (not done — the bench
+   monkeypatches).
+3. Compile: `layer.compile(backend="neuron", dynamic=False)` per Block, plus
+   the embedding and the (norm + lm_head + lse-CE) tail as two more graphs.
+   Keep the loop (backward, all-reduce, clip, step) eager. ~2.5 min TTFI per
+   new shape, then the persistent NEFF cache.
+4. Shadow weights: a bf16 copy of every Linear weight, refreshed after each
+   `optim.step()`; post-accumulate-grad hooks add each bf16 grad into the fp32
+   master `.grad` and free it. Masters go to `ZeroRedundancyOptimizer(...,
+   AdamW)`; save with `consolidate_state_dict()` on rank 0 — the model
+   `state_dict` is unchanged and byte-compatible.
+5. `micro_batch_size: 2` for the 1B model (world=4 -> grad_accum 61). For
+   1.7B use §10d's table.
+6. int32 token ids; the allocator env var; `-O1`; optionally
+   `NEURON_RT_DISABLE_EXECUTION_BARRIER=1`.
 
-Compiler-flag caveat: `--optlevel=2/3` **ballooned the scratchpad 8GB → 23GB**
-for this model and caused OOM where O1 fit. `--auto-cast=none` was also
-implicated in scratchpad growth. Keep `--optlevel=1` for memory-bound models.
+**Minimal reference implementation** — the whole recipe in ~50 lines, the
+same code paths `bench_train.py` runs (`--compile --ce-compile
+--tail-compile --bf16-shadow-hooks --zero`), stripped of its dead-end
+flags. **Verified** (`ref_test.py` runs this code verbatim with the bench's
+seeding): loss trace 11.4956 / 11.3108 / 12.3931 — identical to §10a — at
+46,874 tok/s, MFU 46.0%. Launch with `NEURON_RT_NUM_CORES=4 torchrun
+--nproc_per_node 4 ...` and the allocator env var from §10a:
+
+```python
+# ---- one-time setup (torchrun sets RANK/WORLD_SIZE; NEURON_RT_NUM_CORES=4) ----
+import copy, torch, torch.distributed as dist, torch.nn.functional as F, torch_neuronx
+from torch.distributed.optim import ZeroRedundancyOptimizer
+import xscript.model as M
+from rope_fix import apply_rope_viewbased
+M._apply_rope = apply_rope_viewbased          # item 2 (item 3 = .contiguous() in Attention.forward)
+dist.init_process_group(backend="neuron")
+dev = torch.device(f"neuron:{torch_neuronx.current_device()}")
+master = M.Transformer(cfg).to(dev)            # fp32; owns the optimizer state
+optim = ZeroRedundancyOptimizer(master.parameters(), optimizer_class=torch.optim.AdamW,
+                                lr=3e-3, betas=(0.9, 0.95), weight_decay=0.1, eps=1e-8)
+# bf16 shadow model: Linear weights bf16, everything else SHARES the fp32 storage
+shadow = copy.deepcopy(master)
+lin = {id(m.weight) for m in shadow.modules() if isinstance(m, torch.nn.Linear)}
+pairs = []
+for ps, pm in zip(shadow.parameters(), master.parameters()):
+    ps.data = pm.data.to(torch.bfloat16) if id(ps) in lin else pm.data
+    pairs.append((ps, pm))
+def _hook(pm):                                  # bf16 grad -> fp32 master .grad, freed immediately
+    def h(ps):
+        g = ps.grad
+        pm.grad = (g.float() if g.dtype != torch.float32 else g.clone()) if pm.grad is None else pm.grad.add_(g)
+        ps.grad = None
+    return h
+for ps, pm in pairs: ps.register_post_accumulate_grad_hook(_hook(pm))
+for blk in shadow.layers: blk.compile(backend="neuron", dynamic=False)      # item 1: per-Block graphs
+emb = torch.compile(lambda w, idx: F.embedding(idx, w), backend="neuron", dynamic=False)
+def _tail(x, nw, eps, w, t):                    # final RMSNorm + lm_head + lse-gather CE, one graph
+    f = x.float(); f = f * torch.rsqrt(f.pow(2).mean(-1, keepdim=True) + eps)
+    lg = ((f * nw.float()).to(x.dtype).reshape(-1, x.size(-1)) @ w.t()).float()
+    lse = torch.logsumexp(lg, -1); tl = lg.gather(1, t.clamp(min=0).long().unsqueeze(1)).squeeze(1)
+    valid = (t != -100).to(lg.dtype); return ((lse - tl) * valid).sum() / valid.sum().clamp(min=1.0)
+tail = torch.compile(_tail, backend="neuron", dynamic=False)
+def forward_loss(idx, tgt):                     # idx, tgt: int32 [mb, T]
+    x = emb(shadow.tok_emb.weight, idx)
+    cos, sin = shadow._rope_for(idx.shape[1], idx.device, x.dtype)
+    for blk in shadow.layers: x = blk(x, cos, sin)
+    return tail(x, shadow.norm.weight, shadow.norm.eps, shadow.lm_head.weight, tgt.reshape(-1))
+# ---- one optimizer step (mb=2, grad_accum=61 at world=4 -> 999,424 tokens) ----
+optim.zero_grad(set_to_none=True)
+for x, y in micro_batches:
+    with torch.autocast("neuron", dtype=torch.bfloat16):
+        loss = forward_loss(x, y)
+    (loss / grad_accum).backward()              # hooks accumulate into master .grad
+for pm in master.parameters(): dist.all_reduce(pm.grad, op=dist.ReduceOp.AVG)
+torch.nn.utils.clip_grad_norm_(master.parameters(), 1.0)
+optim.step()
+with torch.no_grad():                           # refresh the bf16 shadows ONCE per step
+    for ps, pm in pairs:
+        if id(ps) in lin: ps.data.copy_(pm.data)
+```
+
+### 10f. What does NOT work — the measured dead-end ledger (don't re-try on this SDK)
+
+Compile / graph structure
+* Whole-graph compile at mb=2: 11k tok/s (pathological) — fine only at mb=1.
+  Checkpointing *inside* a compiled graph: 3x slower (`--ckpt-blocks`,
+  `--full-compile --ckpt`, `--compiled-autograd` all OOM or crawl).
+  Sub-Block and group-of-4 graphs: worse (§10b row 1).
+* Compiler flags (19 A/B'd on the Block; list them with `strings
+  .../driver/commands/CompileCommand*.so | grep -oE '^--[a-z][a-z0-9-]+'`,
+  read with `neuronx-cc compile --help-hidden`): all neutral or worse.
+  ⛔ `--internal-autotune=1` reads +0.2% on the Block but is **36% slower on
+  the real step** — never judge a flag on the micro-bench alone.
+  `--internal-tensorizer-opt-level=operator-fusion` +12% time;
+  `--fast-math=fp32-cast-all`, `--scheduler=none`,
+  `--enable-ccop-compute-overlap`, `--vectorize-strided-dma`,
+  `--experimental-multi-level-tensorization` fail to compile.
+* Backend env knobs: `NKI_DMA_TRANSPOSE_AS_PE_TRANSPOSE=1` 4.5% slower;
+  `TORCH_NEURONX_ENABLE_CONCATENATION`, `TORCH_NEURONX_MLIR_ATEN_OPS`,
+  `--model-type=transformer` identical; tensorizer backend crashes.
+* Runtime knobs (`strings libnrt.so | grep NEURON_RT_`):
+  `ASYNC_EXEC_MAX_INFLIGHT_REQUESTS=16` neutral; `XU_COMPUTE_MAX_QUEUED_REQUESTS=64`
+  crashes; `DISABLE_EXECUTION_BARRIER=1` is the only winner (+0.3% at full
+  accumulation, +3% at accum 8).
+
+Memory / batch
+* mb=3 and mb=4 OOM; FFN token-chunking to cut spill (identical math):
+  1 chunk 9.16, 2 -> 10.29, 4 -> 11.33 ms. Spilling is the compiler's choice.
+* Flat-buffer ZeRO-1 (`flat_zero.py`): same 20.2 GiB peak as
+  `ZeroRedundancyOptimizer`, then OOM (two 4 GB contiguous buffers fragment
+  the pool). Manual `autograd.grad` + `_foreach_add_` accumulation: OOM
+  (holds a full fresh grad set). `bf16_params` (no fp32 master): 3.3x slower
+  AND deviates.
+
+Gradient accumulation (a ~9% tax: `AccumulateGrad`'s 147 eager adds = 32 ms
+per micro; one `_foreach_add_` 22.6 ms; a flat 4.4 GB `add_` 21.3 ms = the
+HBM floor at ~0.58 TB/s per logical core)
+* Winner: bf16 shadow + per-parameter hooks (§10b row 6). Batching the hook
+  adds (`--hook-batch 8`) is slower (46.0k vs 47.2k). `foreach=True`
+  clipping / AdamW: no change.
+
+Collectives
+* 4 GB `all_gather_into_tensor` and `all_reduce_coalesced` fail to allocate
+  ("NRT model scheduling failed" / "Failed to load model with collectives").
+  DDP-style async all-reduce overlapping the last backward (`--overlap-ar`):
+  **1.6x slower** — async collectives stall the compiled graphs. The 219
+  synchronous per-parameter all-reduces (~2% of a step) are right.
+
+Kernels
+* Custom NKI kernels lose to compile-friendly torch for elementwise ops: an
+  interleaved-rope kernel (`nki_rope.py`, bitwise-exact, faster standalone)
+  is slower in-graph (custom-op boundary blocks fusion); an RMSNorm fwd+bwd
+  kernel loses 4.4 vs 0.81 ms, and the ACT engine's `rsqrt` is a ~2^-12
+  table. AWS's own `nkilib` cross-entropy kernel (`nki_ce.py`) is exact but
+  slower (29.6 vs 22.9 ms); it needs `chunk_size=16384` for fp32
+  (`chunk*4B*2 <= 229,376`). NKI 0.6 API notes: `import nki` (not
+  `neuronxcc.nki`); no `nl.arange` — slice with `nl.ds`; tile math via
+  `nl.multiply/add/subtract` or `nisa.tensor_tensor(dst=...)`; `(1, D)` does
+  not partition-broadcast — `nl.broadcast_to`; `nisa.activation` fuses op +
+  reduce.
+* Attention: SDPA already dispatches to `nkilib`'s flash kernels (fwd
+  `attention_cte`, bwd `attention_bwd`, ~30% util). The math decomposition
+  (`TORCH_NEURONX_ENABLE_NKI_SDPA=0`) is much worse (16.6 vs 11.2 ms/Block).
+  ⛔ **Trn2 is NKI `gen3`**: `mm_out_dtype=bfloat16` (2-byte PSUM) is
+  Trn3+ only; `mixed_precision=False` in the backward is a wash and changes
+  numerics (`sdpa_patch.py` keeps both for a later SDK). The 8 transposes
+  per attention are free inside compiled graphs.
+* Fusions and reformulations, all ~zero at the component level
+  (`fast_modules.py`, `fused_shadow.py`, `glue_bench.py`, `head_bench*.py`):
+  fused `[3D,D]` qkv (even materialised once per step: 1% slower — `split`'s
+  backward concatenates), fused `[2FF,D]` w1|w3, `F.rms_norm` and three
+  other norm forms, `g*sigmoid(g)*u` / fp32 silu, the NKI
+  embedding-backward path (`TORCH_NEURONX_EMBEDDING_BWD_NKI_THRESHOLD=1`,
+  4.7 vs 2.8 ms).
+
+**Beta feedback candidates** (per the guide's ask): the strided slice-assign
+rope lowering (60x — the biggest single perf bug found); the non-contiguous
+MLIR lowering failure; fragmentation OOM at default allocator settings;
+whole-graph mb=2 pathology; `-O2`/`-O3` whole-graph regression;
+`--internal-autotune` regression; tensorizer crash; 4 GB collectives failing
+to allocate; async collectives stalling compiled graphs; 43% PE util on
+2048^3 matmuls with 17.7% transpose FLOPs and 3.5 GB spill per graph; ACT
+`rsqrt` precision; LNC1 not selectable.
+
+### 10g. Operational lessons (each cost real time)
+
+* ⛔ **Benchmarking trap:** chaining runs of NEW model shapes back-to-back
+  contaminates timings — neuronx-cc subprocesses from run N are still
+  compiling while run N+1 times its steps, and `--warmup 1` does not absorb
+  it. The same 28-layer config read 2.9k, 15.5k and 3.6k tok/s in chains,
+  while isolated warm-cache repeats are stable to +-0.4%. **Warm the cache
+  for a shape, then re-run it isolated**, and keep the canonical control
+  (§10a reproduces 47.2k with an identical loss trace every time).
+* Never chain device jobs with `until [ $(ps aux | grep -c '<script>') -eq 0 ]`
+  waiters: each waiter's own command line contains the next script's name,
+  so queued waiters deadlock (the §6f trap, again). When the Claude Code
+  process exits, `docker exec` clients die but container-side loops survive
+  as orphans. Do: ONE detached sequential chain
+  (`docker exec -d ... 'a; b; c; echo done > marker'`), every job's output
+  to a file, poll the marker. Kill by PID from `ps -eo pid,args`, never
+  `pkill -f <pattern>` (it matched its own shell).
+* `neuron-explorer capture` fails silently ("exited with an error") if the
+  device is busy; run it alone. A `torch.profiler` trace with
+  `torch_neuronx.profiling.NeuronConfig` works but its chrome categories
+  nest, so sum nothing from it — use `key_averages()` and `neuron-explorer`.
+* `torch.compile` on `Attention` failed only in composition (every submodule
+  compiled alone) — bisect at the composition level, not per op.
+* Kill a stalled `torchrun` with `pkill -9 -f bench_train.py; pkill -9 -f
+  torchrun` from the HOST (`sudo docker exec neuron-native ...`), then wait
+  ~8 s for cores to free.
+
+### 10h. Environment — how to use it, and the fresh-instance setup
+
+**On this box:** `sudo docker exec -it neuron-native bash` (torch 2.12.1,
+torch-neuronx 2.12.3, python 3.12; repo at `/repo`). The container is
+`--privileged`, restart-policy `unless-stopped`. Host tools (`neuron-ls`,
+`neuron-top`, `neuron-monitor`, `neuron-explorer`) live in
+`/opt/aws/neuron/bin` (in `~/.bashrc` PATH). Beta artifacts (wheels, runtime
+debs, `torch_neuron_eager` source + examples + the torchtitan diffs) are in
+`/home/ubuntu/workspace/`.
+
+**Fresh instance (~20 min, mostly the image pull):**
+
+1. Attach an EC2 instance role with `AmazonEC2ContainerRegistryReadOnly`
+   (no keys needed; cross-account access to the beta registry worked; the
+   registry is us-east-1 regardless of the instance's region).
+2. `sudo apt-get update && sudo apt-get install -y docker.io awscli dkms
+   build-essential "linux-headers-$(uname -r)" libhwloc-dev && sudo usermod
+   -aG docker ubuntu` — `libhwloc-dev` is an undocumented dependency of
+   `aws-neuronx-collectives`.
+3. `git clone <this repo> /home/ubuntu/XScript-Pretraining` (it is bind-mounted
+   into the container as `/repo` in the next step), then:
+   ```bash
+   aws ecr get-login-password --region us-east-1 | sudo docker login --username AWS --password-stdin 421672808698.dkr.ecr.us-east-1.amazonaws.com
+   sudo docker pull 421672808698.dkr.ecr.us-east-1.amazonaws.com/concourse-release-0461d3b:latest
+   imageID=$(sudo docker images -q --filter reference=421672808698.dkr.ecr.us-east-1.amazonaws.com/concourse-release-0461d3b)
+   cd ~ && sudo docker create --name tmp $imageID && sudo docker cp tmp:/workspace . && sudo docker rm tmp && sudo chown -R ubuntu:ubuntu ~/workspace
+   sudo dpkg -i ~/workspace/runtime_artifacts/*.deb && sudo modprobe neuron && /opt/aws/neuron/bin/neuron-ls
+   sudo docker run -d --privileged --restart unless-stopped --name neuron-native \
+     -v /home/ubuntu/XScript-Pretraining:/repo $imageID sleep infinity
+   ```
+4. Smoke test: `sudo docker exec neuron-native bash -c "pip install
+   transformers && cd /workspace/torch_neuron_eager/examples/gpt2-train-loop
+   && python3 train.py"` (2 iterations, loss ~11.05, ~1 min).
+
+What the guide doesn't say: the beta DKMS driver builds clean on kernel 7.0
+(no `mm_get_unmapped_area` patch needed); the host-venv "Option B" is
+impossible on Ubuntu 26.04 (cp312 wheels, only Python 3.14 available) — use
+Docker; `:latest` is a moving target (the 5/15 guide says torch 2.11, the
+Aug-5 image ships 2.12.1 / torch-neuronx 2.12.3.0 / neuronx-cc 2.27 / nki
+0.6.0 — record `pip list`); int64 and float64 are auto-downcast with a
+warning; `NKI_ENABLE_TRACE_CACHE=1` persists the NKI kernel cache across
+processes (set 0 if kernels behave inconsistently).

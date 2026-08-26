@@ -1,0 +1,19 @@
+{
+  "tag": "mb2-ckpt",
+  "world": 1,
+  "micro_bsz": 2,
+  "grad_accum": 2,
+  "ckpt": true,
+  "ce_chunk": 2048,
+  "zero": false,
+  "compile": false,
+  "steps": 3,
+  "tokens_per_step": 8192,
+  "seconds": 127.11,
+  "tok_per_s": 193,
+  "model_tflops": 1.3,
+  "hw_tflops": 1.7,
+  "mfu_vs_chip": 0.0019,
+  "hfu_vs_chip": 0.0025,
+  "note": "per-chip MFU valid when all ranks are on one chip (world<=4); world=1 uses 1/4 of the chip"
+}

@@ -1,0 +1,21 @@
+{
+  "tag": "w4-sanity",
+  "world": 4,
+  "micro_bsz": 2,
+  "grad_accum": 2,
+  "ckpt": true,
+  "ce_chunk": 512,
+  "ce_compile": false,
+  "full_compile": false,
+  "zero": true,
+  "compile": true,
+  "steps": 2,
+  "tokens_per_step": 32768,
+  "seconds": 34.51,
+  "tok_per_s": 1899,
+  "model_tflops": 12.4,
+  "hw_tflops": 16.6,
+  "mfu_vs_chip": 0.0186,
+  "hfu_vs_chip": 0.0248,
+  "note": "per-chip MFU valid when all ranks are on one chip (world<=4); world=1 uses 1/4 of the chip"
+}

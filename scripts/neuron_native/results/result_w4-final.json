@@ -1,0 +1,21 @@
+{
+  "tag": "w4-final",
+  "world": 4,
+  "micro_bsz": 2,
+  "grad_accum": 61,
+  "ckpt": true,
+  "ce_chunk": 512,
+  "ce_compile": false,
+  "full_compile": false,
+  "zero": true,
+  "compile": true,
+  "steps": 3,
+  "tokens_per_step": 999424,
+  "seconds": 480.41,
+  "tok_per_s": 6241,
+  "model_tflops": 40.8,
+  "hw_tflops": 54.4,
+  "mfu_vs_chip": 0.0612,
+  "hfu_vs_chip": 0.0816,
+  "note": "per-chip MFU valid when all ranks are on one chip (world<=4); world=1 uses 1/4 of the chip"
+}
