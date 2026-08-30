@@ -1,0 +1,113 @@
+{
+  "per_language": {
+    "fair/en": {
+      "tokens": 58809,
+      "bytes": 257386,
+      "sentences": 2009,
+      "tok_per_sent": 29.272772523643603,
+      "bytes_per_tok": 4.376643030828615,
+      "distinct_pieces": 8119
+    },
+    "fair/de": {
+      "tokens": 66451,
+      "bytes": 305294,
+      "sentences": 2009,
+      "tok_per_sent": 33.07665505226481,
+      "bytes_per_tok": 4.594272471445125,
+      "distinct_pieces": 9282
+    },
+    "fair/fr": {
+      "tokens": 72512,
+      "bytes": 318500,
+      "sentences": 2009,
+      "tok_per_sent": 36.09357889497262,
+      "bytes_per_tok": 4.392376434245366,
+      "distinct_pieces": 8685
+    },
+    "fair/ar": {
+      "tokens": 60793,
+      "bytes": 411839,
+      "sentences": 2009,
+      "tok_per_sent": 30.260328521652564,
+      "bytes_per_tok": 6.774447716019936,
+      "distinct_pieces": 8943
+    },
+    "fair/zh": {
+      "tokens": 59519,
+      "bytes": 238057,
+      "sentences": 2009,
+      "tok_per_sent": 29.626182180189147,
+      "bytes_per_tok": 3.999680774206556,
+      "distinct_pieces": 7311
+    },
+    "starved/en": {
+      "tokens": 70581,
+      "bytes": 257386,
+      "sentences": 2009,
+      "tok_per_sent": 35.13240418118467,
+      "bytes_per_tok": 3.646675450900384,
+      "distinct_pieces": 5767
+    },
+    "starved/de": {
+      "tokens": 91130,
+      "bytes": 305294,
+      "sentences": 2009,
+      "tok_per_sent": 45.36087605774017,
+      "bytes_per_tok": 3.35009327334577,
+      "distinct_pieces": 5274
+    },
+    "starved/fr": {
+      "tokens": 94374,
+      "bytes": 318500,
+      "sentences": 2009,
+      "tok_per_sent": 46.97560975609756,
+      "bytes_per_tok": 3.374870197300104,
+      "distinct_pieces": 5285
+    },
+    "starved/ar": {
+      "tokens": 89725,
+      "bytes": 411839,
+      "sentences": 2009,
+      "tok_per_sent": 44.6615231458437,
+      "bytes_per_tok": 4.59001393145723,
+      "distinct_pieces": 2431
+    },
+    "starved/zh": {
+      "tokens": 77637,
+      "bytes": 238057,
+      "sentences": 2009,
+      "tok_per_sent": 38.64459930313589,
+      "bytes_per_tok": 3.066282829063462,
+      "distinct_pieces": 3912
+    }
+  },
+  "vocab_by_script": {
+    "fair": {
+      "special": 4,
+      "byte atom": 256,
+      "symbols / digits / space": 2297,
+      "Latin": 30624,
+      "Han": 17625,
+      "Arabic": 13175,
+      "other scripts": 1540,
+      "mixed": 15
+    },
+    "starved": {
+      "special": 4,
+      "byte atom": 256,
+      "symbols / digits / space": 2201,
+      "Latin": 29718,
+      "other scripts": 20157,
+      "Arabic": 3766,
+      "Han": 9104,
+      "mixed": 330
+    }
+  },
+  "fertility_ratio_starved_over_fair_tokens": {
+    "en": 1.2001734428403816,
+    "de": 1.3713864351176055,
+    "fr": 1.3014949249779346,
+    "ar": 1.4759100554340139,
+    "zh": 1.3044069960852838
+  }
+}
