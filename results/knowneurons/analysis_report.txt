@@ -1,0 +1,143 @@
+== 1. FACT SELECTION (PolyFact, n after length filter; acc = argmax raw ll) ==
+run                langs     acc_l1  acc_l2  known1  known2  shared same-answer%
+en-ar-fair         en/ar     0.4949  0.4134    1009     843     681          0.0
+en-ar-starved      en/ar     0.5150  0.3860    1050     787     646          0.0
+en-de-fair         en/de     0.5380  0.4978    1097    1015     800         42.4
+en-de-starved      en/de     0.5282  0.4880    1077     995     800         40.8
+en-fr-fair         en/fr     0.5051  0.4762    1030     971     800         41.2
+en-fr-starved      en/fr     0.5213  0.4625    1063     943     800         41.9
+en-zh-fair         en/zh     0.4993  0.4223    1018     861     709          1.7
+en-zh-starved      en/zh     0.4973  0.4007    1014     817     658          1.7
+
+fair-vs-starved shared-fact-set overlap (Jaccard of fact ids):
+  de (same): J=0.615 (inter=609)
+  fr (same): J=0.656 (inter=634)
+  ar (cross): J=0.659 (inter=527)
+  zh (cross): J=0.707 (inter=566)
+
+== 2. IG COMPLETENESS (|sum Attr - (G1-G0)| / |G1-G0|) ==
+  en-ar-fair         median 0.0523  p90 0.1470
+  en-ar-starved      median 0.1572  p90 0.6102
+  en-de-fair         median 0.2016  p90 0.5895
+  en-de-starved      median 0.0751  p90 0.2367
+  en-fr-fair         median 0.3713  p90 1.2710
+  en-fr-starved      median 0.2884  p90 0.9354
+  en-zh-fair         median 0.2731  p90 0.6717
+  en-zh-starved      median 0.1655  p90 0.4534
+
+== 3. CROSS-LANGUAGE TOP-K OVERLAP (dKS = same-fact J - mismatched-fact J) ==
+
+-- K=50 --
+run                  sameJ   mismJ                 dKS [95% CI]
+en-ar-fair          0.1851  0.1044  +0.0807 [+0.0762, +0.0852]*
+en-ar-starved       0.1271  0.1006  +0.0265 [+0.0232, +0.0300]*
+en-de-fair          0.3283  0.1244  +0.2039 [+0.1946, +0.2131]*
+en-de-starved       0.2399  0.0959  +0.1440 [+0.1377, +0.1500]*
+en-fr-fair          0.2786  0.1464  +0.1322 [+0.1260, +0.1387]*
+en-fr-starved       0.2107  0.0973  +0.1134 [+0.1068, +0.1198]*
+en-zh-fair          0.1499  0.1271  +0.0228 [+0.0190, +0.0269]*
+en-zh-starved       0.1228  0.1002  +0.0226 [+0.0194, +0.0260]*
+
+-- K=100 --
+run                  sameJ   mismJ                 dKS [95% CI]
+en-ar-fair          0.1636  0.0918  +0.0718 [+0.0682, +0.0755]*
+en-ar-starved       0.1236  0.0978  +0.0258 [+0.0232, +0.0285]*
+en-de-fair          0.3315  0.1282  +0.2033 [+0.1942, +0.2119]*
+en-de-starved       0.2342  0.0931  +0.1411 [+0.1355, +0.1467]*
+en-fr-fair          0.2588  0.1235  +0.1352 [+0.1295, +0.1413]*
+en-fr-starved       0.2093  0.0961  +0.1132 [+0.1071, +0.1190]*
+en-zh-fair          0.1352  0.1079  +0.0273 [+0.0241, +0.0306]*
+en-zh-starved       0.1173  0.0915  +0.0258 [+0.0233, +0.0283]*
+
+-- K=200 --
+run                  sameJ   mismJ                 dKS [95% CI]
+en-ar-fair          0.1528  0.0868  +0.0660 [+0.0630, +0.0688]*
+en-ar-starved       0.1215  0.0969  +0.0247 [+0.0226, +0.0270]*
+en-de-fair          0.3319  0.1304  +0.2015 [+0.1925, +0.2099]*
+en-de-starved       0.2270  0.0900  +0.1370 [+0.1319, +0.1423]*
+en-fr-fair          0.2486  0.1097  +0.1389 [+0.1331, +0.1450]*
+en-fr-starved       0.2138  0.0997  +0.1141 [+0.1084, +0.1194]*
+en-zh-fair          0.1257  0.0968  +0.0289 [+0.0263, +0.0317]*
+en-zh-starved       0.1114  0.0859  +0.0255 [+0.0233, +0.0276]*
+
+-- K=500 --
+run                  sameJ   mismJ                 dKS [95% CI]
+en-ar-fair          0.1441  0.0840  +0.0601 [+0.0576, +0.0627]*
+en-ar-starved       0.1223  0.0986  +0.0237 [+0.0220, +0.0257]*
+en-de-fair          0.3308  0.1285  +0.2023 [+0.1939, +0.2107]*
+en-de-starved       0.2241  0.0929  +0.1312 [+0.1263, +0.1359]*
+en-fr-fair          0.2436  0.1032  +0.1404 [+0.1347, +0.1462]*
+en-fr-starved       0.2190  0.1070  +0.1120 [+0.1064, +0.1172]*
+en-zh-fair          0.1268  0.0979  +0.0290 [+0.0267, +0.0313]*
+en-zh-starved       0.1040  0.0799  +0.0242 [+0.0223, +0.0261]*
+
+-- dKS at K=100, split by identical gold surface form --
+run                 n_same   dKS_same  n_diff   dKS_diff
+en-ar-fair               0        nan     681     0.0718
+en-ar-starved            0        nan     646     0.0258
+en-de-fair             339     0.3146     461     0.1215
+en-de-starved          326     0.2036     474     0.0982
+en-fr-fair             330     0.1973     470     0.0916
+en-fr-starved          335     0.1859     465     0.0608
+en-zh-fair              12     0.1694     697     0.0248
+en-zh-starved           11     0.1249     647     0.0241
+
+-- layer distribution of top-100 neurons (share in layers 0-3 / 4-7 / 8-11 / 12-15) --
+  en-ar-fair         en: 0.30 / 0.30 / 0.24 / 0.16
+  en-ar-fair         ar: 0.31 / 0.29 / 0.23 / 0.17
+  en-ar-starved      en: 0.18 / 0.39 / 0.29 / 0.14
+  en-ar-starved      ar: 0.19 / 0.42 / 0.27 / 0.12
+  en-de-fair         en: 0.32 / 0.28 / 0.19 / 0.22
+  en-de-fair         de: 0.28 / 0.30 / 0.21 / 0.22
+  en-de-starved      en: 0.24 / 0.26 / 0.28 / 0.22
+  en-de-starved      de: 0.24 / 0.29 / 0.26 / 0.21
+  en-fr-fair         en: 0.29 / 0.26 / 0.26 / 0.19
+  en-fr-fair         fr: 0.28 / 0.27 / 0.27 / 0.17
+  en-fr-starved      en: 0.27 / 0.24 / 0.28 / 0.20
+  en-fr-starved      fr: 0.27 / 0.23 / 0.28 / 0.22
+  en-zh-fair         en: 0.55 / 0.20 / 0.12 / 0.13
+  en-zh-fair         zh: 0.66 / 0.16 / 0.10 / 0.08
+  en-zh-starved      en: 0.34 / 0.29 / 0.23 / 0.14
+  en-zh-starved      zh: 0.50 / 0.25 / 0.14 / 0.10
+
+== 4. ABLATION (K=100; damage = drop in gold ll; flip = argmax leaves gold) ==
+run                dir           own  ownCtl   cross crossCtl    rand    spec              transfer [CI]   rate flip_own flip_cross
+en-ar-fair         ar->en     12.166   6.200   7.513    5.374   0.009   5.967 +2.1389 [+1.6747, +2.6070]*  0.358    0.546      0.335
+en-ar-fair         en->ar     14.070   7.007   8.204    5.986   0.010   7.064 +2.2183 [+1.6517, +2.7847]*  0.314    0.630      0.374
+en-ar-starved      ar->en      9.877   2.669   2.117    1.258   0.022   7.208 +0.8591 [+0.7009, +1.0248]*  0.119    0.574      0.128
+en-ar-starved      en->ar     18.473   3.339   3.489    2.158   0.013  15.133 +1.3312 [+1.1568, +1.5053]*  0.088    0.867      0.249
+en-de-fair         de->en     13.909   6.891  10.564    4.810   0.013   7.018 +5.7541 [+5.2729, +6.2760]*  0.820    0.634      0.509
+en-de-fair         en->de     12.492   5.410  11.755    6.450   0.011   7.082 +5.3047 [+4.7754, +5.8721]*  0.749    0.576      0.589
+en-de-starved      de->en     14.451   2.637  11.374    2.024   0.018  11.815 +9.3505 [+8.7044, +10.0722]*  0.791    0.733      0.576
+en-de-starved      en->de     15.743   3.315  11.062    2.205   0.033  12.428 +8.8564 [+8.1942, +9.5407]*  0.713    0.738      0.589
+en-fr-fair         fr->en     11.715   4.595   8.573    3.760   0.007   7.120 +4.8129 [+4.3151, +5.3298]*  0.676    0.580      0.414
+en-fr-fair         en->fr     12.954   5.754   9.367    4.117   0.008   7.200 +5.2496 [+4.7193, +5.8031]*  0.729    0.595      0.501
+en-fr-starved      fr->en     11.265   2.589   6.151    1.624   0.005   8.676 +4.5273 [+4.1528, +4.9283]*  0.522    0.674      0.445
+en-fr-starved      en->fr     11.793   2.690   7.222    2.030   0.011   9.103 +5.1924 [+4.7917, +5.6098]*  0.570    0.777      0.506
+en-zh-fair         zh->en     13.225   6.119   5.736    4.634   0.004   7.105 +1.1029 [+0.8094, +1.4008]*  0.155    0.509      0.295
+en-zh-fair         en->zh     16.006   7.496   5.497    3.373   0.002   8.510 +2.1237 [+1.6371, +2.6060]*  0.250    0.639      0.316
+en-zh-starved      zh->en     13.387   6.393   2.181    1.485   0.004   6.994 +0.6952 [+0.3354, +1.0510]*  0.099    0.565      0.131
+en-zh-starved      en->zh      8.468   1.760   7.110    5.286   0.022   6.708 +1.8241 [+1.0246, +2.6878]*  0.272    0.562      0.331
+
+== 5. FAIR - STARVED (the headline contrast) ==
+
+-- dKS (unpaired over each model's facts; paired over the intersection) --
+partner  script           unpaired diff [CI]             paired diff [CI]  n_pair
+de       same    +0.0622 [+0.0521, +0.0727]*  +0.0600 [+0.0529, +0.0671]*     609
+fr       same    +0.0221 [+0.0139, +0.0303]*  +0.0245 [+0.0188, +0.0298]*     634
+ar       cross   +0.0460 [+0.0416, +0.0504]*  +0.0467 [+0.0426, +0.0508]*     527
+zh       cross   +0.0015 [-0.0024, +0.0055]   +0.0014 [-0.0023, +0.0052]      566
+
+-- ablation TRANSFER RATE (pooled both directions; rate = mean transfer / mean specificity, the tokenizer-comparable unit) --
+partner  script     fair  starved                    diff [CI]
+de       same     0.7843   0.7510  +0.0333 [-0.0051, +0.0739] 
+fr       same     0.7027   0.5467  +0.1560 [+0.1121, +0.1995]*
+ar       cross    0.3344   0.0980  +0.2364 [+0.1899, +0.2824]*
+zh       cross    0.2066   0.1839  +0.0228 [-0.0451, +0.0936] 
+
+-- dKS restricted to DIFFERENT gold surface forms (the honest basis for same- vs cross-script comparisons) --
+partner  script     fair  starved         diff [CI] (unpaired)
+de       same     0.1215   0.0982  +0.0233 [+0.0155, +0.0310]*
+fr       same     0.0916   0.0608  +0.0309 [+0.0238, +0.0375]*
+ar       cross    0.0718   0.0258  +0.0460 [+0.0416, +0.0504]*
+zh       cross    0.0248   0.0241  +0.0007 [-0.0030, +0.0045] 

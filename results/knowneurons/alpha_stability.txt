@@ -1,0 +1,5 @@
+en-fr-fair: n_alpha 20 vs 100, 30 facts x ['en', 'fr']
+  top-50   Jaccard: mean 0.7603  min 0.4493
+  top-100  Jaccard: mean 0.7973  min 0.5152
+  top-200  Jaccard: mean 0.8300  min 0.5625
+  completeness rel err: median 0.3528 (n=20) -> 0.0684 (n=100)

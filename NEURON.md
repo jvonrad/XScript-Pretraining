@@ -106,6 +106,35 @@ These pins are also recorded in [scripts/external_bench/requirements.txt](script
 Verified working set: `torch 2.9.1`, `torch-xla 2.9.0`, `torch-neuronx 2.9.0.2`,
 `datasets 3.2.0`, `huggingface_hub 0.26.5`, `transformers 4.47.1`, `lm_eval 0.4.12`.
 
+⛔ **Also pin `neuronx-cc==2.25.3371.0`** (2026-09-01). A fresh install pulls
+`neuronx-cc 2.27.5334.0`, which **cannot compile this repo's 1B Transformer
+forward at all** — every graph dies with the internal error `[NCC_ISMP902]
+Simplifier error: is_subset(): incompatible function arguments`, including the
+exact `[24, 64]` scoring graphs that ran for months on the eval box. Not our
+code: a bare `model(x, y)` with no scoring logic reproduces it. Downgrading to
+2.25.3371.0 (and clearing `/var/tmp/neuron-compile-cache`) fixes it with no
+other change:
+
+```bash
+uv pip install "neuronx-cc==2.25.3371.0" "nki==0.5.0+28631259367.ga768afa6" \
+  --extra-index-url=https://pip.repos.neuron.amazonaws.com --index-strategy unsafe-best-match
+rm -rf /var/tmp/neuron-compile-cache /var/tmp/nki-intermediate-cache
+```
+
+Three traps found while landing the downgrade, all with misleading errors:
+the **`nki` package must be downgraded in step** (2.27's `nki 0.6.0` writes
+kernel binaries 2.25 rejects with `NCC_INLA001 ... incompatible with the
+compiler's expected version: 1.0.0` — but only on graphs that hit an NKI
+kernel, so small graphs work and a bigger one fails much later);
+`/var/tmp/nki-intermediate-cache` must be cleared or stale binaries keep
+failing after the package is fixed; and **failed compilations are cached** in
+`/var/tmp/neuron-compile-cache` and replayed verbatim on retry — delete the
+failing `MODULE_*` directory (or the whole cache) after fixing the cause.
+Also note `NCC_EBVF030` ("Instructions ... exceeds the typical limit"): a
+~100-row fwd+bwd graph over this 1B model is past the compiler's 5M
+instruction limit — chunk the batch and reuse a smaller compiled shape
+instead (values are data; shapes are graphs).
+
 `export HF_TOKEN=hf_...` — the repo is **private**; nothing downloads without it.
 
 ---

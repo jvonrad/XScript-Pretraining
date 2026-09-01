@@ -17,6 +17,26 @@ across both files, so cross-references still resolve — **§3, §6, §6b, §6c,
 
 ## TL;DR
 
+- 🆕 **§6j — parametric knowledge sharing at the MLP-neuron level** (2026-09-01,
+  all 8 bilingual cooled finals, PolyFact facts known in both languages, IG
+  attribution + cross-lingual ablation transfer per arXiv:2308.13198 /
+  2025.findings-naacl.475). Four results. (1) **The fair tokenizer DOES
+  increase parametric sharing** — fair ≥ starved in all 8 (partner x measure)
+  cells, significant in 5; the first mechanism-level thesis-direction effect
+  in this repo with CIs that clear zero. (2) **The gain is Arabic-led, not
+  script-general** (ablation-transfer rate .334 fair vs .098 starved; zh is
+  a clean null) — the same "it's Arabic, not script" structure as §6e, now at
+  the parameter level, and Arabic is exactly where starved fertility is worst
+  (1.476). (3) **Script dominates sharing while consistency is flat across
+  scripts** — same-script pairs share 2-5x more neurons than cross-script at
+  matched answer-consistency, replicating Ifergan et al.'s
+  consistency-is-not-sharing in controlled bilinguals. (4) **Sharing and
+  capability dissociate**: the checkpoints §6d-§6i show to be
+  capability-equivalent differ up to 3.4x in how much they share neurons —
+  duplicated storage costs nothing measurable at this scale, which cuts
+  against reading BTS separation as capability. Ablation gate: own-fact
+  top-100 costs 8.5-18.5 nats and flips 51-87% of facts; 100 random neurons
+  cost ~0.01 and flip ~0.
 - ✅ **`de-starved` EXISTS now (§6h)** — the missing monolingual every other
   section had to work around. 16.10B tokens, 9h36m, 76.8 of ~100 GPU-hours.
   The original did **not** collapse: it diverged at the warmup/peak-LR seam
@@ -2457,6 +2477,182 @@ belong on a handful of models, not on all 116.
 
 ---
 
+## 6j. Parametric knowledge sharing at the MLP-neuron level (2026-09-01)
+
+Does the fair tokenizer make the model store the SAME fact in the SAME
+neurons across its two languages? Method is a hybrid of the two reference
+papers: knowledge-neuron identification per Dai et al. 2022 / Chen et al.
+2024 (AMIG, arXiv:2308.13198), and the "sharing must be measured
+functionally, not from consistent outputs" framing of Ifergan et al. 2025
+(NAACL Findings, 2025.findings-naacl.475) — but with **cross-lingual ablation
+transfer** in place of their ROME/MEMIT edit transfer, which would have meant
+porting EasyEdit + per-model covariance statistics to this custom
+architecture for the same construct. Code:
+`src/xscript/eval/knowneurons.py`, `scripts/external_bench/run_knowneurons.py`
+/ `analyze_knowneurons.py` / `check_kn_alpha.py` / `test_knowneurons.py`;
+data committed in `results/knowneurons/` (43 MB — raw enough that every
+statistic below is a pure-CPU re-derivation, per §6e's sidecar rule).
+
+**Setup.** All 8 bilingual **cooled 30B finals** (`en-{de,fr,ar,zh}-{fair,
+starved}`) — every comparison is cooled-vs-cooled at an identical budget, so
+§6's LR-state confound does not apply anywhere in this section. Facts:
+PolyFact (2,039 Wikidata triples, `fact_id`-aligned, gold QID identical
+across languages), restricted per model to facts answered correctly (argmax
+raw loglikelihood over the 4 candidates) in BOTH training languages — 646 to
+888 facts per model (capped at 800), own-language accuracy .39–.54 against
+.25 chance. Attribution: integrated gradients over all 16 x 5632 SwiGLU
+intermediate activations along a joint multiplicative path (zero/FFN-off
+baseline, 20 midpoint steps, teacher-forced over ALL gold-answer tokens —
+never first-token-only, which is not comparable across scripts). This
+deviates from AMIG's per-layer/per-word-baseline IG deliberately: 16x
+cheaper, symmetric across layers, completeness-checked, and any bias is
+identical across the two tokenizer conditions being contrasted. Sharing is
+quoted as **dKS** = same-fact cross-language top-K Jaccard **minus
+mismatched-fact Jaccard** (raw overlap is ~0.09–0.15 even for unrelated
+facts — generic neurons — and raw levels are NOT comparable across
+tokenizers), and as the **ablation transfer rate** = (damage to the fact in
+language B from zeroing language A's top-100, net of a different-fact
+control) / (same-language net damage) — self-normalizing, hence
+tokenizer-comparable.
+
+**The gate held.** Zeroing a fact's own top-100 neurons (0.11% of 90,112)
+drops the gold answer's loglikelihood by 8.5–18.5 nats and flips the answer
+on 51–87% of facts; 100 RANDOM neurons cost 0.002–0.033 nats and flip ~0 —
+the attribution is causally on-target, which validates the maps
+independently of the IG flavour. dKS is stable across K=50/100/200/500
+(every conclusion below holds at all four). IG completeness holds to median
+5–37% relative error at the production n_alpha=20; a 5x-finer grid
+(`check_kn_alpha.py`, en-fr-fair — the worst-completeness model) drops that
+to 0.07, confirming the residual is grid discretization, and agrees with the
+production top-100 sets at **Jaccard 0.80** (top-200: 0.83). That 0.80
+self-agreement means absolute dKS levels are somewhat attenuated by grid
+noise, but the attenuation applies identically to the same-fact and
+mismatched-fact terms and to both tokenizer conditions, so every *contrast*
+quoted below survives it. One real confound was found and handled: ~42% of
+de/fr shared facts have an IDENTICAL gold surface form in both languages
+(Latin entity names), and those facts share ~2.6x more (en-de-fair dKS .315
+vs .122) — so every same-vs-cross-script statement below uses the
+**different-surface-form subset**; fair-vs-starved is unaffected (the split
+barely moves it).
+
+### Script dominates sharing, and consistency is not sharing
+
+dKS at K=100, different-surface-form facts only, with the ablation transfer
+rate beside it:
+
+| partner | script | dKS fair | dKS starved | rate fair | rate starved |
+|---|---|---|---|---|---|
+| de | same | .122 | .098 | .784 | .751 |
+| fr | same | .092 | .061 | .703 | .547 |
+| **ar** | cross | .072 | **.026** | .334 | **.098** |
+| **zh** | cross | .025 | .024 | .207 | .184 |
+
+Same-script pairs share 2–5x more than cross-script pairs on both measures
+and under both tokenizers — Ifergan et al.'s headline ("script similarity is
+a dominant factor in representation sharing"), reproduced in controlled 1B
+bilinguals where the corpus, budget and architecture are held fixed and only
+the language pair varies. Meanwhile cross-lingual answer CONSISTENCY is
+nearly flat across scripts (P(known in partner | known in en): de .81/.79,
+fr .82/.76, zh .70/.65, ar .68/.62 — every pair far above the
+independence expectation of ~.49), so Chinese in particular answers
+consistently while sharing almost nothing parametrically — the
+consistency-without-sharing dissociation is the cleanest single replication
+of that paper's core claim, at the neuron level rather than via edits.
+
+### The headline: the fair tokenizer DOES increase parametric sharing — in 3 of 4 pairs, and most where starvation bites hardest
+
+Fair − starved, 95% bootstrap CIs (dKS paired over the fact intersection;
+rate over pooled directions; `*` = CI excludes 0):
+
+| partner | script | ΔdKS (paired) | Δ transfer rate |
+|---|---|---|---|
+| de | same | **+0.060** [+.053, +.067]* | +0.033 [−.005, +.074] |
+| fr | same | **+0.025** [+.019, +.030]* | **+0.156** [+.112, +.200]* |
+| **ar** | cross | **+0.047** [+.043, +.051]* | **+0.236** [+.190, +.282]* |
+| zh | cross | +0.001 [−.002, +.005] | +0.023 [−.045, +.094] |
+
+(The de row's overlap gain shrinks to +0.023* on the different-surface-form
+subset — part of its +0.060 is the starved tokenizer fragmenting the
+identical Latin surface forms differently — but stays significant; fr and ar
+are unchanged by that split.)
+
+Three readings, in order of confidence:
+
+1. **Vocabulary allocation shapes where knowledge lives.** Fair ≥ starved in
+   all 8 (partner x measure) cells, significantly in 5. This is the first
+   place in the project where the tokenizer moves an *internal mechanism* in
+   the thesis direction with error bars that clear zero — §6b/§6c found
+   starvation effects on alignment depth and neuron segregation, but without
+   CIs.
+2. **The effect is Arabic-led, not script-general** — the exact structure
+   §6e found downstream ("the cross-script effect is Arabic") and §6g found
+   for transfer ("carried by French"). Arabic has both the largest starved
+   fertility penalty (1.476, the worst of the five) and the largest sharing
+   gain from de-starving; under starvation an `en-ar` model stores a fact it
+   knows in both languages in essentially disjoint neurons (rate .098, dKS
+   .026 — barely above the mismatched-fact floor). Chinese, equally
+   cross-script, shows nothing. So starvation does not tax "cross-script
+   pairs" as a class at the parameter level — it taxes the pair where the
+   tokenizer damage is largest.
+3. **Sharing and capability dissociate.** §6d/§6e/§6g/§6i show no
+   cross-script capability penalty and ~0 tokenizer effect on partner-side
+   transfer deltas — yet here the same checkpoints differ up to 3.4x in
+   parametric sharing (ar rate .334 vs .098). Knowing a fact in two
+   languages via two disjoint neuron sets evidently costs these models
+   nothing measurable at 30B tokens. That is the same dissociation Fable's
+   plan predicted ("the sharing story and the transfer story come apart at
+   the mechanism level"), and it cuts against reading §6's BTS separation as
+   a capability story: duplication is real, but at this scale it is not the
+   binding constraint.
+
+### Where the knowledge neurons live — the zh anomaly ties to §6b/§6c
+
+Top-100 knowledge neurons cluster in the bottom half of the network
+everywhere (layers 0–7 hold 50–60%) — unlike Chen et al.'s m-BERT/m-GPT
+final-layer concentration — but `en-zh` is extreme: **66% of zh knowledge
+neurons sit in layers 0–3** (fair; .50 starved) vs ~.28 for de/fr. The pair
+whose sharing is lowest is the pair whose factual circuitry sits deepest in
+the embedding-adjacent layers, consistent with §6c's finding that
+cross-script text is handled by low-layer script-detector machinery and
+§6b's depth-of-emergence result. Also note the en side of `en-zh` is
+bottom-heavy too (.55) — the *pair*, not just the foreign language, is
+organized differently.
+
+### Caveats
+
+* One training run per cell, as everywhere in this repo — the Arabic effect
+  is large and doubly-measured (overlap + causal transfer agree), but a
+  seed replicate would still be the single best hardening (same item as
+  §6f #4).
+* Fair and starved twins are measured on partly different fact sets
+  (intersection J = .62–.71); the paired-intersection contrast (reported)
+  and the full-set contrast agree everywhere, so this is not driving it.
+* ~25% of "known" facts at .25 chance are lucky guesses diluting both
+  conditions equally; requiring the intersection of two languages suppresses
+  most of this.
+* K=100 is Fable's plan verbatim, but nothing changes at K=50–500.
+* The joint-path IG is not AMIG: per-layer path integrals could rank layers
+  differently (the ablation validation is flavour-independent, the layer
+  *profiles* less so).
+* PolyFact translation/coverage differences cancel within a pair (both
+  conditions read identical text) but the de/fr/ar/zh rows are not
+  difficulty-matched to each other — another reason dKS levels are compared
+  within-script-class and deltas within-pair.
+
+### Operational (this box, 2026-09-01)
+
+* ⛔ **`neuronx-cc` 2.27.5334.0 cannot compile this repo's model at all**
+  (`NCC_ISMP902` internal error on the bare forward). Pin **2.25.3371.0**
+  — recorded in NEURON.md §2. After ANY compiler downgrade also
+  `rm -rf /var/tmp/nki-intermediate-cache` — stale NKI binaries from the
+  newer compiler fail later compiles with `NCC_INLA001` version mismatch.
+* Whole sweep: 8 models x (selection 2,039 facts + IG ~800x2 + ablation
+  6 masks x 800 x 2) ≈ **22 min/model** on one `trn2.3xlarge` core-pair —
+  IG is 0.35 s/fact-language at [22, 64] fixed shape once compiled. All
+  graphs are weight-independent: three compiles serve all 8 models.
+* stdout in the fleet logs is block-buffered (no `-u`); silence is not a
+  stall — check `ps`/`neuron-ls` before assuming one.
+
 ## 8. Open / next steps
 
 - ~~Run the alignment sweep~~ **DONE** — all 26 checkpoints, n=2009, with d'
@@ -2525,6 +2721,19 @@ belong on a handful of models, not on all 116.
   running over the token-budget series (`*-1b`…`*-23b`) to get a *curve* rather
   than the single-budget snapshot §6d reports — the same lesson §6's ATLAS-BTS
   anchor-sensitivity taught.
+- **§6j follow-ups, in value order.** (a) The Arabic sharing effect (+0.236
+  transfer rate, the largest tokenizer effect found anywhere in this project)
+  is one run per cell — it folds into §6f #4's "second `ar` training run"
+  item and doubles that item's value. (b) Score the `en-*-23b` mid-stable
+  bilinguals with the same pipeline to get sharing as a function of budget
+  (does duplication consolidate with tokens, or is it frozen early?) — the
+  pipeline is 22 min/model. (c) The mono finals (`en-fair` etc.) as
+  zero-shot controls: how much "sharing" does a model that never trained on
+  the partner language show on the facts it happens to get right? (d)
+  Per-layer IG on a subsample to check the joint-path layer profiles (the
+  zh layers-0-3 concentration) against the AMIG-faithful estimator. (e) The
+  degenerate-knowledge-neuron test (Chen et al.'s module 3): the stored
+  top-512 + raw ablation JSONs already contain what pair-suppression needs.
 - **LAPE follow-up (§6c): the deactivation experiment.** The paper's causal
   check — zero the identified neurons and measure per-language PPL — has not
   been run. `run_bpb.py` already emits per-sentence NLL, so ablated-vs-intact

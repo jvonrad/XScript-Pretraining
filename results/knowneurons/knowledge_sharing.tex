@@ -1,0 +1,178 @@
+\subsection{Knowledge Sharing}
+\label{subsec:knowledge-sharing-results}
+
+We run the full analysis of Section~\ref{subsec:knowledge-sharing} on all eight
+bilingual 30B-token finals (\texttt{en-\{de,fr,ar,zh\}} $\times$
+\{fair, starved\}) over the 2{,}039 PolyFact facts. All checkpoints are cooled
+finals at the same token budget, so every comparison below is free of the
+learning-rate-state confound. Per model, between 646 and 888 facts are answered
+correctly in both training languages (capped at 800 for attribution);
+own-language accuracy is $.39$--$.54$ against $.25$ chance.
+
+\paragraph{Conductivity.}
+Table~\ref{tab:conductivity} reports the overlap of correctly answered facts
+(Eq.~\ref{eq:jaccard}) together with the floor expected if correctness were
+\emph{independent} across the two languages,
+$J^{\mathrm{indep}}_{s,t} = a_s a_t / (a_s + a_t - a_s a_t)$, which rises with
+accuracy and must therefore be subtracted before comparing conditions. Three
+observations. First, conductivity is far above independence in every pair
+(observed $J = .54$--$.73$ against floors of $.28$--$.35$): knowing a fact in
+one language strongly predicts knowing it in the other, for every partner and
+both tokenizers. Second, the excess over the floor is only mildly
+script-dependent (same-script $+.34$--$.40$, cross-script $+.26$--$.31$) --- a
+contrast worth keeping in mind for the parametric results below, where the
+script gap is a factor of $3$--$8$. Third, the fair tokenizer yields higher
+conductivity than the starved one for \emph{all four} partners, and the
+ordering survives subtracting each model's own independence floor (e.g.\ fr
+$+.404$ vs.\ $+.344$), so it is not an artefact of the fair models simply
+answering more facts correctly.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{l cc cc cc}
+\toprule
+model & $a_{\mathrm{en}}$ & $a_{p}$ & $J$ & $J^{\mathrm{indep}}$ & $C(p\,|\,\mathrm{en})$ & $C(\mathrm{en}\,|\,p)$ \\
+\midrule
+en-de-fair    & .538 & .498 & \textbf{.725} & .349 & .809 & .875 \\
+en-de-starved & .528 & .488 & .689 & .340 & .785 & .849 \\
+en-fr-fair    & .505 & .476 & \textbf{.729} & .325 & .819 & .869 \\
+en-fr-starved & .521 & .462 & .669 & .325 & .756 & .853 \\
+en-ar-fair    & .495 & .413 & \textbf{.582} & .291 & .675 & .808 \\
+en-ar-starved & .515 & .386 & .542 & .283 & .615 & .821 \\
+en-zh-fair    & .499 & .422 & \textbf{.606} & .297 & .696 & .823 \\
+en-zh-starved & .497 & .401 & .561 & .285 & .649 & .805 \\
+\bottomrule
+\end{tabular}
+\caption{Conductivity on PolyFact ($n=2{,}039$; 4-way, chance $.25$).
+$a_\ell$: own-language accuracy; $J$: Jaccard overlap of correctly answered
+fact sets (Eq.~\ref{eq:jaccard}); $J^{\mathrm{indep}}$: overlap expected under
+independent correctness at the same accuracies; $C(t\,|\,s)$: probability a
+fact known in $s$ is also known in $t$. The fair tokenizer gives higher
+conductivity for every partner, before and after subtracting the floor.}
+\label{tab:conductivity}
+\end{table}
+
+\paragraph{Parametric sharing.}
+Figure~\ref{fig:kn-sharing}a reports $\Delta$KS: the same-fact cross-language
+Jaccard overlap of the top-100 knowledge neurons (Eq.~\ref{eq:neuron-overlap})
+\emph{minus} the mismatched-fact baseline. The baseline is substantial
+(unrelated facts share $J \approx .09$--$.15$ through generically important
+neurons) and differs between tokenizers, so raw overlap is not comparable
+across conditions; $\Delta$KS is. Two results. \emph{Script dominates
+sharing:} same-script pairs share $2$--$5\times$ more fact-specific neurons
+than cross-script pairs under both tokenizers (fair: de $.203$, fr $.135$
+vs.\ ar $.072$, zh $.027$), even though their conductivity is nearly flat ---
+the same consistency-without-sharing dissociation \citet{ifergan2024beneath}
+report for off-the-shelf 7B models, reproduced here in controlled bilinguals
+where corpus, budget and architecture are held fixed. Because $\approx\!42\%$
+of de/fr facts have byte-identical gold surface forms in both languages (Latin
+entity names), which inflates same-script overlap $\sim\!2.6\times$, we verify
+the script gap on the different-surface-form subset only; it persists (fair:
+de $.122$, fr $.092$ vs.\ ar $.072$, zh $.025$). \emph{The fair tokenizer
+increases parametric sharing:} $\Delta$KS is higher under fair for de
+($+.060$ $[.053, .067]$), fr ($+.025$ $[.019, .030]$) and ar ($+.047$
+$[.043, .051]$; paired bootstrap over the fact intersection, 95\% CIs), and
+unchanged for zh ($+.001$ $[-.002, .005]$). All results are stable for
+$K \in \{50, 100, 200, 500\}$.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_kn_sharing.pdf}
+\caption{Parametric knowledge sharing under the fair and starved tokenizer,
+for the same-script (de, fr) and cross-script (ar, zh) bilinguals.
+\textbf{(a)}~$\Delta$KS: same-fact cross-language Jaccard overlap of top-100
+knowledge neurons minus the mismatched-fact baseline (95\% bootstrap CIs over
+facts). \textbf{(b)}~Causal ablation transfer rate: net cross-language damage
+from zeroing one language's top-100, as a fraction of the net own-language
+damage (both directions pooled). Script dominates sharing on both measures;
+the fair tokenizer increases sharing significantly for de/fr/ar (overlap) and
+fr/ar (transfer), with the largest gains on Arabic --- the language with the
+most severe starved-tokenizer fertility penalty --- and no effect on Chinese.}
+\label{fig:kn-sharing}
+\end{figure}
+
+\paragraph{Causal validation.}
+Before reading the transfer results, Figure~\ref{fig:kn-ablation} establishes
+that the attributed neurons are causally load-bearing: zeroing a fact's own
+top-100 neurons ($0.11\%$ of the 90{,}112 FFN neurons) reduces the gold
+answer's log-likelihood by $8.5$--$18.5$ nats and flips the predicted answer
+for $51$--$87\%$ of facts, while zeroing 100 \emph{random} neurons costs
+$0.002$--$0.033$ nats and flips essentially none. The different-fact controls
+sit in between, confirming that part of any top-100's effect flows through
+generically important neurons --- exactly the component the baselines in both
+measures subtract.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_kn_ablation.pdf}
+\caption{Mean drop in gold-answer log-likelihood when zeroing 100 neurons,
+by condition (log scale; measured on the language whose facts are probed,
+both directions pooled). Attributed top-100 sets are load-bearing; 100 random
+neurons are inert; different-fact controls quantify the generic-recall
+component that the net statistics subtract.}
+\label{fig:kn-ablation}
+\end{figure}
+
+\paragraph{Causal transfer.}
+Figure~\ref{fig:kn-sharing}b shows the ablation transfer rate: for a fact
+known in both languages, the damage to language~$t$ caused by zeroing
+language~$s$'s top-100 (net of the different-fact control), divided by the
+damage caused by $t$'s own top-100 (net of its control). The ratio is
+dimensionless, which makes it comparable across tokenizers whose summed
+log-likelihoods span different numbers of tokens and whose independently
+trained loss surfaces have different damage scales. The ordering mirrors the
+overlap measure: same-script transfer is high ($.55$--$.78$), cross-script
+transfer is low ($.10$--$.33$), and the fair tokenizer increases it for fr
+($+.156$ $[.112, .200]$) and ar ($+.236$ $[.190, .282]$), with de positive
+but not significant ($+.033$ $[-.005, .074]$) and zh unchanged ($+.023$
+$[-.045, .094]$). Under the starved tokenizer the \texttt{en-ar} model stores
+a fact it can retrieve in both languages in almost disjoint parameters
+(transfer rate $.098$); de-starving the tokenizer more than triples the
+functional sharing.
+
+\paragraph{Interpretation.}
+Three points. (i)~\emph{Vocabulary allocation shapes where knowledge lives}:
+fair $\geq$ starved in all eight (partner $\times$ measure) cells,
+significantly in five, on two methodologically independent measures (gradient
+attribution overlap and causal ablation). (ii)~\emph{The effect is
+Arabic-led, not script-general}: Arabic has both the largest starved-fertility
+penalty ($1.476\times$, the worst of our languages) and by far the largest
+sharing gain from fair allocation, while Chinese --- equally cross-script,
+but with a mild fertility penalty --- shows none. Starvation does not tax
+cross-script pairs as a class at the parameter level; it taxes the pair where
+the tokenizer damage is concentrated. (iii)~\emph{Sharing and capability
+dissociate}: these checkpoints show no corresponding gap in attained
+capability or transfer deltas on our benchmark suite, yet differ by up to
+$3.4\times$ in parametric sharing --- storing the same fact twice evidently
+costs little at this scale, mirroring the consistency-vs-sharing dissociation
+at the behavioral level. Finally, the pair with the least sharing is also
+organized differently in depth: $66\%$ of Chinese knowledge neurons sit in
+layers 0--3 under the fair tokenizer (Figure~\ref{fig:kn-layers}), against
+$\approx\!28\%$ for de/fr, consistent with our representation-level finding
+that cross-script processing is handled by embedding-adjacent machinery.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_kn_layers.pdf}
+\caption{Cumulative distribution over layers of the partner language's top-100
+knowledge neurons (dashed: uniform). Chinese factual circuitry concentrates
+sharply in the earliest layers --- the same pair that shows the least
+parametric sharing --- while de/fr/ar track the uniform line much more
+closely.}
+\label{fig:kn-layers}
+\end{figure}
+
+\paragraph{Limitations.}
+One training run per condition, as throughout this work; the Arabic effect is
+the largest we measure and is doubly attested (overlap and ablation agree),
+but a seed replicate would harden it. Fair and starved twins are measured on
+partly different fact sets (intersection $J = .62$--$.71$); paired analysis on
+the intersection agrees with the full-set analysis everywhere. Attribution
+uses a joint-path integrated-gradients estimator over all layers
+(Section~\ref{subsec:knowledge-sharing}); its top-100 ranking is stable to a
+$5\times$ finer integration grid (Jaccard $.80$), and the causal results do
+not depend on the attribution flavour. Neuron granularity cannot rule out
+polysemantic neurons implementing two language-specific features, and
+zero-ablation is an off-distribution intervention with known backup-circuit
+caveats.
