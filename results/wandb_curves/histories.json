@@ -2,6 +2,9 @@
  "ar__unigram_starved": {
   "name": "ar__unigram_starved",
   "tokens_per_step": 917504.0,
+  "sources": [
+   "ar__unigram_starved"
+  ],
   "history": [
    {
     "step": 273,
@@ -188,6 +191,9 @@
  "ar__unigram_destarved": {
   "name": "ar__unigram_destarved",
   "tokens_per_step": 917504.0,
+  "sources": [
+   "ar__unigram_destarved"
+  ],
   "history": [
    {
     "step": 273,
@@ -374,6 +380,9 @@
  "en__unigram_starved": {
   "name": "en__unigram_starved",
   "tokens_per_step": 933957.0754230728,
+  "sources": [
+   "en__unigram_starved"
+  ],
   "history": [
    {
     "step": 273,
@@ -560,6 +569,10 @@
  "zh__unigram_starved": {
   "name": "zh__unigram_starved",
   "tokens_per_step": 917504.0,
+  "sources": [
+   "zh__unigram_starved",
+   "zh__unigram_starved__neuron"
+  ],
   "history": [
    {
     "step": 273,
@@ -686,6 +699,9 @@
  "de__unigram_starved": {
   "name": "de__unigram_starved",
   "tokens_per_step": 917504.0,
+  "sources": [
+   "de__unigram_starved"
+  ],
   "history": [
    {
     "step": 8451,
@@ -740,6 +756,9 @@
  "de__unigram_destarved": {
   "name": "de__unigram_destarved",
   "tokens_per_step": 920701.7908629442,
+  "sources": [
+   "de__unigram_destarved"
+  ],
   "history": [
    {
     "step": 273,
@@ -926,6 +945,9 @@
  "en-ar__unigram_destarved": {
   "name": "en-ar__unigram_destarved",
   "tokens_per_step": 925124.1510370492,
+  "sources": [
+   "en-ar__unigram_destarved"
+  ],
   "history": [
    {
     "step": 273,
@@ -1172,6 +1194,9 @@
  "en-fr__unigram_destarved": {
   "name": "en-fr__unigram_destarved",
   "tokens_per_step": 929529.3539165475,
+  "sources": [
+   "en-fr__unigram_destarved"
+  ],
   "history": [
    {
     "step": 273,
@@ -1410,6 +1435,9 @@
  "en-fr__unigram_starved": {
   "name": "en-fr__unigram_starved",
   "tokens_per_step": 929529.3539165475,
+  "sources": [
+   "en-fr__unigram_starved"
+  ],
   "history": [
    {
     "step": 273,
@@ -1656,6 +1684,9 @@
  "en-zh__unigram_destarved": {
   "name": "en-zh__unigram_destarved",
   "tokens_per_step": 925124.1510370492,
+  "sources": [
+   "en-zh__unigram_destarved"
+  ],
   "history": [
    {
     "step": 273,
@@ -1894,6 +1925,9 @@
  "en-zh__unigram_starved": {
   "name": "en-zh__unigram_starved",
   "tokens_per_step": 929529.3539165475,
+  "sources": [
+   "en-zh__unigram_starved"
+  ],
   "history": [
    {
     "step": 273,
@@ -2140,6 +2174,9 @@
  "en-de__unigram_destarved": {
   "name": "en-de__unigram_destarved",
   "tokens_per_step": 925160.9697585768,
+  "sources": [
+   "en-de__unigram_destarved"
+  ],
   "history": [
    {
     "step": 273,
@@ -2378,6 +2415,9 @@
  "en__unigram_destarved": {
   "name": "en__unigram_destarved",
   "tokens_per_step": 925124.1510370492,
+  "sources": [
+   "en__unigram_destarved"
+  ],
   "history": [
    {
     "step": 273,
@@ -2564,6 +2604,9 @@
  "fr__unigram_destarved": {
   "name": "fr__unigram_destarved",
   "tokens_per_step": 920701.7908629442,
+  "sources": [
+   "fr__unigram_destarved"
+  ],
   "history": [
    {
     "step": 273,
@@ -2750,6 +2793,9 @@
  "fr__unigram_starved": {
   "name": "fr__unigram_starved",
   "tokens_per_step": 920701.7908629442,
+  "sources": [
+   "fr__unigram_starved"
+  ],
   "history": [
    {
     "step": 273,
@@ -2936,6 +2982,9 @@
  "en-ar__unigram_starved": {
   "name": "en-ar__unigram_starved",
   "tokens_per_step": 933988.4383141763,
+  "sources": [
+   "en-ar__unigram_starved"
+  ],
   "history": [
    {
     "step": 273,
@@ -3174,6 +3223,9 @@
  "en-de__unigram_starved": {
   "name": "en-de__unigram_starved",
   "tokens_per_step": 929529.3539165475,
+  "sources": [
+   "en-de__unigram_starved"
+  ],
   "history": [
    {
     "step": 273,
@@ -3404,6 +3456,10 @@
  "zh__unigram_destarved": {
   "name": "zh__unigram_destarved",
   "tokens_per_step": 917504.0,
+  "sources": [
+   "zh__unigram_destarved",
+   "zh__unigram_destarved__neuron"
+  ],
   "history": [
    {
     "step": 273,
@@ -3536,6 +3592,9 @@
  "de-ar__unigram_destarved": {
   "name": "de-ar__unigram_destarved",
   "tokens_per_step": 917504.0,
+  "sources": [
+   "de-ar__unigram_destarved"
+  ],
   "history": [
    {
     "step": 273,
@@ -3702,6 +3761,9 @@
  "de-fr__unigram_destarved": {
   "name": "de-fr__unigram_destarved",
   "tokens_per_step": 917504.0,
+  "sources": [
+   "de-fr__unigram_destarved"
+  ],
   "history": [
    {
     "step": 273,
@@ -3868,6 +3930,9 @@
  "de-fr__unigram_starved": {
   "name": "de-fr__unigram_starved",
   "tokens_per_step": 917504.0,
+  "sources": [
+   "de-fr__unigram_starved"
+  ],
   "history": [
    {
     "step": 273,
@@ -4034,6 +4099,9 @@
  "de-zh__unigram_starved": {
   "name": "de-zh__unigram_starved",
   "tokens_per_step": 917504.0,
+  "sources": [
+   "de-zh__unigram_starved"
+  ],
   "history": [
    {
     "step": 273,
@@ -4200,6 +4268,9 @@
  "de-zh__unigram_destarved": {
   "name": "de-zh__unigram_destarved",
   "tokens_per_step": 917504.0,
+  "sources": [
+   "de-zh__unigram_destarved"
+  ],
   "history": [
    {
     "step": 273,
@@ -4366,6 +4437,9 @@
  "de-ar__unigram_starved": {
   "name": "de-ar__unigram_starved",
   "tokens_per_step": 917504.0,
+  "sources": [
+   "de-ar__unigram_starved"
+  ],
   "history": [
    {
     "step": 273,
@@ -4532,6 +4606,9 @@
  "fr-ar__unigram_starved": {
   "name": "fr-ar__unigram_starved",
   "tokens_per_step": 917504.0,
+  "sources": [
+   "fr-ar__unigram_starved"
+  ],
   "history": [
    {
     "step": 273,
@@ -4546,51 +4623,49 @@
  "fr-ar__unigram_destarved": {
   "name": "fr-ar__unigram_destarved",
   "tokens_per_step": null,
+  "sources": [
+   "fr-ar__unigram_destarved"
+  ],
   "history": []
  },
  "fr-zh__unigram_starved": {
   "name": "fr-zh__unigram_starved",
   "tokens_per_step": null,
+  "sources": [
+   "fr-zh__unigram_starved"
+  ],
   "history": []
  },
  "fr-zh__unigram_destarved": {
   "name": "fr-zh__unigram_destarved",
   "tokens_per_step": null,
+  "sources": [
+   "fr-zh__unigram_destarved"
+  ],
   "history": []
  },
  "ar-zh__unigram_destarved": {
   "name": "ar-zh__unigram_destarved",
   "tokens_per_step": null,
+  "sources": [
+   "ar-zh__unigram_destarved"
+  ],
   "history": []
  },
  "ar-zh__unigram_starved": {
   "name": "ar-zh__unigram_starved",
   "tokens_per_step": null,
-  "history": []
- },
- "zh__unigram_destarved__neuron": {
-  "name": "zh__unigram_destarved",
-  "tokens_per_step": 924977.6420470263,
+  "sources": [
+   "ar-zh__unigram_starved"
+  ],
   "history": []
  },
  "de__unigram_starved__neuron": {
   "name": "de__unigram_starved",
   "tokens_per_step": 983040.0,
-  "history": []
- },
- "zh__unigram_starved__neuron": {
-  "name": "zh__unigram_starved",
-  "tokens_per_step": 924977.6420470263,
-  "history": []
- },
- "en__unigram_destarved__uncapped": {
-  "name": "en__unigram_destarved__uncapped",
-  "tokens_per_step": 2048.0,
-  "history": []
- },
- "en__unigram_destarved__capped": {
-  "name": "en__unigram_destarved__capped",
-  "tokens_per_step": 2048.0,
+  "sources": [
+   "de__unigram_starved__neuron"
+  ],
   "history": []
  }
 }

@@ -131,11 +131,64 @@ a fact it can retrieve in both languages in almost disjoint parameters
 (transfer rate $.098$); de-starving the tokenizer more than triples the
 functional sharing.
 
+\paragraph{Stricter controls: relation-level vs.\ fact-level sharing.}
+The different-fact baselines above use an arbitrary other fact; replacing
+them with a different fact of the \emph{same Wikidata relation} (e.g.\
+capital-of vs.\ capital-of) additionally subtracts relation-level circuitry
+--- shared ``capital-of machinery'' and answer-type priors. All quantities
+shrink, showing that part of the measured sharing is relation-level, and the
+decomposition is informative: cross-script transfer rates drop far more than
+same-script ones (ar $.334 \to .224$, zh $.207 \to .113$ vs.\ de
+$.784 \to .784$), so cross-script pairs share the machinery for a relation
+family more than they share individual facts. The tokenizer effect survives
+the stricter control where it matters most: Arabic remains significant on
+both measures ($\Delta$KS $+.021$ $[.017, .025]$; transfer rate $.224$ vs.\
+$.060$, $+.164$ $[.098, .224]$), French keeps its functional advantage
+($+.079$ $[.023, .133]$) while its overlap advantage proves mostly
+relation-level, and German the reverse (overlap $+.046$ $[.036, .056]$,
+transfer n.s.); Chinese stays null.
+
+\paragraph{The shared neurons are the shared store.}
+Overlap and whole-set ablation together still admit an alternative reading:
+the two languages' circuits could be functionally coupled while remaining
+disjoint (the transfer flowing through language-specific neurons). To rule
+this out we split each fact's source-language top-$K$ into the
+cross-language intersection $I$ and the disjoint remainder $D$, and ablate
+each separately against size-matched controls (random $|I|$-subsets of the
+same top-$K$, and the same-relation different-fact intersection). In all
+eight models, at $K{=}100$ and $K{=}200$, the damage to the other language
+concentrates overwhelmingly in $I$: the intersection carries $72$--$94\%$ of
+the combined damage from $21$--$48\%$ of the neurons
+(Figure~\ref{fig:kn-intersection}), and out-damages size-matched random
+subsets by $+1.1$ to $+6.2$ nats (all 95\% CIs exclude zero). Cross-lingual
+transfer therefore flows through the very neurons identified in both
+languages --- shared storage demonstrated at neuron granularity rather than
+inferred from overlap statistics. The single partial exception is
+\texttt{en-zh-starved}, the only model in which the disjoint remainder
+out-damages the intersection (damage share $.38$ vs.\ everyone else's
+$.72$--$.94$): the pair with the least sharing is also the one whose residual
+coupling partly bypasses its shared neurons.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.62\linewidth]{figures/fig_kn_intersection.pdf}
+\caption{Shared-storage test at $K{=}100$: share of cross-language ablation
+damage carried by the intersection $I$ of the two languages' top-100 sets,
+against $I$'s size share (dashed diagonal: damage proportional to size, i.e.\
+no special role for the shared neurons). Every model sits far above the
+diagonal; \texttt{en-zh-starved} is the outlier whose coupling partly
+bypasses its shared neurons.}
+\label{fig:kn-intersection}
+\end{figure}
+
 \paragraph{Interpretation.}
 Three points. (i)~\emph{Vocabulary allocation shapes where knowledge lives}:
 fair $\geq$ starved in all eight (partner $\times$ measure) cells,
 significantly in five, on two methodologically independent measures (gradient
-attribution overlap and causal ablation). (ii)~\emph{The effect is
+attribution overlap and causal ablation) --- and the intersection
+decomposition shows the additional sharing under the fair tokenizer is
+carried by neurons that verifiably store the fact for both languages, not by
+coupling between disjoint circuits. (ii)~\emph{The effect is
 Arabic-led, not script-general}: Arabic has both the largest starved-fertility
 penalty ($1.476\times$, the worst of our languages) and by far the largest
 sharing gain from fair allocation, while Chinese --- equally cross-script,

@@ -1,0 +1,178 @@
+{
+ "ar__unigram_starved": {
+  "name": "ar__unigram_starved",
+  "state": "finished",
+  "curve_id": "ar__unigram_starved",
+  "roster": true,
+  "steps": 32698,
+  "tokens_b": 30.000545792,
+  "eval_final/flores_ar_bpb": 0.814988271892243,
+  "eval_final/holdout_ar_bpb": 0.6751033828140545
+ },
+ "ar__unigram_destarved": {
+  "name": "ar__unigram_destarved",
+  "state": "finished",
+  "curve_id": "ar__unigram_destarved",
+  "roster": true,
+  "steps": 32698,
+  "tokens_b": 30.000545792,
+  "eval_final/flores_ar_bpb": 0.7978940033540041,
+  "eval_final/holdout_ar_bpb": 0.6426040944722213
+ },
+ "en__unigram_starved": {
+  "name": "en__unigram_starved",
+  "state": "finished",
+  "curve_id": "en__unigram_starved",
+  "roster": true,
+  "steps": 31299,
+  "tokens_b": 29.231922503666755,
+  "eval_final/flores_en_bpb": 1.076044903112627,
+  "eval_final/holdout_en_bpb": 0.864810884322484
+ },
+ "de__unigram_starved": {
+  "name": "de__unigram_starved",
+  "state": "finished",
+  "curve_id": "de__unigram_starved",
+  "roster": true,
+  "steps": 17548,
+  "tokens_b": 16.100360192,
+  "eval_final/flores_de_bpb": 1.0465836486533897,
+  "eval_final/holdout_de_bpb": 0.9420841207475305
+ },
+ "de__unigram_destarved": {
+  "name": "de__unigram_destarved",
+  "state": "finished",
+  "curve_id": "de__unigram_destarved",
+  "roster": true,
+  "steps": 31517,
+  "tokens_b": 29.01775834262741,
+  "eval_final/flores_de_bpb": 0.9466993825501454,
+  "eval_final/holdout_de_bpb": 0.8169923674374343
+ },
+ "en-ar__unigram_destarved": {
+  "name": "en-ar__unigram_destarved",
+  "state": "finished",
+  "curve_id": "en-ar__unigram_destarved",
+  "roster": true,
+  "steps": 31445,
+  "tokens_b": 29.090528929360012,
+  "eval_final/flores_ar_bpb": 0.8063041785613854,
+  "eval_final/flores_en_bpb": 1.0947203053973,
+  "eval_final/holdout_ar_bpb": 0.6620491863548337,
+  "eval_final/holdout_en_bpb": 0.888317438493506
+ },
+ "en-fr__unigram_destarved": {
+  "name": "en-fr__unigram_destarved",
+  "state": "finished",
+  "curve_id": "en-fr__unigram_destarved",
+  "roster": true,
+  "steps": 31372,
+  "tokens_b": 29.161194891069925,
+  "eval_final/flores_en_bpb": 1.0870358549163746,
+  "eval_final/flores_fr_bpb": 0.8826597054367274,
+  "eval_final/holdout_en_bpb": 0.8785948952469145,
+  "eval_final/holdout_fr_bpb": 0.7458465086446281
+ },
+ "en-fr__unigram_starved": {
+  "name": "en-fr__unigram_starved",
+  "state": "finished",
+  "curve_id": "en-fr__unigram_starved",
+  "roster": true,
+  "steps": 31372,
+  "tokens_b": 29.161194891069925,
+  "eval_final/flores_en_bpb": 1.1175432750140994,
+  "eval_final/flores_fr_bpb": 0.9087925576160308,
+  "eval_final/holdout_en_bpb": 0.8987716204399361,
+  "eval_final/holdout_fr_bpb": 0.769248522947712
+ },
+ "en-zh__unigram_destarved": {
+  "name": "en-zh__unigram_destarved",
+  "state": "finished",
+  "curve_id": "en-zh__unigram_destarved",
+  "roster": true,
+  "steps": 31445,
+  "tokens_b": 29.090528929360012,
+  "eval_final/flores_en_bpb": 1.0907406992348263,
+  "eval_final/flores_zh_bpb": 1.266358582455902,
+  "eval_final/holdout_en_bpb": 0.8831964187395157,
+  "eval_final/holdout_zh_bpb": 1.0610194914035755
+ },
+ "en-zh__unigram_starved": {
+  "name": "en-zh__unigram_starved",
+  "state": "finished",
+  "curve_id": "en-zh__unigram_starved",
+  "roster": true,
+  "steps": 31372,
+  "tokens_b": 29.161194891069925,
+  "eval_final/flores_en_bpb": 1.1123946841300176,
+  "eval_final/flores_zh_bpb": 1.2883558817056395,
+  "eval_final/holdout_en_bpb": 0.9040210396604237,
+  "eval_final/holdout_zh_bpb": 1.084845521851536
+ },
+ "en-de__unigram_destarved": {
+  "name": "en-de__unigram_destarved",
+  "state": "finished",
+  "curve_id": "en-de__unigram_destarved",
+  "roster": true,
+  "steps": 31445,
+  "tokens_b": 29.09168669405845,
+  "eval_final/flores_de_bpb": 0.9611222131411926,
+  "eval_final/flores_en_bpb": 1.0906875655592878,
+  "eval_final/holdout_de_bpb": 0.8353958991963325,
+  "eval_final/holdout_en_bpb": 0.8768488235915751
+ },
+ "en__unigram_destarved": {
+  "name": "en__unigram_destarved",
+  "state": "finished",
+  "curve_id": "en__unigram_destarved",
+  "roster": true,
+  "steps": 31445,
+  "tokens_b": 29.090528929360012,
+  "eval_final/flores_en_bpb": 1.062691639719364,
+  "eval_final/holdout_en_bpb": 0.8435230438893743
+ },
+ "fr__unigram_destarved": {
+  "name": "fr__unigram_destarved",
+  "state": "finished",
+  "curve_id": "fr__unigram_destarved",
+  "roster": true,
+  "steps": 31517,
+  "tokens_b": 29.01775834262741,
+  "eval_final/flores_fr_bpb": 0.8813922307042843,
+  "eval_final/holdout_fr_bpb": 0.7360496974336243
+ },
+ "fr__unigram_starved": {
+  "name": "fr__unigram_starved",
+  "state": "finished",
+  "curve_id": "fr__unigram_starved",
+  "roster": true,
+  "steps": 31517,
+  "tokens_b": 29.01775834262741,
+  "eval_final/flores_fr_bpb": 0.8868532825433489,
+  "eval_final/holdout_fr_bpb": 0.7587869516258335
+ },
+ "en-ar__unigram_starved": {
+  "name": "en-ar__unigram_starved",
+  "state": "finished",
+  "curve_id": "en-ar__unigram_starved",
+  "roster": true,
+  "steps": 31299,
+  "tokens_b": 29.232904130795404,
+  "eval_final/flores_ar_bpb": 0.8350174799572533,
+  "eval_final/flores_en_bpb": 1.1205397046166636,
+  "eval_final/holdout_ar_bpb": 0.6959144914317248,
+  "eval_final/holdout_en_bpb": 0.9181980878510806
+ },
+ "en-de__unigram_starved": {
+  "name": "en-de__unigram_starved",
+  "state": "finished",
+  "curve_id": "en-de__unigram_starved",
+  "roster": true,
+  "steps": 31372,
+  "tokens_b": 29.161194891069925,
+  "eval_final/flores_de_bpb": 0.9864158782513944,
+  "eval_final/flores_en_bpb": 1.1121269272633176,
+  "eval_final/holdout_de_bpb": 0.8794357126269957,
+  "eval_final/holdout_en_bpb": 0.9117599963464026
+ }
+}

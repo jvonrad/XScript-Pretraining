@@ -2605,6 +2605,65 @@ Three readings, in order of confidence:
    a capability story: duplication is real, but at this scale it is not the
    binding constraint.
 
+### Follow-up (same session): same-relation controls + intersection decomposition
+
+Two forward-only passes (`run_kn_followup.py` / `analyze_kn_followup.py`,
+results + raw in `results/knowneurons/`, report `followup_report.txt`) that
+harden the above. The re-run own/cross damages reproduce phase C to 4
+decimals (deterministic), so the two passes are directly comparable.
+
+**1. Same-relation controls (stricter baseline).** Replacing the
+arbitrary-different-fact baseline with a different fact of the SAME Wikidata
+relation subtracts relation-level circuitry (capital-of machinery,
+answer-type priors) too. Everything shrinks — part of "fact sharing" is
+relation-level — and the shrinkage is informative:
+
+| partner | ΔdKS_sr (fair−starved) | rate_sr fair | rate_sr starved | Δrate_sr |
+|---|---|---|---|---|
+| de | **+0.046\*** | .784 | .805 | −0.021 |
+| fr | +0.006 | .719 | .640 | **+0.079\*** |
+| **ar** | **+0.021\*** | .224 | .060 | **+0.164\*** |
+| zh | +0.004 | .113 | .077 | +0.036 |
+
+**Arabic survives the stricter control on BOTH measures** (still a ~3–4x
+fair/starved ratio) and remains the headline. The de/fr cells decompose:
+fr's overlap advantage was mostly relation-level (+0.025\* → +0.006) while
+its functional advantage stays (+0.079\*); de is the mirror (overlap stays
++0.046\*, functional −0.021 n.s.). Cross-script rates drop much more than
+same-script under this control (ar .334→.224, zh .207→.113 vs de .784→.784),
+i.e. **a larger fraction of cross-script transfer is relation-level rather
+than fact-level**.
+
+**2. Intersection decomposition — the shared neurons ARE the store (Story A).**
+For each fact, the source language's top-K splits into the cross-language
+intersection I and the disjoint remainder D; each is ablated separately with
+size-matched controls (random |I|-subsets of the same top-K, and the
+same-relation different-fact intersection). Every one of the 8 models, at
+K=100 and K=200: the intersection out-damages size-matched random subsets by
+**+1.1 to +6.2 nats\*** and carries **72–94% of the (I+D) damage from 21–48%
+of the neurons** (concentration excess +0.36..+0.73\*, all CIs clear of 0).
+So the cross-language transfer flows through the very neurons identified in
+both languages — shared storage demonstrated at neuron granularity, not
+inferred from overlap, which upgrades §6j's headline from "consistent with
+sharing" to "demonstrated sharing" (up to the standing polysemanticity /
+zero-ablation caveats). Two refinements:
+
+* **`en-zh-starved` is the one Story-B-mixture cell**: the only model where
+  the disjoint remainder out-damages the intersection (2.70 vs 1.67 nats;
+  damage share .38 vs everyone else's .72–.94) — the least-sharing pair is
+  also the least intersection-concentrated, i.e. what little cross-language
+  coupling it has partly bypasses the shared neurons.
+* **The cross-script shared store is largely relation-level**: dmg(I) minus
+  dmg(same-relation different-fact intersection) — the fact-specific part —
+  is +3.0..+6.4 nats for de/fr but only +0.9/+0.6 (ar fair/starved) and
+  +0.3/−0.2 (zh) for cross-script. Cross-script pairs share the machinery
+  for a *relation family* far more than they share individual facts, which
+  is exactly what the small dKS_sr for ar/zh says from the overlap side.
+
+`fig_kn_intersection.pdf` (results/knowneurons/figs/) plots damage share vs
+size share — all 8 models far above the diagonal, zh-starved the visible
+outlier.
+
 ### Where the knowledge neurons live — the zh anomaly ties to §6b/§6c
 
 Top-100 knowledge neurons cluster in the bottom half of the network

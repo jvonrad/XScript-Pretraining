@@ -203,6 +203,50 @@ def main():
         fig.savefig(out / f"fig_kn_layers.{ext}", dpi=200, bbox_inches="tight")
     plt.close(fig)
 
+    # ---------- figure 4: intersection decomposition (if follow-up ran) ----------
+    if all((a.results / f"en-{p}-{t}_intersect_k100.json").exists()
+           for p in PARTNERS for t in ("fair", "starved")):
+        fig, ax = plt.subplots(figsize=(4.4, 4.0))
+        ax.plot([0, 1], [0, 1], ls="--", color="#aaaaaa", lw=1.0, zorder=1)
+        ax.annotate("damage $\\propto$ size\n(no special role)", (0.72, 0.62),
+                    color="#999999", fontsize=7.5, ha="center", rotation=38)
+        for p in PARTNERS:
+            for tokn, filled in (("fair", True), ("starved", False)):
+                doc = json.loads((a.results / f"en-{p}-{tokn}_intersect_k100.json")
+                                 .read_text())
+                sI = sD = nn = cells = 0.0
+                for tlang in doc["langs"]:
+                    gold = doc["gold"][tlang]
+                    for j, cell in enumerate(doc["cells"][tlang]):
+                        if cell["ll"] is None:
+                            continue
+                        g = gold[j]
+                        ll = np.array(cell["ll"])
+                        sI += ll[0, g] - ll[1, g]
+                        sD += ll[0, g] - ll[2, g]
+                        nn += cell["nI"]; cells += 1
+                x = nn / cells / 100.0
+                y = sI / (sI + sD)
+                c = PARTNER_COLORS[p]
+                ax.scatter(x, y, s=52, zorder=3, marker="o",
+                           facecolors=c if filled else "none", edgecolors=c,
+                           linewidths=1.6)
+                dy = -0.045 if (p, tokn) in (("zh", "starved"), ("ar", "starved")) else 0.035
+                ax.annotate(f"{p}-{tokn[0]}", (x, y + dy), color=c, fontsize=7.5,
+                            ha="center")
+        ax.set_xlim(0, 1); ax.set_ylim(0, 1.02)
+        ax.set_xlabel("intersection size share  $|I|/K$", fontsize=9)
+        ax.set_ylabel("share of ablation damage carried by $I$", fontsize=9)
+        ax.set_title("Cross-language damage concentrates in the\nshared neurons "
+                     "(filled = fair, open = starved)", fontsize=9.5, loc="left")
+        style(ax)
+        ax.grid(axis="x", color="#e6e6e6", lw=0.6, zorder=0)
+        fig.tight_layout()
+        for ext in ("pdf", "png"):
+            fig.savefig(out / f"fig_kn_intersection.{ext}", dpi=200,
+                        bbox_inches="tight")
+        plt.close(fig)
+
     # ---------- conductivity numbers ----------
     lines = ["% conductivity table rows: model & acc_en & acc_p & J & J_indep & C(p|en) & C(en|p)"]
     for name, r in runs.items():

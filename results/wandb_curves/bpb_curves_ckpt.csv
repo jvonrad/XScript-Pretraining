@@ -1,0 +1,5 @@
+run,model,orig_run,step,tokens,metric,value,split,n_sentences
+zh__unigram_destarved,zh-fair-12b,zh__unigram_destarved__step12811_11754M,12811,11754000000.0,eval/flores_zh_bpb,1.314352638237502,dev,997
+zh__unigram_destarved,zh-fair-15b,zh__unigram_destarved__step15865_14756M,15865,14756000000.0,eval/flores_zh_bpb,1.3127207789582784,dev,997
+zh__unigram_starved,zh-starved-12b,zh__unigram_starved__step12811_11754M,12811,11754000000.0,eval/flores_zh_bpb,1.3491230650939492,dev,997
+zh__unigram_starved,zh-starved-15b,zh__unigram_starved__step15865_14756M,15865,14756000000.0,eval/flores_zh_bpb,1.3439506872711406,dev,997
