@@ -17,6 +17,14 @@ across both files, so cross-references still resolve — **§3, §6, §6b, §6c,
 
 ## TL;DR
 
+- 🆕 **§6k — cross-lingual consistency (RankC), 8 bilingual finals + the
+  matched-loss control** (2026-09-04). Fair > starved on every pair at 30B
+  (PolyFact and MuBench-BMLAMA agree; Arabic largest, +.03–.05), but at
+  **matched partner-language BPB only French keeps the advantage** —
+  German's and Arabic's are explained by the fair model reaching lower
+  loss, Chinese is null throughout. Use MuBench's BMLAMA (aligned
+  candidates), not the original TSVs, and never the token-normalised
+  reference estimator alone.
 - 🆕 **§6j — parametric knowledge sharing at the MLP-neuron level** (2026-09-01,
   all 8 bilingual cooled finals, PolyFact facts known in both languages, IG
   attribution + cross-lingual ablation transfer per arXiv:2308.13198 /
@@ -2605,6 +2613,25 @@ Three readings, in order of confidence:
    a capability story: duplication is real, but at this scale it is not the
    binding constraint.
 
+### Addendum (2026-09-04): report everything on the different-surface-form facts
+
+`scripts/external_bench/analyze_kn_surface.py` applies the identical-gold-
+surface-form split (above, dKS only) to the ablation transfer rate as well.
+On facts whose gold entity is spelled identically in both languages the
+transfer rate is ~0.8–1.0 in EVERY model (same string → same tokens →
+trivially shared circuitry), so those facts inflate same-script pairs and
+are absent for Arabic (0 of 681). On the **different-surface-form facts
+only** (30B finals, fair − starved, 95% CI): transfer rate de **+.071\***,
+fr **+.139\***, ar **+.236\***, zh +.038; dKS de **+.023\***, fr **+.031\***,
+ar **+.046\***, zh +.001. Both measures survive the control, and German's
+functional gain becomes significant once its 339 identical-name facts are
+excluded. Quote the different-surface-form numbers as the headline for both
+statistics, not just for dKS. Figures (different-surface-form facts only; the bar panel shows the raw
+same-fact Jaccard N with the mismatched-fact baseline as a dashed line
+inside each bar, so PS is the visible gap):
+`results/knowneurons/figs/fig_kn_{ps_bars,ablation,layers}.{pdf,png}`,
+from `scripts/external_bench/plot_kn_ps.py`.
+
 ### Follow-up (same session): same-relation controls + intersection decomposition
 
 Two forward-only passes (`run_kn_followup.py` / `analyze_kn_followup.py`,
@@ -2711,6 +2738,223 @@ organized differently.
   graphs are weight-independent: three compiles serve all 8 models.
 * stdout in the fleet logs is block-buffered (no `-u`); silence is not a
   stall — check `ps`/`neuron-ls` before assuming one.
+
+## 6k. Cross-lingual consistency (RankC) of the bilingual finals — and the matched-loss control (2026-09-04)
+
+RankC (Qi et al. 2023, arXiv:2310.10378): for each fact, rank the shared
+candidate set in both of a bilingual model's languages and score the
+softmax-weighted top-k overlap; mean over facts. Three instruments, all on
+the 8 cooled 30B bilingual finals; code `scripts/external_bench/
+{run_rankc,analyze_rankc,rankc_polyfact,run_polyfact_traj,analyze_polyfact_traj}.py`,
+tables in `results/rankc/`, raw per-candidate scores on the trn2 box
+(`/mnt/scratch/xscript_rankc/results/`, NOT in git — copy off before teardown).
+
+**Which BMLAMA.** The original Qi et al. TSVs (`BMLAMA17/53`, GitHub
+`Betswish/Cross-Lingual-Consistency`) have no German in the 17-language set
+and, where checkable by string, ~0.7% of rows whose distractor sets differ
+across languages (MuBench's complaint). MuBench's re-extraction
+(`aialt/MuBench`, 6016 items, all five languages, `_id`-aligned, 0 candidate
+mismatches, gold at the same position in 100% of rows) is the **primary**
+instrument; the original is kept as the paper-comparable replication and
+labelled as such. State which extraction a number comes from.
+
+**Which estimator.** The reference implementation ranks causal LMs by the
+MEAN per-token cross-entropy of the whole sentence with the candidate
+substituted (`meanCE`). That is token-normalised, i.e. tokenizer-dependent
+(§6g's `acc_tokennorm` theorem): it makes the STARVED model more accurate
+in every cell (Δacc −.05..−.09), flips Arabic's sign, and inflates German
+from +.009 to +.093. Quote `sumWhole` (same sentence, summed loglikelihood)
+or `cand` (candidate after the localized cue, summed — the project's
+standard; note the context/continuation boundary must strip the prefix's
+trailing space or the span collapses and P@1 sits at chance), with `meanCE`
+only as the "as-published" column.
+
+**Result 1 — fair is more consistent than starved on every pair, at 30B.**
+fair − starved RankC, paired over items, `*` = 95% CI excludes 0:
+
+| partner | PolyFact (4 QID-aligned cands, 2039) | MuBench BMLAMA sumWhole (6016) | MuBench cand | original BMLAMA-17 sumWhole |
+|---|---|---|---|---|
+| de | **+.021\*** | **+.012\*** | **+.043\*** | n/a |
+| fr | **+.030\*** | **+.018\*** | **+.011\*** | **+.030\*** |
+| ar | **+.032\*** | **+.040\*** | **+.050\*** | **+.024\*** |
+| zh | +.012 | **+.019\*** | +.001 | −.004 |
+
+Absolute RankC (MuBench sumWhole, fair/starved): de .775/.763, fr .732/.713,
+ar .678/.638, zh .670/.650 against a shuffled-row null of .16; same-script
+> cross-script everywhere, as in §6j. On facts correct in both languages
+RankC is .90–.97 in every cell, so the tokenizer effect lives in how the
+models order the answers they get WRONG. The original BMLAMA-53 gives zh
+**−.040\*** — the one cell that reverses on MuBench's aligned candidates
+(+.019\*), and the one language whose distractor alignment the original
+data does not let you verify; treat that cell as the data, not the model.
+
+**Result 2 — at matched validation loss the effect survives only for
+French.** PolyFact RankC + FLORES BPB on all 48 bilingual checkpoints
+(2b–23b mid-stable + cooled finals), pairing fair and starved checkpoints
+with |Δbpb_partner| ≤ 0.01 and the same LR state:
+
+| partner | cooled finals Δ | mid-stable pairs at equal partner BPB | reading |
+|---|---|---|---|
+| fr | +.030\* | +.030\*, +.030\*, +.035\* | tokenizer property |
+| de | +.021\* | −.005, −.035\* | capability: fair-final is 0.03 bpb better |
+| ar | +.032\* | −.010, −.017 | capability |
+| zh | +.012 | +.002, +.006 | null throughout |
+
+**MuBench-BMLAMA at the same matched pairs agrees** (sumWhole / cand,
+`*` = CI excludes 0; full table `results/rankc/bmlama_rankc_matched.md`):
+
+| pair (Δbpb partner, Δbpb en) | sumWhole | cand |
+|---|---|---|
+| de: fair-5b vs starved-23b (+.001, +.000) | **−.034\*** | −.002 |
+| fr: fair-10b vs starved-23b (−.008, −.012) | **+.013\*** | **+.011\*** |
+| fr: fair-5b vs starved-10b (−.006, +.012) | **+.012\*** | **+.044\*** |
+| ar: fair-5b vs starved-23b (−.003, +.026) | −.006 | **−.046\*** |
+| ar: fair-10b vs starved-23b (−.013, −.015; fair better on both) | **+.025\*** | **+.019\*** |
+| zh: fair-10b vs starved-23b (−.002, +.002) | **−.023\*** | **−.024\*** |
+
+Where the loss match is exact (de, zh), the starved model is at least as
+consistent; Arabic's positive delta appears only in the pair where the fair
+checkpoint is 0.013–0.015 bpb BETTER on both languages, i.e. it tracks
+loss; French stays positive under every estimator and pairing.
+
+RankC is non-monotonic in training (high at 2B, dip at 5–10B, recovery), so
+use the nearest-neighbour pairs, not the linear-fit offset also printed in
+`polyfact_traj_rankc.md` (the 2B points distort it). Only 2–3 tight pairs
+exist per partner. Same structure as §6g/§6j: French carries the
+same-script effect; Arabic's gain is where the fair tokenizer buys the most
+capability, not a separate consistency mechanism.
+
+**Result 3 — controls that do not handicap the fair model** (BPB-matching
+pits a 5–10B fair checkpoint against a 15–23B starved one). Three
+alternatives, all pure-CPU re-derivations of the stored scores:
+
+*(a) Recall-matched instead of loss-matched.* Pooled over the 5b–23b
+mid-stable checkpoints, `RankC = a + b·acc_partner + c·[fair]` (PolyFact):
+c = de +.002 ± .008, **fr +.029 ± .009**, ar −.015 ± .010, zh +.020 ± .011.
+Same answer as the loss match for de/fr/ar; Chinese turns weakly positive
+once recall rather than loss is held fixed (its two late accuracy-matched
+pairs, fair-15b/starved-23b and fair-23b/starved-15b, give +.034\* and
++.025\*; the 2B pair gives −.040\*).
+
+*(b) Item-level, at the 30B finals.* On facts BOTH models get right in BOTH
+languages the two conditions are indistinguishable (PolyFact RankC .95–.97,
+Δ ≤ .002 n.s.; MuBench Δ +.005..+.007, tiny). The whole 30B effect lives on
+facts the models get WRONG in both languages — "error consistency", whether
+the two languages pick the same wrong answer:
+
+| partner | PolyFact same-wrong-answer fair / starved | MuBench ΔRankC on wrong-in-both |
+|---|---|---|
+| de | .818 / .804 (+.014 n.s.) | +.010 [−.009, +.031] |
+| fr | .817 / .818 (−.001) | +.004 [−.015, +.023] |
+| **ar** | **.782 / .737 (+.045\*)** | **+.052\*** [+.031, +.073] |
+| zh | .741 / .764 (−.023 n.s.) | +.014 [−.008, +.036] |
+
+So at equal tokens the Arabic gain is specifically that the fair en-ar
+model is *wrong the same way* in both languages 4–6 points more often — a
+representational-sharing signature on unknown facts (consistent with §6j's
+Arabic-led parametric-sharing gain), not better recall; and it is the only
+partner where that holds. French's advantage does not show up here at all,
+which fits it being an across-the-board ranking property rather than an
+error-sharing one.
+
+**Result 3c — parametric sharing (6j) at matched capability.** The 6j
+pipeline re-run on intermediate checkpoints (`results/rankc/
+knowneurons_matched_pairs_{A,B,C*}.txt`; raw on the trn2 box). Fair −
+starved, different-surface-form facts, `*` = CI excludes 0:
+
+| partner | accuracy-matched pair (Δacc_X ≤ .01) | Δ dKS K=100 | Δ transfer rate | BPB-matched (fair-5b/10b vs starved-23b) Δ dKS / Δ rate |
+|---|---|---|---|---|
+| de | fair-23b vs starved-23b | **+.032\*** | **+.056\*** | +.021\* / +.001 |
+| fr | fair-10b vs starved-10b | +.007 | **+.054\*** | +.021\* / −.013 |
+| ar | fair-15b vs starved-23b | **+.036\*** | **+.120\*** | +.014\* / +.031 |
+| zh | fair-10b vs starved-15b | **+.008\*** | −.005 | +.007\* / −.017 |
+
+At equal recall (and near-equal training stage) the fair tokenizer stores
+shared facts in more overlapping neurons in every pair but French, and the
+functional cross-lingual transfer through those neurons is higher for
+de/fr/ar (Arabic +.12, half of the +.24 at the 30B finals) and null for
+Chinese. Under the BPB match (which pits a 5–10B fair checkpoint against a
+15–23B starved one) the overlap gain persists but the functional gain
+mostly vanishes — the transfer rate develops with training tokens
+(en-ar-fair .12 @5B → .16 @10B → .21 @15B → .33 @30B; starved flat at
+.09–.10), which is why loss-matching is the wrong control here (see the
+trajectory tables in `results/trajectories/`). Recall-matched and
+equal-tokens comparisons agree: the sharing effect is a tokenizer
+property, Arabic-led, and its functional half grows with training only
+under the fair tokenizer.
+
+**Result 5 — the trajectories (all 8 bilinguals x 2b/5b/10b/15b/23b/30B),
+`results/trajectories/trajectories.{md,csv,json}`; figures in
+`results/trajectories/figs/` (`fig_traj_sharing`, `fig_traj_consistency`,
+`fig_traj_deltas`, PDF+PNG; `scripts/external_bench/plot_trajectories.py`).** Fair − starved per
+budget (all facts; PolyFact RankC = consistency, dKS/transfer = 6j sharing):
+
+| partner | metric | 2b | 5b | 10b | 15b | 23b | 30b |
+|---|---|---|---|---|---|---|---|
+| ar | dKS K=100 | +.014 | +.030 | +.042 | +.045 | +.039 | +.046 |
+| ar | transfer rate | +.042 | +.085 | +.123 | +.130 | +.161 | +.236 |
+| ar | RankC PolyFact | +.015 | +.015 | +.007 | +.013 | +.004 | +.032 |
+| de | dKS K=100 | +.012 | +.060 | +.063 | +.060 | +.082 | +.062 |
+| de | transfer rate | −.003 | −.016 | −.002 | +.018 | +.042 | +.033 |
+| fr | dKS K=100 | +.058 | +.024 | +.010 | +.003 | +.035 | +.022 |
+| fr | transfer rate | −.043 | −.001 | +.056 | −.017 | +.011 | +.156 |
+| zh | dKS K=100 | +.001 | +.008 | +.014 | +.009 | −.007 | +.002 |
+| zh | transfer rate | +.021 | +.028 | +.023 | +.007 | +.077 | +.023 |
+
+Absolute en-ar: fair transfer rate .05 → .12 → .16 → .21 → .25 → .33
+against starved .01 → .04 → .04 → .08 → .09 → .10; fair dKS .018 → .072
+against starved .004 → .026. Reading: (i) the Arabic sharing gap OPENS
+with training — both overlap and functional transfer grow monotonically
+under fair and stay flat under starved, so it is not an early-training
+artifact and not a capability offset at one point; (ii) German's overlap
+gap is present from 5B and its functional gap appears late (15B+); (iii)
+French's functional gain is largely a cooldown/late effect (+.156 at 30B,
+≤ .056 before); (iv) Chinese shows nothing at any budget on either measure
+— its 23b transfer blip (+.077) is one checkpoint. Consistency (RankC)
+deltas are positive at every budget for ar/de/fr but small and noisy
+relative to the sharing curves, consistent with Result 3/4: consistency
+follows sharing loosely, and the tokenizer effect is much clearer at the
+parameter level than at the behavioural level.
+
+**Result 4 — is the consistency gain mediated by representation
+alignment? Alignment rises, but per-fact alignment does not carry
+per-fact consistency.** `run_fact_align.py` / `analyze_fact_align.py`:
+every PolyFact question embedded in both languages (6b's pooled path, all
+17 layers), per-fact retrieval d' against the other 2038 facts, joined with
+that fact's answer consistency (same top-1 QID in both languages).
+
+* *Alignment level.* Arabic: fair > starved at EVERY layer (+0.4..+1.5 d'
+  at L2–L12, +0.2\* at the peak, paired over facts), the same Arabic-led
+  pattern as 6j's sharing gain. German/French: sign flips with layer
+  (L0–L4 d' of 7–9 is lexical entity overlap, the 6b "lexical floor",
+  where starved is often higher; L8–L16 d' ≈ 4 is the semantic part,
+  fair ≈ starved). Chinese: +0.3..+0.8 at L0–L8, ≈0 or negative deeper.
+* *Alignment → consistency, within a model.* AUC of per-fact d' for
+  predicting a consistent answer is 0.50–0.59 at every layer, in every
+  model, on all facts and on wrong-in-both facts alike. A fact whose
+  question is better aligned across languages is barely more likely to be
+  answered consistently.
+* *Mediation.* Logistic `consistent ~ fair + d'`: the tokenizer coefficient
+  does not shrink when d' is added (−6% to +2% in all four partners;
+  β_d' ≈ 0). So the fair tokenizer's consistency gain is NOT explained by
+  the alignment of the question representation. Sentence-level alignment
+  and answer consistency move together under the fair tokenizer (Arabic),
+  but as parallel effects — and 6j's parameter-level sharing (shared
+  knowledge neurons, ablation transfer) remains the mechanism-level
+  evidence, with the error-consistency result (Result 3b) as its
+  behavioural signature.
+
+Caveat: d' on mean-pooled question embeddings is a coarse per-item
+statistic (the sentence-level 6b metric was designed for pools, not items);
+a per-fact probe on the answer-token representation or on 6j's neuron
+overlap for the *wrong* answers would be the sharper test.
+
+Operational: BMLAMA requests are ≤ 48 tokens and PolyFact ≤ 64 / FLORES ≤ 144
+under both tokenizers, so one pinned width per task = one graph, one warm
+compile, and 8–16 parallel scorers with no compile race; ~190 requests/s per
+logical core at [32, 48]. `Transformer.forward(idx)` without targets returns
+ONLY the last position's logits — every scorer here walks the blocks
+explicitly.
 
 ## 8. Open / next steps
 

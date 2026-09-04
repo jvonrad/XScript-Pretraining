@@ -926,6 +926,41 @@ with torch.no_grad():                           # refresh the bf16 shadows ONCE 
         if id(ps) in lin: ps.data.copy_(pm.data)
 ```
 
+### 10e′. Multi-chip on the trn2.48xlarge — MEASURED (2026-09-04), and the real trainer
+
+`scripts/neuron_native/train_native.py` is the port of 10e wired to the
+repo's `MixedStream`, WSD schedule, resumable checkpoints (same keys as the
+CUDA/XLA trainers; `ZeroRedundancyOptimizer.consolidate_state_dict` on rank
+0) and W&B; `run_native.sh` / `orchestrate_native.sh` launch and supervise
+runs from the host via `docker exec`. Four concurrent runs, one per 4 chips
+(world=16, mb=2, grad_accum 15, 983,040 tok/step — the GH200 1-node batch).
+
+| config | tok/s per run | per chip | MFU/chip |
+|---|---|---|---|
+| 1 chip (world=4), box idle | 40.3k | 40.3k | 39.5% |
+| 4 chips (world=16), box idle, one job | 133k | 33.3k | 32.7% |
+| 4 x (4-chip jobs) concurrent, **unpinned** | 140–160k for ~100 steps, then **decays to 79–80k** | 20k | 19.6% |
+| 4 x (4-chip jobs) concurrent, **NUMA-pinned + `OMP_NUM_THREADS=2`** | **155–163k**, flat through 180+ steps | 40k | **38–40%** |
+
+So: the 16-way collective costs ~17% on an idle box, but with four jobs
+running the box is *host*-bound unless each job is pinned to the NUMA node
+its chips hang off (`neuron-ls` CPU AFFINITY: devices 0–3 and 12–15 →
+CPUs 48–95,144–191; devices 4–11 → 0–47,96–143; `taskset -c` in
+`run_native.sh`) and host threads are bounded. Unpinned, the scheduler drifts
+13 of 16 ranks of every job onto one node and throughput decays over the
+first ~150 steps to an identical 80k plateau for every job — a pattern that
+looks exactly like thermal throttling and is not. Pinned, four concurrent
+jobs each run FASTER than one 4-chip job alone did unpinned. Two traps on
+the way: the native compiler rejects `NEURON_CC_FLAGS=--cache_dir`
+(`NCC_EARG002`; use `NEURON_COMPILE_CACHE_URL`), and `neuron-ls` omits its
+PID column entirely when no process holds a device, so any "is device N
+busy" check that reads a positional column silently reports every device
+busy on an idle box. The host driver/runtime/collectives (dkms 2.30.2.0,
+runtime-lib 2.34.10.0) were already the same versions as the beta debs on
+this instance, so the public XLA venv and the native container coexisted
+without a driver swap — §1's "cannot coexist" holds only when the versions
+differ.
+
 ### 10f. What does NOT work — the measured dead-end ledger (don't re-try on this SDK)
 
 Compile / graph structure
