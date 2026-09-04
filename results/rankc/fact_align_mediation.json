@@ -1,0 +1,46 @@
+{
+ "de": {
+  "d_dprime_peak": 0.2551040054482577,
+  "lo": 0.13114023644918962,
+  "hi": 0.3719570570145541,
+  "d_dprime_L12": -0.1272898750218161,
+  "beta_fair": 0.1734723012286856,
+  "beta_fair_given_dprime": 0.17601422539564648,
+  "beta_dprime": -0.03379706384217873,
+  "wrong_both_beta_fair": 0.16856074558322726,
+  "wrong_both_beta_fair_given_dprime": 0.1728221343636547
+ },
+ "fr": {
+  "d_dprime_peak": -1.3088474651450563,
+  "lo": -1.4143540843272515,
+  "hi": -1.2007357288377716,
+  "d_dprime_L12": 0.11113783766730732,
+  "beta_fair": 0.21009330269814305,
+  "beta_fair_given_dprime": 0.22298200189967377,
+  "beta_dprime": 0.033578452356374786,
+  "wrong_both_beta_fair": 0.034116310591721224,
+  "wrong_both_beta_fair_given_dprime": 0.01969786116708204
+ },
+ "ar": {
+  "d_dprime_peak": 0.20532218237266003,
+  "lo": 0.1703862917030536,
+  "hi": 0.23894252630126972,
+  "d_dprime_L12": 0.3794956075859091,
+  "beta_fair": 0.18749365014507471,
+  "beta_fair_given_dprime": 0.18354176283884385,
+  "beta_dprime": 0.020023003996016104,
+  "wrong_both_beta_fair": 0.23538981416583316,
+  "wrong_both_beta_fair_given_dprime": 0.24983908090723914
+ },
+ "zh": {
+  "d_dprime_peak": 0.017010789560134482,
+  "lo": -0.06166470643426765,
+  "hi": 0.09986830963818297,
+  "d_dprime_L12": -0.2373512511974734,
+  "beta_fair": 0.08207588043685934,
+  "beta_fair_given_dprime": 0.08308562309170872,
+  "beta_dprime": 0.13347613500790984,
+  "wrong_both_beta_fair": -0.0919430756175099,
+  "wrong_both_beta_fair_given_dprime": -0.1146483417890352
+ }
+}

@@ -58,7 +58,10 @@ def pack(lang: str, tok_name: str, workers: int = 8, seed: int = 1234,
     stats_path = src / "stats.json"
     if stats_path.exists():
         pst = json.loads(stats_path.read_text())
-        pool_done = pst["text_bytes"] >= pst["budget_bytes"] * 0.99
+        # A pool whose source corpora ran out (`exhausted`, e.g. ar) is also
+        # complete: its builder has closed every shard and will not add more.
+        pool_done = (pst["text_bytes"] >= pst["budget_bytes"] * 0.99
+                     or bool(pst.get("exhausted", False)))
     shards = all_shards if pool_done else all_shards[:-1]
     out = ensure(shard_dir(lang, tok_name))
     tok_dir = str(tokenizer_dir(tok_name))

@@ -30,13 +30,16 @@ import random
 import urllib.request
 from pathlib import Path
 
-from ..langs import LANGS
+from ..langs import (LANGS, ANCHOR, PARTNERS, EN_SHARE_50LANG,
+                     BILINGUAL_TOK_CONDITIONS, TOK_CONDITION_50LANG,
+                     NLANG_CONDITIONS, nlang_of)
 from ..paths import MANIFEST_CACHE, TOK_CORPORA, ensure
 from .fineweb import _iter_texts
 
 FINEWEB_EN_REPO = "HuggingFaceFW/fineweb"
 FINEWEB2_REPO = "HuggingFaceFW/fineweb-2"
 N_STARVED_LANGS = 419  # matches MADLAD-400/ATLAS's ~419-language scale
+N_50LANG = 50          # corroboration condition: our 5 + the 45 largest others
 
 # SentencePiece skips sentences longer than max_sentence_length (default 4192
 # bytes); we pre-split long documents so no text is silently dropped.
@@ -218,3 +221,172 @@ def corpus_files(condition: str) -> list[Path]:
     if not files:
         raise FileNotFoundError(f"no corpus at {d} - run `xscript tok-corpus --condition {condition}`")
     return files
+
+
+# --------------------------------------------------------------------------- #
+# Corroboration conditions (2026-09-04): 50lang and bi_<X>
+# --------------------------------------------------------------------------- #
+# Both reuse `_collect` unchanged. The five study languages are collected ONCE
+# into TOK_CORPORA/cache/<code>.txt at the largest budget any condition needs
+# and every condition takes a byte-prefix of that file (cut at a line
+# boundary). Because `_collect` streams the seeded-shuffled file list in
+# order until the budget is met, a prefix of a larger collection is exactly
+# what a smaller collection with the same seed would have produced -- so the
+# cache is a pure download saving, not a change in what the corpus contains.
+
+_CACHE_SEED = {l: 100 + i for i, l in enumerate(LANGS)}
+
+
+def select_50lang_languages(n_langs: int = N_50LANG) -> list[str]:
+    """["en"] + our four partners + the largest remaining FineWeb2 configs by
+    volume up to n_langs, as raw config names (deu_Latn, ...), in volume
+    order. The partners are ranks 2/3/5/13 of 1314, so for n_langs >= 14
+    this is exactly the top-(n_langs-1); below that (10lang) Arabic would
+    otherwise be dropped, so the study languages are forced in."""
+    sizes = _fineweb2_size_manifest()
+    ranked = [c for c, _ in sorted(sizes.items(), key=lambda kv: -kv[1])]
+    study = [LANGS[l].fineweb_subdir for l in LANGS if l != "en"]
+    if n_langs - 1 < len(study):
+        raise ValueError(f"n_langs={n_langs} cannot hold the 5 study languages")
+    fill = [c for c in ranked if c not in study][: n_langs - 1 - len(study)]
+    chosen = set(study) | set(fill)
+    return ["en", *[c for c in ranked if c in chosen]]
+
+
+def _study_code(code: str) -> str:
+    """FineWeb2 config name -> study short code where one exists, else itself."""
+    for l, L in LANGS.items():
+        if code == l or code == L.fineweb_subdir:
+            return l
+    return code
+
+
+def study_cache_budgets(total_bytes: float = 4e9) -> dict[str, int]:
+    """Largest byte budget each study language needs across 50lang + bi_<X>."""
+    from ..byte_premium import load_premiums
+    prem = load_premiums()
+    n_min = min(nlang_of(c) for c in NLANG_CONDITIONS)
+    other = total_bytes * (1.0 - EN_SHARE_50LANG) / (n_min - 1)
+    need = {"en": total_bytes * EN_SHARE_50LANG}
+    for l in LANGS:
+        if l != "en":
+            need[l] = other
+    for cond, (a, x) in BILINGUAL_TOK_CONDITIONS.items():
+        en_b = total_bytes / (1.0 + prem[x])
+        need["en"] = max(need["en"], en_b)
+        need[x] = max(need[x], total_bytes - en_b)
+    return {l: int(v) for l, v in need.items()}
+
+
+def _cache_path(code: str) -> Path:
+    return ensure(TOK_CORPORA / "cache") / f"{code}.txt"
+
+
+def _collect_job(args) -> tuple[str, int]:
+    code, budget, out_path, seed = args
+    out_path = Path(out_path)
+    if out_path.exists() and out_path.stat().st_size >= 0.9 * budget:
+        return code, out_path.stat().st_size
+    got = _collect(code, budget, out_path, seed=seed)
+    print(f"[tokcorpus] {code}: {got/1e6:.1f}MB / budget {budget/1e6:.1f}MB", flush=True)
+    return code, got
+
+
+def _run_jobs(jobs, workers: int) -> dict[str, int]:
+    import multiprocessing as mp
+    out = {}
+    if workers <= 1 or len(jobs) <= 1:
+        for j in jobs:
+            code, got = _collect_job(j)
+            out[code] = got
+        return out
+    with mp.Pool(workers) as pool:
+        for code, got in pool.imap_unordered(_collect_job, jobs):
+            out[code] = got
+    return out
+
+
+def build_study_cache(total_bytes: float = 4e9, workers: int = 4) -> dict[str, int]:
+    budgets = study_cache_budgets(total_bytes)
+    jobs = [(l, b, str(_cache_path(l)), _CACHE_SEED[l]) for l, b in budgets.items()]
+    return _run_jobs(jobs, workers)
+
+
+def _materialize(code: str, budget: int, out_path: Path) -> int:
+    """Byte-prefix of the cached collection, cut at a newline."""
+    src = _cache_path(code)
+    if not src.exists() or src.stat().st_size < 0.9 * budget:
+        raise FileNotFoundError(f"cache for {code} missing/short ({src}); run build_study_cache")
+    if out_path.exists() and out_path.stat().st_size >= 0.9 * budget:
+        return out_path.stat().st_size
+    got = 0
+    with open(src, "rb") as f, open(out_path, "wb") as o:
+        while got < budget:
+            chunk = f.read(1 << 24)
+            if not chunk:
+                break
+            if got + len(chunk) > budget:
+                cut = chunk.rfind(b"\n", 0, budget - got)
+                chunk = chunk[: cut + 1] if cut >= 0 else chunk
+                o.write(chunk)
+                got += len(chunk)
+                break
+            o.write(chunk)
+            got += len(chunk)
+    return got
+
+
+def build_nlang(n_langs: int, total_bytes: float = 4e9, seed: int = 0,
+                workers: int = 4, en_share: float = EN_SHARE_50LANG) -> Path:
+    """N languages: English fixed at `en_share` of the bytes, the other N-1
+    uniform in bytes (NOT byte-premium adjusted -- deliberately mirrors the
+    near-uniform-in-bytes T=100 starved mixture, just over N languages
+    instead of 419). Condition name is f"{n_langs}lang"."""
+    langs = select_50lang_languages(n_langs)
+    out_dir = ensure(TOK_CORPORA / f"{n_langs}lang")
+    other = total_bytes * (1.0 - en_share) / (len(langs) - 1)
+    budgets = {c: int(total_bytes * en_share) if c == "en" else int(other) for c in langs}
+    build_study_cache(total_bytes, workers)
+    stats, jobs = {}, []
+    for i, code in enumerate(langs):
+        sc = _study_code(code)
+        out_path = out_dir / f"{sc}.txt"
+        if sc in LANGS:
+            got = _materialize(sc, budgets[code], out_path)
+            stats[sc] = {"budget": budgets[code], "bytes": got, "from_cache": True}
+        else:
+            jobs.append((code, budgets[code], str(out_path), seed + 1000 + i))
+    for code, got in _run_jobs(jobs, workers).items():
+        stats[code] = {"budget": budgets[code], "bytes": got}
+    (out_dir / "stats.json").write_text(json.dumps(
+        {"total_bytes": total_bytes, "en_share": en_share, "n_langs": len(langs),
+         "languages": langs, "per_lang": stats}, indent=2))
+    print(f"[{n_langs}lang] {len(langs)} languages, {sum(v['bytes'] for v in stats.values())/1e9:.2f}GB")
+    return out_dir
+
+
+def build_50lang(total_bytes: float = 4e9, seed: int = 0, workers: int = 4,
+                 en_share: float = EN_SHARE_50LANG) -> Path:
+    return build_nlang(50, total_bytes, seed, workers, en_share)
+
+
+def build_bilingual(condition: str, total_bytes: float = 4e9, workers: int = 4) -> Path:
+    """en + one partner, byte budgets scaled by the FLORES+ byte premium so
+    content (not bytes) is matched -- the destarved recipe restricted to the
+    pair a bilingual model actually trains on."""
+    from ..byte_premium import load_premiums
+    a, x = BILINGUAL_TOK_CONDITIONS[condition]
+    prem = load_premiums()
+    out_dir = ensure(TOK_CORPORA / condition)
+    z = prem[a] + prem[x]
+    budgets = {a: int(total_bytes * prem[a] / z), x: int(total_bytes * prem[x] / z)}
+    build_study_cache(total_bytes, workers)
+    stats = {}
+    for code, b in budgets.items():
+        got = _materialize(code, b, out_dir / f"{code}.txt")
+        stats[code] = {"budget": b, "bytes": got, "from_cache": True}
+    (out_dir / "stats.json").write_text(json.dumps(
+        {"total_bytes": total_bytes, "premiums": {a: prem[a], x: prem[x]},
+         "per_lang": stats}, indent=2))
+    print(f"[{condition}] " + ", ".join(f"{c}={v['bytes']/1e6:.0f}MB" for c, v in stats.items()))
+    return out_dir

@@ -1,0 +1,125 @@
+== 1. FACT SELECTION (PolyFact, n after length filter; acc = argmax raw ll) ==
+run                langs     acc_l1  acc_l2  known1  known2  shared same-answer%
+en-ar-fair         en/ar     0.4649  0.3634     948     741     572             
+en-ar-starved      en/ar     0.4517  0.3546     921     723     574             
+en-de-fair         en/de     0.4860  0.4311     991     879     727             
+en-de-starved      en/de     0.4777  0.4478     974     913     746             
+en-fr-fair         en/fr     0.4708  0.4345     960     886     750             
+en-fr-starved      en/fr     0.4782  0.4237     975     864     720             
+en-zh-fair         en/zh     0.4213  0.3458     859     705     516             
+en-zh-starved      en/zh     0.4232  0.3482     863     710     519             
+
+fair-vs-starved shared-fact-set overlap (Jaccard of fact ids):
+  de (same): J=0.668 (inter=590)
+  fr (same): J=0.654 (inter=581)
+  ar (cross): J=0.581 (inter=421)
+  zh (cross): J=0.595 (inter=386)
+
+== 2. IG COMPLETENESS (|sum Attr - (G1-G0)| / |G1-G0|) ==
+  en-ar-fair         median 0.0413  p90 0.1163
+  en-ar-starved      median 0.1077  p90 0.3091
+  en-de-fair         median 0.0191  p90 0.0647
+  en-de-starved      median 0.1271  p90 0.3857
+  en-fr-fair         median 0.0287  p90 0.0912
+  en-fr-starved      median 0.0519  p90 0.1611
+  en-zh-fair         median 0.0148  p90 0.0476
+  en-zh-starved      median 0.0503  p90 0.1538
+
+== 3. CROSS-LANGUAGE TOP-K OVERLAP (dKS = same-fact J - mismatched-fact J) ==
+
+-- K=50 --
+run                  sameJ   mismJ                 dKS [95% CI]
+en-ar-fair          0.1770  0.1229  +0.0541 [+0.0498, +0.0583]*
+en-ar-starved       0.1156  0.0820  +0.0336 [+0.0305, +0.0368]*
+en-de-fair          0.2838  0.1129  +0.1709 [+0.1633, +0.1789]*
+en-de-starved       0.2721  0.1295  +0.1426 [+0.1365, +0.1493]*
+en-fr-fair          0.2452  0.1287  +0.1165 [+0.1106, +0.1225]*
+en-fr-starved       0.2532  0.1337  +0.1195 [+0.1128, +0.1261]*
+en-zh-fair          0.1559  0.1201  +0.0358 [+0.0305, +0.0413]*
+en-zh-starved       0.1664  0.1459  +0.0205 [+0.0165, +0.0245]*
+
+-- K=100 --
+run                  sameJ   mismJ                 dKS [95% CI]
+en-ar-fair          0.1667  0.1103  +0.0565 [+0.0529, +0.0602]*
+en-ar-starved       0.1093  0.0797  +0.0296 [+0.0273, +0.0319]*
+en-de-fair          0.2790  0.1072  +0.1718 [+0.1648, +0.1793]*
+en-de-starved       0.2601  0.1203  +0.1398 [+0.1339, +0.1464]*
+en-fr-fair          0.2321  0.1139  +0.1181 [+0.1126, +0.1237]*
+en-fr-starved       0.2491  0.1302  +0.1189 [+0.1126, +0.1251]*
+en-zh-fair          0.1470  0.1087  +0.0382 [+0.0338, +0.0431]*
+en-zh-starved       0.1558  0.1332  +0.0227 [+0.0193, +0.0259]*
+
+-- K=200 --
+run                  sameJ   mismJ                 dKS [95% CI]
+en-ar-fair          0.1554  0.0997  +0.0556 [+0.0524, +0.0587]*
+en-ar-starved       0.1049  0.0790  +0.0260 [+0.0241, +0.0277]*
+en-de-fair          0.2741  0.1058  +0.1683 [+0.1618, +0.1752]*
+en-de-starved       0.2515  0.1135  +0.1379 [+0.1319, +0.1447]*
+en-fr-fair          0.2230  0.1049  +0.1181 [+0.1129, +0.1236]*
+en-fr-starved       0.2493  0.1293  +0.1200 [+0.1138, +0.1262]*
+en-zh-fair          0.1396  0.0994  +0.0401 [+0.0360, +0.0446]*
+en-zh-starved       0.1550  0.1271  +0.0279 [+0.0247, +0.0311]*
+
+-- K=500 --
+run                  sameJ   mismJ                 dKS [95% CI]
+en-ar-fair          0.1456  0.0947  +0.0509 [+0.0483, +0.0535]*
+en-ar-starved       0.1057  0.0821  +0.0236 [+0.0222, +0.0250]*
+en-de-fair          0.2715  0.1055  +0.1660 [+0.1598, +0.1724]*
+en-de-starved       0.2434  0.1083  +0.1352 [+0.1296, +0.1413]*
+en-fr-fair          0.2177  0.1006  +0.1171 [+0.1125, +0.1220]*
+en-fr-starved       0.2513  0.1336  +0.1177 [+0.1116, +0.1239]*
+en-zh-fair          0.1392  0.0991  +0.0401 [+0.0362, +0.0443]*
+en-zh-starved       0.1506  0.1205  +0.0302 [+0.0270, +0.0333]*
+
+-- layer distribution of top-100 neurons (share in layers 0-3 / 4-7 / 8-11 / 12-15) --
+  en-ar-fair         en: 0.25 / 0.36 / 0.25 / 0.14
+  en-ar-fair         ar: 0.25 / 0.36 / 0.25 / 0.15
+  en-ar-starved      en: 0.22 / 0.28 / 0.29 / 0.20
+  en-ar-starved      ar: 0.26 / 0.33 / 0.24 / 0.17
+  en-de-fair         en: 0.18 / 0.40 / 0.30 / 0.13
+  en-de-fair         de: 0.14 / 0.43 / 0.30 / 0.13
+  en-de-starved      en: 0.24 / 0.25 / 0.30 / 0.21
+  en-de-starved      de: 0.26 / 0.24 / 0.29 / 0.21
+  en-fr-fair         en: 0.22 / 0.32 / 0.30 / 0.16
+  en-fr-fair         fr: 0.24 / 0.31 / 0.28 / 0.17
+  en-fr-starved      en: 0.24 / 0.20 / 0.40 / 0.16
+  en-fr-starved      fr: 0.24 / 0.18 / 0.39 / 0.19
+  en-zh-fair         en: 0.22 / 0.50 / 0.18 / 0.10
+  en-zh-fair         zh: 0.22 / 0.45 / 0.21 / 0.11
+  en-zh-starved      en: 0.32 / 0.24 / 0.32 / 0.12
+  en-zh-starved      zh: 0.39 / 0.23 / 0.30 / 0.08
+
+== 4. ABLATION (K=100; damage = drop in gold ll; flip = argmax leaves gold) ==
+run                dir           own  ownCtl   cross crossCtl    rand    spec              transfer [CI]   rate flip_own flip_cross
+en-ar-fair         ar->en     10.368   5.742   5.549    4.514   0.003   4.626 +1.0354 [+0.7324, +1.3472]*  0.224    0.510      0.266
+en-ar-fair         en->ar     11.774   4.756   4.957    4.085   0.002   7.017 +0.8714 [+0.5916, +1.1379]*  0.124    0.596      0.274
+en-ar-starved      ar->en     13.411   5.924   3.364    2.361   0.004   7.487 +1.0031 [+0.7603, +1.2525]*  0.134    0.591      0.134
+en-ar-starved      en->ar     25.400   6.693   5.775    4.421   0.010  18.707 +1.3535 [+1.1156, +1.5972]*  0.072    0.904      0.277
+en-de-fair         de->en      9.424   4.496   6.253    3.118   0.001   4.928 +3.1354 [+2.8612, +3.4498]*  0.636    0.571      0.398
+en-de-fair         en->de      6.699   2.160   5.344    2.052  -0.001   4.539 +3.2920 [+2.9647, +3.6500]*  0.725    0.470      0.371
+en-de-starved      de->en     14.841   4.965  11.807    4.018   0.007   9.876 +7.7898 [+7.0500, +8.5512]*  0.789    0.692      0.574
+en-de-starved      en->de     14.421   3.393  11.301    3.917   0.004  11.027 +7.3843 [+6.7321, +8.0524]*  0.670    0.753      0.587
+en-fr-fair         fr->en      9.107   2.930   4.772    1.372   0.005   6.176 +3.3994 [+3.0741, +3.7448]*  0.550    0.557      0.343
+en-fr-fair         en->fr     11.584   5.030   5.504    1.514   0.005   6.553 +3.9898 [+3.6663, +4.3349]*  0.609    0.652      0.368
+en-fr-starved      fr->en     10.800   2.599   5.434    0.687   0.008   8.201 +4.7475 [+4.3083, +5.2173]*  0.579    0.644      0.356
+en-fr-starved      en->fr     12.073   1.979   5.512    0.497   0.008  10.093 +5.0157 [+4.5947, +5.4725]*  0.497    0.738      0.422
+en-zh-fair         zh->en     10.664   6.045   4.031    3.539   0.004   4.620 +0.4922 [+0.2599, +0.7289]*  0.107    0.519      0.165
+en-zh-fair         en->zh     11.349   3.144   2.365    1.631   0.036   8.204 +0.7339 [+0.5294, +0.9517]*  0.089    0.595      0.188
+en-zh-starved      zh->en      9.039   2.768   1.597    1.193   0.002   6.271 +0.4043 [+0.2426, +0.5793]*  0.064    0.522      0.091
+en-zh-starved      en->zh     10.480   2.369   1.007    0.288   0.010   8.111 +0.7182 [+0.5552, +0.8779]*  0.089    0.597      0.166
+
+== 5. FAIR - STARVED (the headline contrast) ==
+
+-- dKS (unpaired over each model's facts; paired over the intersection) --
+partner  script           unpaired diff [CI]             paired diff [CI]  n_pair
+de       same    +0.0320 [+0.0227, +0.0416]*  +0.0330 [+0.0279, +0.0378]*     590
+fr       same    -0.0008 [-0.0088, +0.0074]   +0.0006 [-0.0050, +0.0063]      581
+ar       cross   +0.0269 [+0.0225, +0.0309]*  +0.0269 [+0.0226, +0.0316]*     421
+zh       cross   +0.0155 [+0.0099, +0.0215]*  +0.0169 [+0.0126, +0.0215]*     386
+
+-- ablation TRANSFER RATE (pooled both directions; rate = mean transfer / mean specificity, the tokenizer-comparable unit) --
+partner  script     fair  starved                    diff [CI]
+de       same     0.6789   0.7259  -0.0470 [-0.0925, -0.0030]*
+fr       same     0.5805   0.5337  +0.0468 [+0.0011, +0.0929]*
+ar       cross    0.1638   0.0900  +0.0738 [+0.0365, +0.1120]*
+zh       cross    0.0956   0.0780  +0.0176 [-0.0137, +0.0523] 

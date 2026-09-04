@@ -152,6 +152,15 @@ def run(tok_names=None, out_dir: Path | None = None, n_samples: int = 3) -> dict
         if s in metrics and d in metrics:
             gate[f] = {l: metrics[s][l]["tokens_per_sentence"] /
                           metrics[d][l]["tokens_per_sentence"] for l in LANGS}
+    # corroboration conditions: every other <flavor>_<cond> against destarved,
+    # same ratio (>1 = more tokens than the fair tokenizer for the same text)
+    for name in metrics:
+        f, _, cond = name.partition("_")
+        d = f"{f}_destarved"
+        if cond not in ("starved", "destarved") and d in metrics:
+            gate[f"{name}/destarved"] = {
+                l: metrics[name][l]["tokens_per_sentence"] /
+                   metrics[d][l]["tokens_per_sentence"] for l in LANGS}
 
     result = {"metrics": metrics, "vocab_allocation": alloc,
               "starved_over_destarved_tokens": gate}
@@ -170,7 +179,8 @@ def run(tok_names=None, out_dir: Path | None = None, n_samples: int = 3) -> dict
                       " | ".join(f"{m[l][c]:.3f}" if isinstance(m[l][c], float)
                                  else str(m[l][c]) for c in cols) + " |")
         md.append("")
-    md += ["# Gate: starved/destarved token-count ratio (per flavor)", ""]
+    md += ["# Gate: starved/destarved token-count ratio (per flavor; "
+           "`<tok>/destarved` rows = corroboration tokenizers vs destarved)", ""]
     for f, g in gate.items():
         md.append(f"- **{f}**: " + ", ".join(f"{l}={v:.3f}" for l, v in g.items()))
     md += ["", "# Vocab allocation (64k pieces by script)", ""]

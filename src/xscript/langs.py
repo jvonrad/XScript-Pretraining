@@ -68,14 +68,54 @@ TOK_FLAVORS = ["unigram", "bpe", "pa"]
 TOK_CONDITIONS = ["starved", "destarved"]
 MODEL_FLAVORS = ["unigram", "bpe"]  # eligible as the model-training tokenizer
 
+# Corroboration conditions (2026-09-04), unigram only. They sit BETWEEN the
+# two headline arms on the vocabulary-competition axis and are used to check
+# that the alignment (CLAUDE.md 6b), consistency and parametric-sharing (6j)
+# results are not specific to the 419-vs-5 contrast:
+#   50lang  -- 50 languages: our 5 plus the 45 largest remaining FineWeb2
+#              configs by volume; English fixed at EN_SHARE_50LANG (5%) of
+#              corpus bytes, the other 49 uniform in bytes.
+#   bi_<X>  -- a 2-language tokenizer for the en-X bilingual (X in PARTNERS),
+#              byte-premium content-aligned between en and X like destarved.
+#              Only meaningful for the mixtures {en, X, en-X}; see
+#              condition_langs() and runmatrix.
+TOK_CONDITION_50LANG = "50lang"
+NLANG_CONDITIONS = ["50lang", "20lang", "10lang"]   # "<N>lang": N-way competition, en 5%
+EN_SHARE_50LANG = 0.05                    # English share for every <N>lang
+BILINGUAL_TOK_CONDITIONS: dict[str, tuple[str, str]] = {
+    f"bi_{p}": (ANCHOR, p) for p in PARTNERS}
+EXTRA_TOK_CONDITIONS = [*NLANG_CONDITIONS, *BILINGUAL_TOK_CONDITIONS]
+
+
+def nlang_of(condition: str) -> int | None:
+    """50 for "50lang", 20 for "20lang", None for anything else."""
+    import re
+    m = re.fullmatch(r"(\d+)lang", condition)
+    return int(m.group(1)) if m else None
+ALL_TOK_CONDITIONS = TOK_CONDITIONS + EXTRA_TOK_CONDITIONS
+
 
 def tok_name(flavor: str, condition: str) -> str:
     return f"{flavor}_{condition}"
 
 
-def tok_conditions(flavor: str) -> list[str]:
-    return ["destarved"] if flavor == "pa" else TOK_CONDITIONS
+def tok_conditions(flavor: str, extra: bool = False) -> list[str]:
+    """Conditions a flavor is trained in. `extra=True` adds the corroboration
+    conditions (unigram only) -- off by default so the headline matrix,
+    the gate report and every existing caller are unchanged."""
+    if flavor == "pa":
+        return ["destarved"]
+    if extra and flavor == "unigram":
+        return ALL_TOK_CONDITIONS
+    return TOK_CONDITIONS
 
 
-def all_tok_names() -> list[str]:
-    return [tok_name(f, c) for f in TOK_FLAVORS for c in tok_conditions(f)]
+def condition_langs(condition: str) -> list[str]:
+    """Study languages a tokenizer condition is meant to train models on."""
+    if condition in BILINGUAL_TOK_CONDITIONS:
+        return list(BILINGUAL_TOK_CONDITIONS[condition])
+    return list(LANGS)
+
+
+def all_tok_names(extra: bool = False) -> list[str]:
+    return [tok_name(f, c) for f in TOK_FLAVORS for c in tok_conditions(f, extra)]

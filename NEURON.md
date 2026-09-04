@@ -961,6 +961,25 @@ this instance, so the public XLA venv and the native container coexisted
 without a driver swap — §1's "cannot coexist" holds only when the versions
 differ.
 
+**⛔ The box is power/thermal-capped at ~380k tok/s aggregate (≈23% MFU
+per chip) under sustained full load — measured 2026-09-04 evening.** All four
+pinned 4-chip runs start at 150–165k tok/s and, 30–45 min after their chips
+come under sustained load, settle to an identical 92–93k each (aggregate
+~372k). Three observations pin this on the hardware, not the software:
+(1) freezing one job with `SIGSTOP` for 8 min and resuming the *same
+process* brings it back to 159k (no restart, no state change); (2) while it
+was frozen the other three rose from 80k to 103k each, and fell back to 80k
+when it resumed — a shared budget; (3) every layout tried today lands on the
+same aggregate: XLA 8 x 46k, unpinned native 3 x 79k + 142k, pinned native
+4 x 93k. Allocator retries stay 0, reserved memory flat, RSS flat after the
+first checkpoint. Consequences: the 46% recipe MFU is real only on a lightly
+loaded box (one 4-chip job alone: 133k idle; one chip alone: 40k); for the
+30B runs budget **~380k tok/s for the whole instance**, i.e. 4 x 30B ≈ 3.6
+days whatever the per-job layout, and do not spend time re-tuning per-job
+throughput on a fully loaded 48xlarge. Not exposed by `neuron-monitor` /
+sysfs (only ECC counters); `neuron-explorer`'s
+`throttle_avg_util_limit_nc*_percent` (10c) is the counter that would show it.
+
 ### 10f. What does NOT work — the measured dead-end ledger (don't re-try on this SDK)
 
 Compile / graph structure

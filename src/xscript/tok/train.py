@@ -77,7 +77,10 @@ def train_unigram(condition: str, seed: int = 42) -> Path:
         shuffle_input_sentence=True,
         train_extremely_large_corpus=True,
         remove_extra_whitespaces=False,
-        num_threads=max(1, (os.cpu_count() or 8) - 2),
+        # XSCRIPT_TOK_THREADS lets several tokenizers train concurrently on
+        # one big box without each grabbing every core.
+        num_threads=int(os.environ.get("XSCRIPT_TOK_THREADS",
+                                       max(1, (os.cpu_count() or 8) - 2))),
     )
     _write_meta(out, "unigram", condition, files)
     return out

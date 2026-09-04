@@ -13,8 +13,9 @@ compute nodes.
 """
 import argparse
 
-from .langs import (LANGS, TOK_FLAVORS, TOK_CONDITIONS, MODEL_FLAVORS,
-                    tok_name, tok_conditions)
+from .langs import (LANGS, TOK_FLAVORS, TOK_CONDITIONS, ALL_TOK_CONDITIONS,
+                    EXTRA_TOK_CONDITIONS, BILINGUAL_TOK_CONDITIONS,
+                    MODEL_FLAVORS, tok_name, tok_conditions)
 
 
 def _add(sub, name, help):
@@ -34,12 +35,16 @@ def main(argv=None):
     _add(sub, "byte-premium", "compute FLORES+ byte premiums (+ compare Arnett)")
 
     p = _add(sub, "tok-corpus", "build raw FineWeb/FineWeb2 tokenizer-training corpora")
-    p.add_argument("condition", choices=TOK_CONDITIONS + ["both"])
+    p.add_argument("condition", choices=ALL_TOK_CONDITIONS + ["both", "extra"],
+                   help="both = starved+destarved; extra = 50lang + every bi_<X>")
     p.add_argument("--gb", type=float, default=4.0, help="target corpus size (GB)")
+    p.add_argument("--workers", type=int, default=4,
+                   help="concurrent language downloads (extra conditions only)")
 
     p = _add(sub, "tok-train", "train tokenizer(s): unigram/bpe/pa")
     p.add_argument("--flavor", choices=TOK_FLAVORS + ["all"], default="all")
-    p.add_argument("--condition", choices=TOK_CONDITIONS + ["both"], default="both")
+    p.add_argument("--condition", choices=ALL_TOK_CONDITIONS + ["both", "extra"],
+                   default="both")
 
     p = _add(sub, "tok-analyze", "fertility / allocation gate on FLORES+")
     p.add_argument("--toks", nargs="*", default=None)
@@ -119,21 +124,31 @@ def _dispatch(args):
 
     elif cmd == "tok-corpus":
         from .data import tokcorpus
-        conds = TOK_CONDITIONS if args.condition == "both" else [args.condition]
+        conds = (TOK_CONDITIONS if args.condition == "both"
+                 else EXTRA_TOK_CONDITIONS if args.condition == "extra"
+                 else [args.condition])
         for c in conds:
             if c == "starved":
                 tokcorpus.build_starved(total_bytes=args.gb * 1e9)
-            else:
+            elif c == "destarved":
                 tokcorpus.build_destarved(total_bytes=args.gb * 1e9)
+            elif c.endswith("lang"):
+                from .langs import nlang_of
+                tokcorpus.build_nlang(nlang_of(c), total_bytes=args.gb * 1e9,
+                                      workers=args.workers)
+            elif c in BILINGUAL_TOK_CONDITIONS:
+                tokcorpus.build_bilingual(c, total_bytes=args.gb * 1e9, workers=args.workers)
 
     elif cmd == "tok-train":
         from .tok import train as toktrain
         flavors = TOK_FLAVORS if args.flavor == "all" else [args.flavor]
-        want = TOK_CONDITIONS if args.condition == "both" else [args.condition]
+        want = (TOK_CONDITIONS if args.condition == "both"
+                else EXTRA_TOK_CONDITIONS if args.condition == "extra"
+                else [args.condition])
         for f in flavors:
             for c in want:
-                if c not in tok_conditions(f):
-                    continue  # pa has no starved condition
+                if c not in tok_conditions(f, extra=True):
+                    continue  # pa has no starved condition; extras are unigram-only
                 print(f"[tok-train] {tok_name(f, c)}")
                 toktrain.train(f, c)
 

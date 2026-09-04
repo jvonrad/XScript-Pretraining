@@ -24,7 +24,8 @@ where <mix> is "en" or "en-ar" etc., <tok> is "<flavor>_<condition>".
 import copy
 from pathlib import Path
 
-from .langs import LANGS, ANCHOR, PARTNERS, tok_conditions, tok_name
+from .langs import (LANGS, ANCHOR, PARTNERS, EXTRA_TOK_CONDITIONS,
+                    condition_langs, tok_conditions, tok_name)
 from .paths import run_dir
 
 BILINGUAL_MIXTURES = [f"{ANCHOR}-{p}" for p in PARTNERS]
@@ -83,9 +84,27 @@ def cooldown_run(base, mix, tok, total_tokens) -> dict:
     return cfg
 
 
+def extra_runs(base: dict, flavor: str) -> dict[str, dict]:
+    """Self-contained 30B WSD runs for the corroboration tokenizers
+    (langs.EXTRA_TOK_CONDITIONS; unigram only). A bilingual tokenizer
+    `bi_X` only gets the mixtures it covers: en, X and en-X. No trunks or
+    100B extensions."""
+    runs: dict[str, dict] = {}
+    if flavor != "unigram":
+        return runs
+    for cond in EXTRA_TOK_CONDITIONS:
+        tok = tok_name(flavor, cond)
+        allowed = set(condition_langs(cond))
+        for mix in MIXTURES:
+            if set(mix_langs(mix)) <= allowed:
+                r = wsd_run(base, mix, tok)
+                runs[r["name"]] = r
+    return runs
+
+
 def all_runs(base: dict, flavor: str) -> dict[str, dict]:
     """Every run needed for the full experiment, keyed by run name."""
-    runs: dict[str, dict] = {}
+    runs: dict[str, dict] = extra_runs(base, flavor)
     for mix in MIXTURES:
         for cond in tok_conditions(flavor):
             tok = tok_name(flavor, cond)
@@ -107,7 +126,7 @@ def all_30b_runs(base: dict, flavor: str) -> dict[str, dict]:
     the full matrix, four of these names are cooldown branches from shared
     trunks; here every name instead gets the base self-contained WSD schedule.
     """
-    runs: dict[str, dict] = {}
+    runs: dict[str, dict] = extra_runs(base, flavor)
     for mix in MIXTURES:
         for cond in tok_conditions(flavor):
             tok = tok_name(flavor, cond)
