@@ -11,11 +11,14 @@ produces), so the cached CSV had no reproducible provenance. It does now.
 Writes, into `results/wandb_curves/`:
     histories.json      {curve_id: {name, tokens_per_step, sources, history}}
                         <- read by bts_from_wandb.py
-    bpb_curves.csv      long: run, name, wandb_id, step, tokens, metric, value
+    bpb_curves.csv      long: run, name, wandb_id, leg, step, tokens, metric,
+                        value  (`leg` names the training within a spliced run)
     runs_meta.json      per W&B run: state, tokens_per_step, final tokens_b,
                         eval-point counts, roster, seam/merge bookkeeping
     eval_final_bpb.json per run: the end-of-training `eval_final/*_bpb` block,
-                        with the `_step` and token offset it was logged at
+                        with the `_step`, token position, and a **`cooled`**
+                        flag -- a "final" is only comparable to another final
+                        if both cooled (see DECAY_START_B)
     histories_other.json / bpb_curves_other.csv
                         everything that is NOT the thesis roster, same schema
 
@@ -70,10 +73,17 @@ FOUR THINGS THIS HANDLES THAT A NAIVE PULL GETS WRONG
    interval -- a 0.221 drop that is not learning, it is the model changing
    identity. Read as one curve it mixes a diverged run with a healthy one.
 
-   `RUN_MIN_STEP` cuts each spliced run at its seam. Verified for this one:
-   step x 917,504 reproduces 6h's documented retrain budgets on all three
-   checkpoints (7.754/11.754/14.754 B against 7.753/11.754/14.755), so the
-   retrain's step counter is its own and NO token offset is needed.
+   `RUN_SEGMENTS` says which step ranges belong to which training, and the
+   `leg` column carries that per row -- the two legs share one `wandb_id`, so
+   nothing else can tell them apart. The original's own history splits further:
+   its first 0.25-0.75B is a healthy run and is KEPT, its post-spike remainder
+   is not. See RUN_SEGMENTS for the measured turn-round point and why the
+   partial recovery does not make the tail usable.
+
+   Verified for this run: step x 917,504 reproduces 6h's documented retrain
+   budgets on all three checkpoints (7.754/11.754/14.754 B against
+   7.753/11.754/14.755), so the retrain's step counter is its own and NO token
+   offset is needed.
 
 4. **RESUMED RUNS UNDER A NEW W&B ID, SHARING A DISPLAY NAME.** The opposite
    hazard to 3: one training split across TWO W&B ids that report the same
@@ -100,17 +110,74 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 OUT = REPO / "results" / "wandb_curves"
 
+# WSD schedule (base_main.yaml): warmup 1B, stable 23B, decay 6B -- so the LR
+# leaves peak 3.0e-3 at 24B and lands at 3.0e-4 by 30B. A run that stops before
+# 24B never cooled, and its "final" is a mid-stable checkpoint at peak LR.
+DECAY_START_B = 24.0
+
 EVAL = "eval/"
 EVAL_FINAL = "eval_final/"
 BPB = "_bpb"
 
-# curve id -> first step that belongs to the run we actually want.
-# See the module docstring, point 3. Keep the reason with the number.
-RUN_MIN_STEP = {
-    # Steps <=7361 are the DIVERGED original (BPB 1.55->1.28->1.74->1.30).
-    # Steps >=8451 are the 2026-08-03 retrain (1.0803 -> 1.0472, monotone).
-    "de__unigram_starved": 8451,
+# curve id -> the inclusive step ranges that belong to it, each tagged with
+# WHICH TRAINING it came from. See the module docstring, point 3. A curve with
+# no entry keeps everything, as one unnamed leg. Keep the reasons with the
+# numbers.
+#
+# `de__unigram_starved` is one W&B id holding two trainings, and its first leg
+# is itself part healthy and part wreckage, so it needs three ranges rather
+# than the single floor this used to be:
+#
+#   leg      steps        tokens        what
+#   orig     20-8380      0.018-7.689B  seed 0. Ran 18.5 days before the
+#                                       retrain resumed the id (that wall-clock
+#                                       gap is how the boundary is identified;
+#                                       there is no step gap).
+#   retrain  8400-17540   7.710-16.09B  seed 1, the 2026-08-03 rerun.
+#
+# Inside the orig leg, measured (both eval metrics agree, to the step):
+#
+#   step  tokens   flores_de  holdout_de
+#    273   0.250B    1.5461     1.5642   falling
+#    546   0.501B    1.3728     1.3498   falling
+#    819   0.751B    1.2804     1.2508   <- FLOOR, both metrics
+#   1092   1.002B    1.2902     1.2706   <- turns up, at the warmup/peak-LR seam
+#   3001   2.753B    1.7403     1.6929   <- worst; +0.676 / +0.719 vs de-fair
+#   7361   6.754B    1.3012     1.2937   recovering, but still +0.021 above its
+#                                        OWN 0.751B floor and +0.291 / +0.374
+#                                        behind de-fair -- against the retrain's
+#                                        +0.074 / +0.054 at 7.754B.
+#
+# So the orig leg's 0.25-0.75B prefix is a healthy run and is KEPT; steps
+# 1092-8380 are the loss-spike divergence and its incomplete recovery, and are
+# DROPPED. Train loss says the same: floor 2.6806 @0.734B, peak 3.82 @1.45B,
+# and still 2.7108 at 7.689B when the run was abandoned -- i.e. 6.95B further
+# tokens did not buy back its own floor. "It recovered" is true of the shape
+# and false of the level; nothing after the spike is a usable de/starved point.
+#
+# NB the two kept legs are DIFFERENT SEEDS of a byte-identical config (only
+# `seed`/`data_seed` changed -- CLAUDE.md 6h), so this curve is a seed
+# mixture below 1B. The `leg` column in the CSV is what makes that visible;
+# the two legs cannot be told apart by `wandb_id`, since they share one.
+RUN_SEGMENTS = {
+    "de__unigram_starved": (
+        (0, 819, "orig-prespike"),
+        # (1092, 8380, "orig-diverged") -- deliberately absent, see above.
+        (8451, None, "retrain"),
+    ),
 }
+
+
+def segments_for(curve_id):
+    return RUN_SEGMENTS.get(curve_id, ((0, None, ""),))
+
+
+def leg_of(curve_id, step):
+    """Which leg `step` belongs to, or None if it is cut."""
+    for lo, hi, leg in segments_for(curve_id):
+        if step >= lo and (hi is None or step <= hi):
+            return leg
+    return None
 
 # resume W&B id -> parent W&B id. See the module docstring, point 4.
 #
@@ -152,7 +219,7 @@ UNUSABLE_RUNS = {
         "UNUSABLE. Crashed 1-node attempt (983,040 tok/step), 26 rows, _step "
         "20-520 = 0.020-0.511B, train-loss only, no eval under any key. It is "
         "NOT the 2026-08-03 retrain -- that resumed the `de__unigram_starved` "
-        "id itself (RUN_MIN_STEP above) and ran to 16.09B. It reports the same "
+        "id itself (RUN_SEGMENTS above) and ran to 16.09B. It reports the same "
         "display NAME as that run, which is precisely the collision point 4 "
         "guards against: keyed by name it would have poured a 0.5B crashed "
         "attempt into the middle of the retrain's curve.",
@@ -316,20 +383,25 @@ def main() -> None:
         is_resume = rid in RUN_MERGE
         tps = p["tokens_per_step_delta"] if is_resume else p["tokens_per_step"]
         off = p["affine_offset_tokens"] if is_resume else 0.0
-        cut = RUN_MIN_STEP.get(cid, 0)
 
         hist, kept, dropped = [], 0, 0
+        legs = {}
         if tps:
             for step, vals in p["eval_rows"]:
-                if step < cut:
-                    dropped += 1     # spliced-run seam; see RUN_MIN_STEP
+                leg = leg_of(cid, step)
+                if leg is None:
+                    dropped += 1     # spliced-run seam; see RUN_SEGMENTS
                     continue
                 tokens = step * tps + off
-                hist.append({"step": step, "tokens_b": tokens / 1e9, **vals})
+                rec = {"step": step, "tokens_b": tokens / 1e9, **vals}
+                if leg:
+                    rec["leg"] = leg
+                hist.append(rec)
                 for k, v in vals.items():
                     (csv_rows if roster else other_csv_rows).append(
-                        (cid, p["name"], rid, step, tokens, k, v))
+                        (cid, p["name"], rid, leg, step, tokens, k, v))
                 kept += 1
+                legs[leg] = legs.get(leg, 0) + 1
 
         cur = (histories if roster else other_histories).setdefault(
             cid, {"name": pulled[cid]["name"],
@@ -350,6 +422,8 @@ def main() -> None:
             "n_eval_points": kept, "n_cut_at_seam": dropped,
             "n_history_rows": p["n_history_rows"],
         }
+        if len(legs) > 1 or any(legs):
+            meta[rid]["n_eval_points_by_leg"] = legs
         if is_resume:
             meta[rid]["merged_into"] = p["merged_into"]
             meta[rid]["seam_gap_b"] = p.get("seam_gap_b")
@@ -360,7 +434,7 @@ def main() -> None:
             meta[rid]["unusable"] = UNUSABLE_RUNS[rid]
         flag = ""
         if dropped:
-            flag += f"  CUT {dropped} pre-seam rows"
+            flag += f"  CUT {dropped} rows outside RUN_SEGMENTS"
         if is_resume:
             flag += f"  MERGED into {p['merged_into']} (+{kept} pts)"
         if rid in UNUSABLE_RUNS and not kept:
@@ -386,19 +460,30 @@ def main() -> None:
         step, vals = p["eval_final_rows"][-1]
         tps = p["tokens_per_step_delta"] if rid in RUN_MERGE else p["tokens_per_step"]
         off = p["affine_offset_tokens"] if rid in RUN_MERGE else 0.0
+        tokens_b = (step * tps + off) / 1e9 if tps else None
         finals[rid] = {
             "name": p["name"], "state": p["state"],
             "curve_id": RUN_MERGE.get(rid, rid),
             "roster": is_roster(p["name"]),
             "steps": step,
-            "tokens_b": (step * tps + off) / 1e9 if tps else None,
+            "tokens_b": tokens_b,
+            # ⛔ A "final" is only comparable to another "final" if BOTH cooled.
+            # `de__unigram_starved` stops at 16.10B, i.e. mid-stable at peak LR
+            # 3.0e-3, while every other roster final is a cooled ~29-30B model
+            # at 3.0e-4. Reading this file by name alone therefore pits an
+            # uncooled half-length run against a cooled full-length one; the
+            # cooldown alone is worth 0.041-0.054 BPB (measured, last stable
+            # point -> final, across six runs), which is larger than most
+            # mono-vs-bilingual differences in the table. Hence this flag.
+            "cooled": (tokens_b is not None and tokens_b >= DECAY_START_B),
             **{k: v for k, v in sorted(vals.items())},
         }
 
     def write_csv(path, rows):
         with open(path, "w", newline="") as fh:
             w = csv.writer(fh)
-            w.writerow(["run", "name", "wandb_id", "step", "tokens", "metric", "value"])
+            w.writerow(["run", "name", "wandb_id", "leg", "step", "tokens",
+                        "metric", "value"])
             for row in sorted(rows):
                 w.writerow(row)
 

@@ -1,5 +1,17 @@
 run,model,orig_run,step,tokens,metric,value,split,n_sentences
+de__unigram_starved,de-starved-1b,de__unigram_starved__step1092_1001M,1092,1001000000.0,eval/flores_de_bpb,1.259496160948799,dev,997
+de__unigram_starved,de-starved-1b,de__unigram_starved__step1092_1001M,1092,1001000000.0,eval/holdout_de_bpb,1.1979650572783125,holdout,500
+de__unigram_starved,de-starved-2b,de__unigram_starved__step2456_2253M,2456,2253000000.0,eval/flores_de_bpb,1.1481482799813574,dev,997
+de__unigram_starved,de-starved-2b,de__unigram_starved__step2456_2253M,2456,2253000000.0,eval/holdout_de_bpb,1.0558947886093415,holdout,500
+de__unigram_starved,de-starved-5b,de__unigram_starved__step5181_4753M,5181,4753000000.0,eval/flores_de_bpb,1.083827115498584,dev,997
+de__unigram_starved,de-starved-5b,de__unigram_starved__step5181_4753M,5181,4753000000.0,eval/holdout_de_bpb,0.9939640791568428,holdout,500
+de__unigram_starved,de-starved-8b,de__unigram_starved__step8451_7753M,8451,7753000000.0,eval/flores_de_bpb,1.0803406660177326,dev,997
+de__unigram_starved,de-starved-8b,de__unigram_starved__step8451_7753M,8451,7753000000.0,eval/holdout_de_bpb,0.969919655763741,holdout,500
 zh__unigram_destarved,zh-fair-12b,zh__unigram_destarved__step12811_11754M,12811,11754000000.0,eval/flores_zh_bpb,1.314352638237502,dev,997
+zh__unigram_destarved,zh-fair-12b,zh__unigram_destarved__step12811_11754M,12811,11754000000.0,eval/holdout_zh_bpb,1.1361163940617407,holdout,500
 zh__unigram_destarved,zh-fair-15b,zh__unigram_destarved__step15865_14756M,15865,14756000000.0,eval/flores_zh_bpb,1.3127207789582784,dev,997
+zh__unigram_destarved,zh-fair-15b,zh__unigram_destarved__step15865_14756M,15865,14756000000.0,eval/holdout_zh_bpb,1.129716103709592,holdout,500
 zh__unigram_starved,zh-starved-12b,zh__unigram_starved__step12811_11754M,12811,11754000000.0,eval/flores_zh_bpb,1.3491230650939492,dev,997
+zh__unigram_starved,zh-starved-12b,zh__unigram_starved__step12811_11754M,12811,11754000000.0,eval/holdout_zh_bpb,1.166574251467476,holdout,500
 zh__unigram_starved,zh-starved-15b,zh__unigram_starved__step15865_14756M,15865,14756000000.0,eval/flores_zh_bpb,1.3439506872711406,dev,997
+zh__unigram_starved,zh-starved-15b,zh__unigram_starved__step15865_14756M,15865,14756000000.0,eval/holdout_zh_bpb,1.1558803139701084,holdout,500

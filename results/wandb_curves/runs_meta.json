@@ -73,9 +73,13 @@
   "affine_fit_max_err_b": 1.9073486328125e-15,
   "final_step": 17548,
   "final_tokens_b": 14.754381824,
-  "n_eval_points": 8,
-  "n_cut_at_seam": 15,
-  "n_history_rows": 901
+  "n_eval_points": 11,
+  "n_cut_at_seam": 12,
+  "n_history_rows": 901,
+  "n_eval_points_by_leg": {
+   "orig-prespike": 3,
+   "retrain": 8
+  }
  },
  "de__unigram_destarved": {
   "name": "de__unigram_destarved",
@@ -488,7 +492,7 @@
   "n_eval_points": 0,
   "n_cut_at_seam": 0,
   "n_history_rows": 26,
-  "unusable": "UNUSABLE. Crashed 1-node attempt (983,040 tok/step), 26 rows, _step 20-520 = 0.020-0.511B, train-loss only, no eval under any key. It is NOT the 2026-08-03 retrain -- that resumed the `de__unigram_starved` id itself (RUN_MIN_STEP above) and ran to 16.09B. It reports the same display NAME as that run, which is precisely the collision point 4 guards against: keyed by name it would have poured a 0.5B crashed attempt into the middle of the retrain's curve."
+  "unusable": "UNUSABLE. Crashed 1-node attempt (983,040 tok/step), 26 rows, _step 20-520 = 0.020-0.511B, train-loss only, no eval under any key. It is NOT the 2026-08-03 retrain -- that resumed the `de__unigram_starved` id itself (RUN_SEGMENTS above) and ran to 16.09B. It reports the same display NAME as that run, which is precisely the collision point 4 guards against: keyed by name it would have poured a 0.5B crashed attempt into the middle of the retrain's curve."
  },
  "zh__unigram_starved__neuron": {
   "name": "zh__unigram_starved",

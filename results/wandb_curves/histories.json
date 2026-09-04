@@ -704,52 +704,81 @@
   ],
   "history": [
    {
+    "step": 273,
+    "tokens_b": 0.250478592,
+    "eval/flores_de_bpb": 1.5461184373909065,
+    "eval/holdout_de_bpb": 1.5642349587589024,
+    "leg": "orig-prespike"
+   },
+   {
+    "step": 546,
+    "tokens_b": 0.500957184,
+    "eval/flores_de_bpb": 1.3728002936964925,
+    "eval/holdout_de_bpb": 1.3497838903868304,
+    "leg": "orig-prespike"
+   },
+   {
+    "step": 819,
+    "tokens_b": 0.751435776,
+    "eval/flores_de_bpb": 1.2803875052667375,
+    "eval/holdout_de_bpb": 1.2507664970279362,
+    "leg": "orig-prespike"
+   },
+   {
     "step": 8451,
     "tokens_b": 7.753826304,
     "eval/flores_de_bpb": 1.080349602685974,
-    "eval/holdout_de_bpb": 0.9699254960174912
+    "eval/holdout_de_bpb": 0.9699254960174912,
+    "leg": "retrain"
    },
    {
     "step": 9541,
     "tokens_b": 8.753905664,
     "eval/flores_de_bpb": 1.066843368325637,
-    "eval/holdout_de_bpb": 0.9647445075698703
+    "eval/holdout_de_bpb": 0.9647445075698703,
+    "leg": "retrain"
    },
    {
     "step": 10631,
     "tokens_b": 9.753985024,
     "eval/flores_de_bpb": 1.0611101037569723,
-    "eval/holdout_de_bpb": 0.9600284688157048
+    "eval/holdout_de_bpb": 0.9600284688157048,
+    "leg": "retrain"
    },
    {
     "step": 11721,
     "tokens_b": 10.754064384,
     "eval/flores_de_bpb": 1.06226829454952,
-    "eval/holdout_de_bpb": 0.9564451197857652
+    "eval/holdout_de_bpb": 0.9564451197857652,
+    "leg": "retrain"
    },
    {
     "step": 12811,
     "tokens_b": 11.754143744,
     "eval/flores_de_bpb": 1.0542981038446582,
-    "eval/holdout_de_bpb": 0.9525644148285225
+    "eval/holdout_de_bpb": 0.9525644148285225,
+    "leg": "retrain"
    },
    {
     "step": 13901,
     "tokens_b": 12.754223104,
     "eval/flores_de_bpb": 1.049494078083748,
-    "eval/holdout_de_bpb": 0.9493236812735149
+    "eval/holdout_de_bpb": 0.9493236812735149,
+    "leg": "retrain"
    },
    {
     "step": 14991,
     "tokens_b": 13.754302464,
     "eval/flores_de_bpb": 1.050143912825634,
-    "eval/holdout_de_bpb": 0.9470624116368177
+    "eval/holdout_de_bpb": 0.9470624116368177,
+    "leg": "retrain"
    },
    {
     "step": 16081,
     "tokens_b": 14.754381824,
     "eval/flores_de_bpb": 1.0471858359884618,
-    "eval/holdout_de_bpb": 0.9451473904292121
+    "eval/holdout_de_bpb": 0.9451473904292121,
+    "leg": "retrain"
    }
   ]
  },

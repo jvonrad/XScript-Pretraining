@@ -1,7 +1,9 @@
 # Dense BPB-vs-tokens curves (cached from W&B)
 
-`bpb_curves.csv` — long format: `run, name, wandb_id, step, tokens, metric,
-value`, **1,938 points across 31 roster curves**. `metric` is
+`bpb_curves.csv` — long format: `run, name, wandb_id, leg, step, tokens,
+metric, value`, **1,944 points across 31 roster curves**. `leg` is empty except
+where one W&B id holds more than one training (only `de__unigram_starved`
+today — see below). `metric` is
 `eval/{flores,holdout}_{en,de,fr,ar,zh}_bpb`.
 
 `bpb_curves_other.csv` / `histories_other.json` hold everything that is **not**
@@ -30,7 +32,9 @@ logged at.
 Cached from `jonathan-von-rad/XScript-Pretraining` because this is the **only**
 fine-grained performance-over-training-tokens source in the repo — the 107
 checkpoint evals (`../appendix_c5`, `../alignment_v2_107`) are much coarser, and
-**holdout** BPB shards are not on the eval box at all. Everything here is
+the **holdout** BPB shards died with the training allocation (they are
+reconstructible per language — see the holdout section below — but only `de`
+has been rebuilt and controlled). Everything here is
 produced by `scripts/external_bench/pull_wandb_curves.py`; read it with
 `scripts/external_bench/bts_from_wandb.py`.
 
@@ -57,34 +61,62 @@ from `step x tokens_per_step` — 0 for most runs, **0.77B for
 - **Non-English-anchor bilinguals** (`de-ar`, `de-fr`, `de-zh`, `fr-ar`) appear
   here with eval points but **never actually ran** — see CLAUDE.md §6. Excluded
   in `bts_from_wandb.py`'s `load()`; drop them.
-- ⛔ **`de__unigram_starved` is ONE W&B id holding TWO trainings.** It is no
-  longer in `EXCLUDE_RUNS` — the 2026-08-03 retrain has landed (CLAUDE.md §6h)
-  — but it must be cut at the seam:
+- ⛔ **`de__unigram_starved` is ONE W&B id holding TWO trainings**, and the
+  first of them is itself part healthy and part wreckage. It is no longer in
+  `EXCLUDE_RUNS` — the 2026-08-03 retrain has landed (CLAUDE.md §6h) — but it
+  has to be cut into legs. `pull_wandb_curves.py`'s `RUN_SEGMENTS` does that,
+  and the CSV's **`leg` column** carries the result per row (the two trainings
+  share one `wandb_id`, so nothing else distinguishes them):
 
-  | steps | tokens | what it is | BPB |
-  |---|---|---|---|
-  | 273–7361 | 0.25–6.75B | **original, diverged** at the warmup/peak-LR seam | 1.546 → 1.280 → 1.740 → 1.301 |
-  | 8451–16081 | 7.75–14.75B | **retrain** | 1.0803 → 1.0472, monotone |
+  | steps | tokens | leg | what it is | in the CSV? |
+  |---|---|---|---|---|
+  | 273–819 | 0.25–0.75B | `orig-prespike` | **original, still healthy** — flores 1.5461 → 1.3728 → **1.2804**, holdout 1.5642 → 1.3498 → **1.2508**, both falling | **yes** |
+  | 1092–8380 | 1.00–7.69B | — | **the divergence and its incomplete recovery** | **no** |
+  | 8451–16081 | 7.75–14.75B | `retrain` | **retrain** (seed 1) | yes |
 
-  The retrain resumed the same id, so its early points collided with existing
-  steps and W&B dropped them; only its post-7361 history survived. Across the
-  seam BPB falls **1.3012 → 1.0803 in one eval interval** — a 0.221 drop that
-  is not learning but the model changing identity. Interpolated together the
-  two produce a curve belonging to no model that ever existed.
+  **Where it diverged: 1.00B, not ~7B.** Both eval metrics turn upward at
+  step 1092 = 1.002B — exactly where warmup ends and the LR pins at peak
+  3.0e-3 — and train loss turns at ~0.92B off a floor of 2.6806 @0.734B. The
+  run's *last* logged token is 7.689B, which is the number that invites the
+  ~7B intuition; that is where it was abandoned, not where it broke.
 
-  This is cut in **two** places, deliberately: `pull_wandb_curves.py`'s
-  `RUN_MIN_STEP` (at the source) and `bts_from_wandb.py`'s `RUN_MIN_TOKENS_B`
-  (at the analysis). The second is what protects you if someone re-pulls with
-  a different tool. **The data in this directory is already cut** — the CSV
-  holds only the 8 retrain points.
+  **It did recover — in shape, not in level, which is why the tail is still
+  unusable.** BPB peaks at 1.7403 / 1.6929 @2.75B (+0.676 / +0.719 vs
+  de-fair), then descends monotonically from 3.25B on. But at its last eval
+  (6.754B) it is 1.3012 / 1.2937 — **still 0.021 above its OWN 0.751B floor
+  after 6B further tokens**, and still +0.291 / +0.374 behind de-fair, against
+  the retrain's +0.074 / +0.054 at 7.754B. Train loss says the same: 2.7108 at
+  7.689B against its 2.6806 floor. Nothing after the spike is a de/starved
+  point at its nominal budget.
 
-  ⚠️ Consequence: de/starved has **no curve below 7.75B**, against 1–22B for
-  every other run. Its ATLAS-BTS anchor is therefore forced into a different
-  region of the loss curve than de/destarved's, and the two are not directly
-  comparable (FLORES gives 0.845, holdout 0.498, for the same cell). The
-  repo-style BTS at ~11.15B/lang *is* comparable, since that budget is inside
-  every cell's window. Scoring the existing `de-starved-{1,2,5}b` checkpoints
-  with `run_bpb.py` would fill 1–7.75B and remove this asymmetry.
+  Across the leg seam BPB falls **1.3012 → 1.0803 in one eval interval** — a
+  0.221 drop that is not learning but the model changing identity. The retrain
+  resumed the same id, so its own early points collided with existing steps
+  and W&B dropped them; only its post-8380 history survived (the leg boundary
+  is an 18.5-day wall-clock gap between steps 8380 and 8400 — there is no step
+  gap to find it by).
+
+  ⚠️ **The two kept legs are different SEEDS** of a byte-identical config
+  (only `seed`/`data_seed` changed, §6h), so this curve is a seed mixture
+  below 1B. Use the `leg` column before treating it as one training.
+
+  ℹ️ **The restored prefix cannot move any BTS number**, so it is for plotting
+  and completeness only: all three points are at 0.25–0.75B, i.e. inside
+  warmup, and `bts_from_wandb.py`'s `stable_window()` keeps only 1B–24B —
+  independently of its `RUN_MIN_TOKENS_B` floor. That is not a coincidence:
+  the run diverged *at* the warmup/peak-LR seam, so everything healthy is by
+  construction pre-1B. Verified: the BTS table is byte-identical with and
+  without the prefix.
+
+  ⚠️ Consequence, unchanged: de/starved has **no usable curve between 0.75B and
+  7.75B**, against 1–22B for every other run. Its ATLAS-BTS anchor is
+  therefore forced into a different region of the loss curve than
+  de/destarved's, and the two are not directly comparable (FLORES gives 0.845,
+  holdout 0.498, for the same cell). The repo-style BTS at ~11.15B/lang *is*
+  comparable, since that budget is inside every cell's window. Scoring the
+  existing `de-starved-{1,2,5}b` checkpoints with `run_bpb.py` would fill
+  1–7.75B with real seed-1 points and remove this asymmetry — the same route
+  `bpb_curves_ckpt.csv` already took for zh.
 
 - ⛔ **`__100b` / `probe_*` / `ctrl-scratch__*` / `*_scratch` / `*__capped` /
   `*__uncapped`** — split out to `bpb_curves_other.csv` at the source (see
@@ -155,17 +187,60 @@ already holds. `bpb_fill_from_checkpoints.py` asserts this before writing.
 So the 15B points splice on with no calibration offset. The fair−starved gap
 holds across the fill (+0.0348 at 11.754B, +0.0312 at 14.756B).
 
-⛔ **FLORES only — the holdout half of the gap CANNOT be filled this way.**
-`eval/holdout_*_bpb` reads 500 docs from the reserved FineWeb2-HQ holdout
-shard (`bpb.load_holdout`); those shards are not on the eval box, so
-recovering it needs the language's pool rebuilt (CLAUDE.md §6h did that for
-German at 72.6GB). `bts_from_wandb.py --source holdout` still stops where W&B
-does. `bts_from_wandb.py` does not read this file yet.
+`bts_from_wandb.py` reads this file automatically (`--ckpt-csv` defaults to
+it) and merges its points **exempt from `RUN_MIN_TOKENS_B`** — that floor
+exists to cut the diverged original, and a fill point is never the diverged
+original. Pass `--ckpt-csv ''` to disable.
 
-Cost, for reference: **2m02s** for 997 sentences on plain CPU (12 cores, 9.9GB
-RSS) — no accelerator needed — against ~6 min to download each 4.4GB
-checkpoint. The per-sentence `(nll_nats, bytes)` `run_bpb.py` writes are kept,
-so `bts_matched.py` can bootstrap over sentences from these too.
+ℹ️ A **control** point survives the merge as a near-duplicate of its W&B twin
+rather than deduplicating away, because the two sit on marginally different
+x: this file takes tokens from the checkpoint NAME (`step8451_7753M` →
+7.753000B, the trainer's own count) while the W&B curve reconstructs
+`step × tokens_per_step` → 7.753826B. That is a **0.011%** x-offset carrying
+a **5–9e−06** y-difference (the CPU-vs-Neuron rescoring gap), i.e. three
+orders of magnitude below the ±0.008–0.019 checkpoint-to-checkpoint noise
+CLAUDE.md §6 documents. Harmless for interpolation and root-finding, but it
+does mean a cell's point count is one higher than "W&B points + new points"
+would suggest.
+
+Cost, for reference: **2m02s** for 997 FLORES sentences on plain CPU (12
+cores, 9.9GB RSS) — no accelerator needed — against ~6 min to download each
+4.4GB checkpoint. The per-sentence `(nll_nats, bytes)` `run_bpb.py` writes
+are kept, so `bts_matched.py` can bootstrap over sentences from these too.
+
+### Holdout (2026-09-03): reconstructible, and reconstructed for `de`
+
+The `eval/holdout_*_bpb` half was long treated as unfillable, because
+`bpb.load_holdout` reads 500 docs from a reserved FineWeb2-HQ shard that died
+with the Isambard-AI allocation. It is not lost, though — it is a
+**deterministic function of the public corpus**, and every step is still in
+`xscript.data.fineweb`: `_list_parquets()` sorts the manifest, `files[0]` is
+reserved and never enters the pool, and the holdout is its first
+`HOLDOUT_BYTES` (30 MiB) of text in file order. `rebuild_holdout.py` re-runs
+those same functions rather than reimplementing the recipe.
+
+For German: source `epfml/FineWeb2-HQ/deu_Latn`, 570 files, reserved file
+`deu_Latn/000_00000.parquet` → **31.46 MB / 7,391 docs**, of which
+`load_holdout("de", 500)` takes the same first 500 the trainer took.
+
+⛔ Two things this depends on, both easy to get wrong:
+
+1. **Score it with `bpb.score_texts`, not the FLORES path.** Holdout docs are
+   full web pages that exceed the 2048-token context. The trainer scores them
+   in sliding non-overlapping windows; `run_bpb.py`'s fixed-shape FLORES
+   adapter would **truncate** to one window instead. Different numbers.
+   `run_bpb.py --source holdout` calls the trainer's own function.
+2. **The control is per language.** Each language has its own manifest, and
+   `fr`/`ar` fall back to a second repo once the primary is exhausted
+   (`FALLBACK_SOURCES`). Only `de` has been rebuilt and controlled:
+
+   | model | scored | W&B logged | Δ |
+   |---|---|---|---|
+   | `de-starved-8b` (step 8451) | 0.9699196558 | 0.9699254960 | **−5.84e−06** |
+
+   `zh`/`fr`/`ar`/`en` are **not attempted** — rebuild and re-control each
+   before filling it. Scoring cost is ~35 min/checkpoint on CPU (500 web
+   docs ≈ 1.92 MB, batch-1 windows), against ~2 min for FLORES.
 
 ## Analysis window
 

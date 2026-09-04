@@ -51,6 +51,17 @@ def main() -> None:
     ap.add_argument("--runs", nargs="*", default=None)
     ap.add_argument("--langs", nargs="*", default=None, choices=FLORES_LANGS)
     ap.add_argument("--split", default="both", choices=["dev", "devtest", "both"])
+    ap.add_argument("--source", default="flores", choices=["flores", "holdout"],
+                    help="flores: FLORES+ parallel sentences (default). "
+                         "holdout: the reserved in-domain FineWeb shard, i.e. "
+                         "what the trainer logs as eval/holdout_<lang>_bpb. "
+                         "Needs the shard present under <workdir>/xscript/"
+                         "holdout -- see rebuild_holdout.py.")
+    ap.add_argument("--eval-docs", type=int, default=500,
+                    help="holdout only: documents per language, matching the "
+                         "trainer's train.eval_docs (500 in base_main.yaml). "
+                         "Changing this changes the metric, not just its "
+                         "precision -- load_holdout takes the FIRST n docs.")
     ap.add_argument("--batch-size", type=int, default=32)
     ap.add_argument("--limit", type=int, default=None,
                     help="first N sentences per language (debug)")
@@ -203,26 +214,42 @@ def main() -> None:
     from xscript.eval.bench import _make_lm
     from xscript import flores
 
-    # FLORES lives in the shared scratch tree, not this workdir.
-    flores_src = Path(os.environ.get("XSCRIPT_FLORES",
-                                     "/mnt/scratch/xscript/flores_plus"))
-    if not flores_src.exists():
-        sys.exit(f"FLORES+ not found at {flores_src} (set XSCRIPT_FLORES)")
-    link = scratch / "flores_plus"
-    if not link.exists():
-        link.symlink_to(flores_src)
-
-    splits = ["dev", "devtest"] if args.split == "both" else [args.split]
     texts: dict[str, list[str]] = {l: [] for l in langs}
-    for sp in splits:
-        par = flores.load_parallel(langs, sp)
+    if args.source == "flores":
+        # FLORES lives in the shared scratch tree, not this workdir.
+        flores_src = Path(os.environ.get("XSCRIPT_FLORES",
+                                         "/mnt/scratch/xscript/flores_plus"))
+        if not flores_src.exists():
+            sys.exit(f"FLORES+ not found at {flores_src} (set XSCRIPT_FLORES)")
+        link = scratch / "flores_plus"
+        if not link.exists():
+            link.symlink_to(flores_src)
+
+        splits = ["dev", "devtest"] if args.split == "both" else [args.split]
+        for sp in splits:
+            par = flores.load_parallel(langs, sp)
+            for l in langs:
+                texts[l].extend(par[l])
+        if args.limit:
+            texts = {l: t[:args.limit] for l, t in texts.items()}
+        n_sent = len(texts[langs[0]])
+        print(f"[bpb] {len(runs)} model(s) x {len(langs)} lang(s), "
+              f"{n_sent} sentences/lang ({'+'.join(splits)})")
+    else:
+        # The reserved in-domain shard, read EXACTLY as the trainer reads it
+        # (`train_neuron.py`: load_holdout(l, cfg["train"]["eval_docs"])).
+        from xscript.eval.bpb import load_holdout
+        from xscript.paths import HOLDOUT
         for l in langs:
-            texts[l].extend(par[l])
-    if args.limit:
-        texts = {l: t[:args.limit] for l, t in texts.items()}
-    n_sent = len(texts[langs[0]])
-    print(f"[bpb] {len(runs)} model(s) x {len(langs)} lang(s), "
-          f"{n_sent} sentences/lang ({'+'.join(splits)})")
+            texts[l] = load_holdout(l, args.eval_docs)
+            if not texts[l]:
+                sys.exit(f"no holdout shard for {l!r} under {HOLDOUT} -- "
+                         f"run rebuild_holdout.py --lang {l} first")
+        if args.limit:
+            texts = {l: t[:args.limit] for l, t in texts.items()}
+        n_sent = len(texts[langs[0]])
+        print(f"[bpb] {len(runs)} model(s) x {len(langs)} lang(s), "
+              f"{n_sent} holdout docs/lang (from {HOLDOUT})")
 
     if args.device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -253,23 +280,48 @@ def main() -> None:
             per_lang = {}
             for lang in langs:
                 sents = texts[lang]
-                # Bare continuation (empty context) => _prepare prepends exactly
-                # one BOS and every real token is a scored target, matching
-                # eval/bpb.py's convention (BOS not a target, EOS is).
-                enc = [tok.encode(s, bos=False, eos=True) for s in sents]
-                nbytes = [len(s.encode("utf-8")) for s in sents]
-                reqs = [(None, [], e) for e in enc]
-                scored = adapter._loglikelihood_tokens(reqs, disable_tqdm=True)
-                nll = [-lp for lp, _ in scored]          # nats, per sentence
+                if args.source == "flores":
+                    # Bare continuation (empty context) => _prepare prepends exactly
+                    # one BOS and every real token is a scored target, matching
+                    # eval/bpb.py's convention (BOS not a target, EOS is).
+                    enc = [tok.encode(s, bos=False, eos=True) for s in sents]
+                    nbytes = [len(s.encode("utf-8")) for s in sents]
+                    reqs = [(None, [], e) for e in enc]
+                    scored = adapter._loglikelihood_tokens(reqs, disable_tqdm=True)
+                    nll = [-lp for lp, _ in scored]      # nats, per sentence
+                    n_tokens = sum(len(e) for e in enc)
+                else:
+                    # ⛔ Holdout documents are FULL WEB PAGES and routinely exceed
+                    # the 2048-token context; the trainer scores them in sliding
+                    # non-overlapping windows (`bpb.score_texts`), while the
+                    # fixed-shape adapter above would truncate to the last window.
+                    # Those are different numbers, so the holdout path calls the
+                    # trainer's own function verbatim -- that is what makes the
+                    # control against a W&B-logged value meaningful at all.
+                    # Called per document so per-doc (nll, bytes) survive for
+                    # bootstrapping; score_texts only accumulates, so the sums
+                    # are identical to one whole-list call.
+                    from xscript.eval.bpb import score_texts
+                    nll, nbytes, n_tokens = [], [], 0
+                    for di, doc in enumerate(sents):
+                        d_nll, d_b, d_tok = score_texts(
+                            model, tok, [doc], device, model.cfg.max_seq_len)
+                        nll.append(d_nll)
+                        nbytes.append(d_b)
+                        n_tokens += d_tok
+                        if (di + 1) % 100 == 0:
+                            print(f"[bpb]   {run}/{lang}: {di + 1}/{len(sents)} docs",
+                                  flush=True)
                 tot_nll, tot_b = sum(nll), sum(nbytes)
                 per_lang[lang] = {
                     "bpb": tot_nll / (math.log(2) * max(tot_b, 1)),
                     "nll_nats": nll,
                     "bytes": nbytes,
-                    "n_tokens": sum(len(e) for e in enc),
+                    "n_tokens": n_tokens,
                 }
                 print(f"[bpb] {run} / {lang}: bpb={per_lang[lang]['bpb']:.4f} "
-                      f"(n={len(sents)}, {tot_b} bytes)", flush=True)
+                      f"(n={len(sents)}, {tot_b} bytes, src={args.source})",
+                      flush=True)
 
                 if args.verify_cpu:
                     from xscript.eval.bpb import score_texts, bpb as _bpb
@@ -284,10 +336,22 @@ def main() -> None:
 
             payload = {
                 "run": run, "tokenizer": tok_name, "langs": langs,
-                "split": args.split, "n_sentences": n_sent,
-                "source": "flores", "per_lang": per_lang,
+                "split": args.split if args.source == "flores" else "holdout",
+                "n_sentences": n_sent,
+                "source": args.source, "per_lang": per_lang,
             }
-            (out_dir / f"{run}_bpb.json").write_text(json.dumps(payload))
+            if args.source == "holdout":
+                payload["eval_docs"] = args.eval_docs
+            # A --limit run scores a TRUNCATED set and is therefore never a
+            # valid curve point. Recording it lets consumers refuse it rather
+            # than silently comparing 8 sentences against a logged 997 (which
+            # is exactly what happened when checkpoint-staging runs shared this
+            # output directory: the fill script's control gate caught it at
+            # 9.1e-02, but only because a control existed for those cells).
+            if args.limit:
+                payload["limit"] = args.limit
+            suffix = "" if args.source == "flores" else f"_{args.source}"
+            (out_dir / f"{run}{suffix}_bpb.json").write_text(json.dumps(payload))
         except Exception as exc:
             print(f"[bpb] {run} FAILED: {type(exc).__name__}: {exc}")
             (out_dir / f"{run}_bpb.json").write_text(

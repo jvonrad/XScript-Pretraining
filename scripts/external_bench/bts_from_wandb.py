@@ -35,8 +35,23 @@ flat, so `--anchor-frac` picks the target loss from the steeper early part of
 the monolingual curve by default.
 
     python bts_from_wandb.py histories.json [--source flores] [--holdout]
+
+CHECKPOINT-FILLED POINTS (2026-09-02)
+======================================
+`de__unigram_starved` has no W&B history below 7.75B: its 2026-08-03 retrain
+resumed the SAME W&B id as the diverged original, so points below step 8451
+collided with the original's existing steps and W&B silently dropped them.
+`scripts/external_bench/bpb_fill_from_checkpoints.py` scores the retrain's own
+`de-starved-{1,2,5}b` checkpoints on the identical axis (FLORES+ dev, n=997)
+and writes `bpb_curves_ckpt.csv`. `load()` merges those points in alongside
+the W&B history, **exempt from `RUN_MIN_TOKENS_B`** -- that floor exists to
+cut the *diverged original*, and the checkpoint-fill points are retrain
+weights (verified by a control check in `bpb_fill_from_checkpoints.py`: they
+reproduce the W&B-logged value at the one budget both sources cover, 7.753B,
+to <1e-5), so the floor's reason for existing does not apply to them.
 """
 import argparse
+import csv
 import json
 import math
 import sys
@@ -81,28 +96,56 @@ EXCLUDE_RUNS: set[str] = set()
 #
 # 7.5B sits inside the gap (6.75B .. 7.75B), so it cuts the original entirely
 # and keeps every retrain point.
+#
+# ⛔ This floor applies to W&B-SOURCED rows ONLY (`histories.json`'s
+# `"history"` list). It must NOT be applied to the checkpoint-filled points
+# from `bpb_curves_ckpt.csv` (see the module docstring) -- those are already
+# known to be retrain weights (the checkpoint->step mapping is asserted in
+# `bpb_fill_from_checkpoints.py`, and a control point at 7.753B reproduces the
+# W&B-logged value), so applying this floor to them would just re-delete the
+# 1-5B fill this whole mechanism exists to add back. Do NOT lower or delete
+# this floor to "let the fill through" -- that re-admits the diverged
+# original into the W&B branch, which is the failure this floor prevents.
 RUN_MIN_TOKENS_B = {"de__unigram_starved": 7.5}
 
 
-def load(path, source):
-    """{(mix, tok): {lang: [(tokens_b, bpb), ...]}} for EN-anchored runs only."""
+def _curve_key(name):
+    """`name` -> `(mix, tok)`, or None to skip. Shared by both point sources
+    (W&B history and the checkpoint fill) so "EN-anchored, known tokenizer"
+    means the same thing in both -- a run excluded from one must be excluded
+    from the other, or a fill point could enter a curve its W&B history is
+    filtered out of."""
+    if "__" not in name or name in EXCLUDE_RUNS:
+        return None
+    mix, tok = name.split("__", 1)
+    tok = tok.replace("unigram_", "")
+    if tok not in TOKS:
+        return None
+    # EN-anchored only: the non-English-anchor bilinguals never really ran.
+    parts = mix.split("-")
+    if len(parts) == 2 and parts[0] != "en":
+        return None
+    if len(parts) > 2:
+        return None
+    return mix, tok
+
+
+def load(path, source, ckpt_csv=None):
+    """{(mix, tok): {lang: [(tokens_b, bpb), ...]}} for EN-anchored runs only.
+
+    `ckpt_csv`, if given and it exists, merges in checkpoint-scored points
+    (`bpb_fill_from_checkpoints.py`'s output) -- see the module docstring.
+    These are EXEMPT from `RUN_MIN_TOKENS_B`: that floor's job is to cut the
+    diverged original, and a fill point is never the diverged original.
+    """
     raw = json.loads(Path(path).read_text())
     out = {}
     for key, r in raw.items():
         name = r["name"]
-        if "__" not in name or name in EXCLUDE_RUNS:
+        ck = _curve_key(name)
+        if ck is None:
             continue
-        mix, tok = name.split("__", 1)
-        tok = tok.replace("unigram_", "")
-        if tok not in TOKS:
-            continue
-        # EN-anchored only: the non-English-anchor bilinguals never really ran.
-        parts = mix.split("-")
-        if len(parts) == 2 and parts[0] != "en":
-            continue
-        if len(parts) > 2:
-            continue
-        cur = out.setdefault((mix, tok), {})
+        cur = out.setdefault(ck, {})
         floor = RUN_MIN_TOKENS_B.get(name, 0.0)
         n_dropped = 0
         for rec in r["history"]:
@@ -124,7 +167,34 @@ def load(path, source):
         if n_dropped:
             print(f"[bts] {name}: dropped {n_dropped} pre-seam eval point(s) "
                   f"below {floor}B (see RUN_MIN_TOKENS_B)", file=sys.stderr)
-    # de-duplicate (repeated run names) keeping the lowest bpb per token point,
+
+    if ckpt_csv and Path(ckpt_csv).exists():
+        n_merged = {}
+        with open(ckpt_csv, newline="") as fh:
+            for row in csv.DictReader(fh):
+                name = row["run"]
+                ck = _curve_key(name)
+                metric = row["metric"]
+                if ck is None or not (metric.startswith("eval/")
+                                      and metric.endswith("_bpb")):
+                    continue
+                src, lang = metric[len("eval/"):-len("_bpb")].rsplit("_", 1)
+                if src != source:
+                    continue
+                t = float(row["tokens"]) / 1e9
+                # NO floor here -- see RUN_MIN_TOKENS_B's comment.
+                out.setdefault(ck, {}).setdefault(lang, []).append(
+                    (t, float(row["value"])))
+                n_merged[name] = n_merged.get(name, 0) + 1
+        for name, n in sorted(n_merged.items()):
+            print(f"[bts] {name}: merged {n} checkpoint-fill point(s) from "
+                  f"{ckpt_csv} (floor exempt -- these are retrain weights, "
+                  f"not the diverged original; see RUN_MIN_TOKENS_B)",
+                  file=sys.stderr)
+
+    # de-duplicate (repeated run names, or a fill point landing on a token the
+    # W&B history also has -- e.g. de/starved's 7.753B control point exists in
+    # both sources and agrees to <1e-5) keeping the lowest bpb per token point,
     # and sort
     for cell in out.values():
         for lang, pts in cell.items():
@@ -183,8 +253,19 @@ def main():
                     help="target loss = mono BPB at this fraction (log-space) "
                          "of its usable stable range; lower = steeper, better "
                          "conditioned inversion")
+    ap.add_argument("--ckpt-csv", type=Path, default=None,
+                    help="checkpoint-filled points (bpb_fill_from_checkpoints.py "
+                         "output) to merge in, e.g. de/starved below 7.75B. "
+                         "Defaults to bpb_curves_ckpt.csv next to `histories`; "
+                         "pass --ckpt-csv '' to disable.")
     args = ap.parse_args()
-    data = load(args.histories, args.source)
+    ckpt_csv = args.ckpt_csv
+    if ckpt_csv is None:
+        default = Path(args.histories).parent / "bpb_curves_ckpt.csv"
+        ckpt_csv = default if default.exists() else None
+    elif str(ckpt_csv) == "":
+        ckpt_csv = None
+    data = load(args.histories, args.source, ckpt_csv)
 
     print(f"# BTS from W&B training curves (source={args.source})\n")
     print(f"Stable-LR window only: {WARMUP_END_B}B - {DECAY_START_B}B "
