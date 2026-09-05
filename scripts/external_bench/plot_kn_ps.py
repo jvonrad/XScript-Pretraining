@@ -3,12 +3,15 @@
 facts only (gold entity spelled differently in the two languages), for the 8
 cooled 30B bilingual finals:
 
-  fig_kn_ps_bars       (a) PS_{s,t} = same-fact top-K Jaccard minus the
-                       mismatched-fact baseline, K=100; (b) ablation transfer
-                       rate. fair vs starved, 95% bootstrap CIs over facts.
-  fig_kn_ablation      ablation damage by condition per model (log scale):
-                       own top-100, own different-fact control, other-language
-                       top-100, other different-fact control, 100 random.
+  fig_kn_sharing       (a) PS_{s,t} = same-fact top-K Jaccard minus the
+                       mismatched-fact baseline, K=100, fair vs starved, 95%
+                       bootstrap CIs over facts; (b) ablation damage by
+                       condition per model (log scale): own top-100, own
+                       different-fact control, other-language top-100, other
+                       different-fact control, 100 random neurons.
+  fig_kn_transfer      the ablation transfer rate on its own (same bar design).
+  fig_kn_ps_bars /     kept for continuity: the old (PS, rate) bar pair and the
+  fig_kn_ablation      standalone ablation dot plot.
   fig_kn_layers        cumulative layer distribution of the partner language's
                        top-100 knowledge neurons, fair vs starved panels.
 
@@ -28,11 +31,16 @@ sys.path.insert(0, str(HERE)); sys.path.insert(0, str(ROOT / "src"))
 from analyze_knowneurons import Run, jaccard_matrix, jaccard_mismatched, load_gold_strings, CONDS  # noqa: E402
 
 PARTNERS = ["de", "fr", "ar", "zh"]
+# Times New Roman if installed (ttf-mscorefonts-installer), else a metric clone.
+import matplotlib.font_manager as _fm  # noqa: E402
+_HAVE = {f.name for f in _fm.fontManager.ttflist}
+SERIF = next((n for n in ("Times New Roman", "Liberation Serif", "Nimbus Roman", "DejaVu Serif") if n in _HAVE), "serif")
 FAIR, STARVED, INK, INK2, GRID = "#2a78d6", "#eb6834", "#0b0b0b", "#52514e", "#e6e5e1"
 PCOL = {"de": "#2a78d6", "fr": "#e87ba4", "ar": "#eda100", "zh": "#1baf7a"}
 plt.rcParams.update({"font.size": 9, "axes.edgecolor": GRID, "axes.labelcolor": INK2, "xtick.color": INK2, "ytick.color": INK2,
                      "axes.titlecolor": INK, "axes.spines.top": False, "axes.spines.right": False, "axes.grid": True,
-                     "grid.color": GRID, "grid.linewidth": 0.6, "axes.axisbelow": True, "legend.frameon": False})
+                     "grid.color": GRID, "grid.linewidth": 0.6, "axes.axisbelow": True, "legend.frameon": False,
+                     "pdf.fonttype": 42})   # embed TrueType subsets, not Type 3, so the serif survives in LaTeX
 
 
 def boot(vals, rng, B=2000):
@@ -48,6 +56,16 @@ def rate_boot(trans_list, spec_list, rng, B=2000):
         i = rng.integers(0, n, n); i2 = np.concatenate([i, i + n])
         out[b] = t[i2].mean() / s[i2].mean()
     return float(t.mean() / s.mean()), float(np.quantile(out, .025)), float(np.quantile(out, .975))
+
+
+def _top_legend(ax, fontsize=8.5):
+    """Legend above the axes, in as many columns as the panel width actually fits."""
+    handles, labels = ax.get_legend_handles_labels()
+    w_in = ax.figure.get_size_inches()[0] * ax.get_position().width
+    col_in = 0.062 * fontsize / 8.5 * max(len(l) for l in labels) + 0.45   # text + marker + padding
+    ncol = max(1, min(len(labels), int(w_in // col_in)))
+    ax.legend(handles, labels, loc="lower left", bbox_to_anchor=(0.0, 1.02), ncol=ncol,
+              fontsize=fontsize, borderaxespad=0.0, handletextpad=0.4, columnspacing=1.2)
 
 
 def main():
@@ -79,11 +97,11 @@ def main():
                        "layer_cdf": np.cumsum(np.bincount(layers, minlength=16) / len(layers))}
         print(f"{name:14s} n_diff={diff.sum():4d} PS={stats[name]['ps'][0]:.4f} rate={stats[name]['rate'][0]:.3f}")
 
-    # ---- fig 1: bars (thesis design: blue fair, orange hatched starved) -------
+    # ---- bar panel (thesis design: blue fair, orange hatched starved) --------
     BLUE, ORANGE = "#1f77b4", "#e8a33d"
-    fig, axes = plt.subplots(1, 2, figsize=(9.6, 3.9))
     x = np.arange(4); w = 0.36; bw = w * 0.95
-    for ax, key, title in ((axes[0], "ps", "a   Parametric sharing (PS)"), (axes[1], "rate", "b   Ablation transfer rate")):
+
+    def draw_bars(ax, key, title, legend="inside"):
         for cond, off in (("fair", -w / 2), ("starved", w / 2)):
             m = [stats[f"en-{p}-{cond}"][key][0] for p in PARTNERS]
             lo = [m[i] - stats[f"en-{p}-{cond}"][key][1] for i, p in enumerate(PARTNERS)]
@@ -99,34 +117,78 @@ def main():
         top = max(stats[f"en-{p}-{c}"][key][2] for p in PARTNERS for c in ("fair", "starved"))
         ax.set_ylim(0, top * 1.18)
         ax.set_xticks(x); ax.set_xticklabels(PARTNERS, fontsize=10)
-        ax.annotate("same script", xy=(0.25, -0.15), xycoords="axes fraction", ha="center", fontsize=9.5, color="#666666")
-        ax.annotate("cross-script", xy=(0.75, -0.15), xycoords="axes fraction", ha="center", fontsize=9.5, color="#666666")
-        ax.set_title(title, loc="left", fontsize=12, color="#222222", pad=8)
+        for gx, glab in ((0.25, "same script"), (0.75, "cross-script")):
+            ax.annotate(glab, xy=(gx, 0.0), xycoords="axes fraction", xytext=(0, -30),
+                        textcoords="offset points", ha="center", fontsize=9.5, color="#666666")
+        if title:
+            ax.set_title(title, loc="left", fontsize=12, color="#222222", pad=8)
         ax.set_ylabel("PS  (same-fact − mismatched-fact Jaccard)" if key == "ps" else "transfer rate", fontsize=10.5, color="#222222")
         ax.tick_params(axis="y", labelsize=10, colors="#444444"); ax.tick_params(axis="x", colors="#222222")
         ax.grid(axis="x", visible=False); ax.grid(axis="y", color="#e5e5e5", lw=0.8)
         for sp in ("left", "bottom"):
             ax.spines[sp].set_color("#cccccc")
-    axes[0].legend(loc="upper right", fontsize=10)
+        if legend == "top":
+            ax.legend(loc="upper right", fontsize=10); _top_legend(ax)   # one row above the panel
+        else:
+            ax.legend(loc="upper right", fontsize=10)
+
+    # ---- ablation-damage dot panel -------------------------------------------
+    def draw_ablation(ax, title=None, legend="outside"):
+        names = [f"en-{p}-{c}" for p in PARTNERS for c in ("fair", "starved")]
+        spec = [("own_fact", FAIR, "o", True, "own-language top-100"), ("own_other", FAIR, "o", False, "own, different fact (control)"),
+                ("cross_fact", STARVED, "s", True, "other-language top-100"), ("cross_other", STARVED, "s", False, "other, different fact (control)"),
+                ("random", "#6f6e6a", "D", True, "100 random neurons")]
+        for yi, n in enumerate(names):
+            for c, col, mk, filled, lab in spec:
+                v = max(stats[n]["dmg"][c], 1e-3)
+                ax.plot(v, len(names) - 1 - yi, marker=mk, ms=8, mfc=col if filled else "white", mec=col, mew=1.6, ls="none",
+                        label=lab if yi == 0 else None, zorder=3)
+        ax.set_yticks(range(len(names))); ax.set_yticklabels(names[::-1]); ax.set_xscale("log")
+        ax.set_xlabel("drop in gold-answer log-likelihood (nats, log scale)"); ax.grid(axis="y", visible=False)
+        if title:
+            ax.set_title(title, loc="left", fontsize=12, color="#222222", pad=8)
+        if legend == "outside":
+            ax.legend(loc="center left", bbox_to_anchor=(1.01, 0.5), fontsize=8)
+        elif legend == "top":
+            _top_legend(ax)          # above the axes, so the panel keeps its full width
+
+    # fig_kn_sharing: (a) PS bars, (b) ablation damage (no descriptive title)
+    fig, axes = plt.subplots(1, 2, figsize=(10.9, 4.15), gridspec_kw={"width_ratios": [1.0, 1.15]})
+    draw_bars(axes[0], "ps", None, legend="top")
+    draw_ablation(axes[1], title=None, legend="top")
+    fig.tight_layout(rect=(0, 0.075, 1, 1.0))
+    for ax in axes:                       # re-fit now that the panels have their real width
+        _top_legend(ax)
+    fig.tight_layout(rect=(0, 0.075, 1, 1.0))
+    # panel letters below each panel, centred, in Times New Roman (thesis body font)
+    for ax, lab in ((axes[0], "a)"), (axes[1], "b)")):
+        bb = ax.get_position()
+        fig.text(bb.x0 + bb.width / 2, 0.018, lab, fontsize=13, color="#222222",
+                 ha="center", va="bottom", family=SERIF, fontweight="bold")
+    for ext in ("pdf", "png"):
+        # NOT bbox_inches="tight": cropping shifts the figure-level panel letters
+        # out of alignment with the axes they label.
+        fig.savefig(out / f"fig_kn_sharing.{ext}", dpi=170)
+    plt.close(fig)
+
+    # fig_kn_transfer: the ablation transfer rate on its own
+    fig, ax = plt.subplots(figsize=(4.9, 3.9))
+    draw_bars(ax, "rate", None)
+    fig.tight_layout()
+    for ext in ("pdf", "png"):
+        fig.savefig(out / f"fig_kn_transfer.{ext}", dpi=170)
+    plt.close(fig)
+
+    # kept for continuity: the old two-bar-panel figure and the standalone ablation plot
+    fig, axes = plt.subplots(1, 2, figsize=(9.6, 3.9))
+    draw_bars(axes[0], "ps", "a   Parametric sharing (PS)"); draw_bars(axes[1], "rate", "b   Ablation transfer rate")
+    axes[1].get_legend().remove()
     fig.tight_layout()
     for ext in ("pdf", "png"):
         fig.savefig(out / f"fig_kn_ps_bars.{ext}", dpi=170)
     plt.close(fig)
-
-    # ---- fig 2: ablation damage by condition --------------------------------
     fig, ax = plt.subplots(figsize=(9.6, 3.6))
-    names = [f"en-{p}-{c}" for p in PARTNERS for c in ("fair", "starved")]
-    spec = [("own_fact", FAIR, "o", True, "own-language top-100"), ("own_other", FAIR, "o", False, "own, different fact (control)"),
-            ("cross_fact", STARVED, "s", True, "other-language top-100"), ("cross_other", STARVED, "s", False, "other, different fact (control)"),
-            ("random", "#6f6e6a", "D", True, "100 random neurons")]
-    for yi, n in enumerate(names):
-        for c, col, mk, filled, lab in spec:
-            v = max(stats[n]["dmg"][c], 1e-3)
-            ax.plot(v, len(names) - 1 - yi, marker=mk, ms=8, mfc=col if filled else "white", mec=col, mew=1.6, ls="none",
-                    label=lab if yi == 0 else None, zorder=3)
-    ax.set_yticks(range(len(names))); ax.set_yticklabels(names[::-1]); ax.set_xscale("log")
-    ax.set_xlabel("drop in gold-answer log-likelihood (nats, log scale)"); ax.grid(axis="y", visible=False)
-    ax.legend(loc="center left", bbox_to_anchor=(1.01, 0.5), fontsize=8)
+    draw_ablation(ax)
     fig.tight_layout()
     for ext in ("pdf", "png"):
         fig.savefig(out / f"fig_kn_ablation.{ext}", dpi=170, bbox_inches="tight")

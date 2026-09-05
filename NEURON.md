@@ -980,6 +980,63 @@ throughput on a fully loaded 48xlarge. Not exposed by `neuron-monitor` /
 sysfs (only ECC counters); `neuron-explorer`'s
 `throttle_avg_util_limit_nc*_percent` (10c) is the counter that would show it.
 
+**⛔ NEVER scale the loss before `backward()` on this stack — a non-power-of-two
+grad_output scale corrupts the compiled backward (found 2026-09-05, cost the
+first ~3B tokens of all four 20lang runs).** The port did the textbook
+`(loss / grad_accum).backward()` with `grad_accum = 15`. On a fixed real
+micro-batch of the `en-fr__unigram_20lang` 2.755B checkpoint, gradients
+through the training graph path (compiled blocks / emb / tail, bf16 shadow,
+fp32 masters) against a CPU fp32 reference, after dividing out the scale:
+
+| grad_output scale | worst per-family cosine | RMSNorm-gain grad norm ratio |
+|---|---|---|
+| 1, 1/2, 1/4, **1/16** | 0.998 (tighter than CPU bf16-autocast's 0.981) | 0.96–1.03 |
+| 1/3 | 0.964 | 0.72–1.15 |
+| **1/15 (the trainer)** | **0.904** | **0.53–1.27** (wv 0.79, w3 0.91) |
+
+Identical whether the scale is applied as `loss / n`, `loss * (1/n)` or
+`backward(gradient=...)`; forward losses are bit-identical; a repeated
+micro-batch is bit-deterministic. So the defect is in how the compiled
+backward consumes a scalar grad_output that is not exactly representable —
+power-of-two scales are exact and pass, everything else is wrong by up to
+2x on the small fp32 gains and a few percent on the matrices, in a
+direction-dependent way. Symptom in training: all four runs tracked the
+GH200 references to ~1.5B tokens, then **plateaued at 2.0–2.1B** (loss flat
+or rising 2000→2800 steps while every reference drops ~0.1 nats; final-norm
+gain growing 1.3→1.55 where references shrink 0.55→0.37; FLORES BPB 5–13%
+worse than the *starved* references by 2.755B). Everything else was verified
+clean on the way to this: forward loss vs CPU fp32 to 4 decimals; single
+micro-batch gradients cos ≥ 0.998; `clip_grad_norm_` on device; one
+ZeRO/AdamW step vs a CPU AdamW step (cos 1.000); no compile-time weight
+capture; per-rank data disjointness; Adam state shards (step counts, finite,
+partition covers 100% of params); no ECC/hardware counters. **Fix** (in
+`train_native.py`): `loss.backward()` unscaled, then `pm.grad.div_(grad_accum)`
+on the fp32 master grads before the all-reduce. Verified on the same batch:
+15 x A / 15 and [A,B,C] / 3 reproduce the single-batch gradient to cos
+1.00000, and that gradient matches CPU fp32 at 0.998. Diagnostics:
+`scripts/neuron_native/diag_{native,accum,accum2,scale,fix}.py` (world=1,
+one free chip, ~1 min each once the NEFF cache is warm). The corrupted runs
+are archived under `runs/_bad_scaled_grads/` (W&B ids `*__native`); the
+clean restarts use W&B ids `*__native2`. Standing rule for any future
+recipe change: run `diag_fix.py`'s three checks before trusting a loss curve.
+
+**Status after the fix (2026-09-05 03:45–03:50 UTC).** All four
+`en-{de,fr,ar,zh}__unigram_20lang` runs were killed and restarted from
+scratch (fresh init, same seeds/config) under the fixed trainer: identical
+init eval across the four (FLORES en 4.293 — same seed, same English
+stream), 150–163k tok/s each before the power cap sets in. About 3B tokens
+per run (~9 h of box time) were lost to the defect; new ETA for 30B is
+Sep 8–9. What to watch: the clean runs must keep descending past 2B tokens
+— the corrupted ones plateaued at steps 2000–2800 where every reference
+drops ~0.1 nats — and their FLORES/holdout BPB should land between the
+`starved` and `destarved` references (fertility says 20lang sits between
+them), not below `starved`. Early losses are not diagnostic: the corrupted
+runs matched the references to ~1.5B tokens. Note the first read of this
+symptom blamed the tokenizer ("20lang is worse than starved for fr/ar");
+in-loop BPB was what exposed it, and the CPU fp32 re-score of the
+checkpoints (§6 scorer) confirmed the eval was reporting the truth about
+the weights, which is why the trainer, not the eval, was investigated.
+
 ### 10f. What does NOT work — the measured dead-end ledger (don't re-try on this SDK)
 
 Compile / graph structure

@@ -195,7 +195,7 @@ def main():
         try:
             import wandb as _wb
             wandb = _wb.init(project="XScript-Pretraining", name=cfg["name"],
-                             id=args.wandb_id or (cfg["name"] + "__native"), resume="allow", config=cfg)
+                             id=args.wandb_id or (cfg["name"] + "__native2"), resume="allow", config=cfg)
         except Exception as exc:
             print(f"[native] wandb disabled ({exc})", flush=True)
 
@@ -236,6 +236,97 @@ def main():
             pass
         dist.barrier()
 
+    # ---- in-loop BPB eval (mirrors eval/bpb.py: BOS+text+EOS, non-overlapping
+    # seq_len windows, sum NLL / (ln2 * UTF-8 bytes)); fixed shapes so it compiles
+    # once; texts sharded over ranks and the sums all-reduced ---------------------
+    import math
+    from xscript import flores as _flores
+    from xscript.eval.bpb import load_holdout
+    from xscript.tok.wrapper import Tok
+    from xscript.paths import tokenizer_dir
+    FL_W, FL_B = 128, 16           # FLORES sentences: <= 102 tokens under every tokenizer here
+    eval_srcs, eval_ok = {}, True
+    try:
+        tok = Tok(tokenizer_dir(cfg["tok_name"]))
+        par = _flores.load_parallel(cfg["langs"], "dev")
+        for l in cfg["langs"]:
+            eval_srcs[f"flores_{l}"] = (par[l], FL_W, FL_B)
+            h = load_holdout(l, cfg["train"].get("eval_docs", 500))
+            if h:
+                eval_srcs[f"holdout_{l}"] = (h, T, mb)   # 2048-wide windows -> reuse the training graphs
+    except Exception as exc:
+        eval_ok = False
+        if rank == 0:
+            print(f"[native] eval disabled: {exc}", flush=True)
+
+    def _windows(texts, width):
+        """(x, y) int32 rows of `width` for the texts owned by this rank, plus byte total."""
+        xs, ys, nbytes = [], [], 0
+        for i, text in enumerate(texts):
+            if i % world != rank:
+                continue
+            b = len(text.encode("utf-8"))
+            if b == 0:
+                continue
+            nbytes += b
+            ids = tok.encode(text, bos=True, eos=True)
+            for st in range(0, len(ids) - 1, width):
+                chunk = ids[st:st + width + 1]
+                if len(chunk) < 2:
+                    continue
+                x = np.full(width, 3, np.int32); y = np.full(width, -100, np.int32)   # pad id 3, ignored target
+                x[:len(chunk) - 1] = chunk[:-1]; y[:len(chunk) - 1] = chunk[1:]
+                xs.append(x); ys.append(y)
+        return xs, ys, nbytes
+
+    @torch.no_grad()
+    def evaluate():
+        nonlocal eval_ok
+        if not eval_ok:
+            return {}
+        try:
+            out = {}
+            for name, (texts, width, bs) in eval_srcs.items():
+                xs, ys, nbytes = _windows(texts, width)
+                nll = torch.zeros((), device=dev); ntok = torch.zeros((), device=dev)
+                for i in range(0, len(xs), bs):
+                    cx, cy = xs[i:i + bs], ys[i:i + bs]
+                    while len(cx) < bs:                       # keep the batch shape fixed
+                        cx.append(np.full(width, 3, np.int32)); cy.append(np.full(width, -100, np.int32))
+                    x = torch.from_numpy(np.stack(cx)).to(dev); y = torch.from_numpy(np.stack(cy)).to(dev)
+                    with torch.autocast("neuron", dtype=torch.bfloat16):
+                        mean_loss = forward_loss(x, y)
+                    valid = (y != -100).sum()
+                    nll = nll + mean_loss.float() * valid.float(); ntok = ntok + valid.float()
+                stats_t = torch.stack([nll, ntok, torch.tensor(float(nbytes), device=dev)])
+                dist.all_reduce(stats_t, op=dist.ReduceOp.SUM)
+                s_nll, s_tok, s_bytes = (float(v) for v in stats_t.cpu())
+                out[name] = {"bpb": s_nll / (math.log(2) * max(s_bytes, 1)), "ppl_token": math.exp(s_nll / max(s_tok, 1)),
+                             "bytes": int(s_bytes), "tokens": int(s_tok)}
+            return out
+        except Exception as exc:
+            eval_ok = False
+            if rank == 0:
+                print(f"[native] eval failed, disabling: {exc}", flush=True)
+            return {}
+
+    def log_eval(res, final=False):
+        if not res or rank != 0:
+            return
+        tag = "eval_final" if final else "eval"
+        _log(rank, log_path, {"step": step, "tokens": tokens, tag: res})
+        print(f"[{tag}] {tokens/1e9:.3f}B: " + ", ".join(f"{k}={v['bpb']:.4f}" for k, v in res.items()), flush=True)
+        if wandb:
+            try:
+                wandb.log({f"{tag}/{k}_bpb": v["bpb"] for k, v in res.items()} |
+                          {f"{tag}/{k}_ppl": v["ppl_token"] for k, v in res.items()} | {"tokens_b": tokens / 1e9}, step=step)
+            except Exception:
+                pass
+
+    t_ev = time.time(); res = evaluate(); log_eval(res)   # one point at (re)start: validates the path, seeds the curve
+    if rank == 0 and res:
+        print(f"[native] startup eval took {time.time()-t_ev:.0f}s (includes the one-time eval-shape compile)", flush=True)
+
     # ---- loop ----------------------------------------------------------------
     log_every = cfg["train"].get("log_every", 20)
     t0 = time.time()
@@ -256,10 +347,15 @@ def main():
             y = t[i:i + mb, 1:].contiguous().to(dev)
             with torch.autocast("neuron", dtype=torch.bfloat16):
                 loss = forward_loss(x, y)
-            (loss / grad_accum).backward()
+            # NEVER scale the loss before backward on this stack: a non-power-of-two
+            # grad_output scale (1/15 here) corrupts the compiled backward (gradients
+            # vs CPU fp32: cos 0.90, RMSNorm-gain grads off by 0.5-1.3x; 1/2, 1/4, 1/16
+            # are exact). Backprop unscaled and divide the fp32 master grads instead.
+            loss.backward()
             d = loss.detach() / grad_accum
             acc = d if acc is None else acc + d
         for pm in master.parameters():
+            pm.grad.div_(grad_accum)
             dist.all_reduce(pm.grad, op=dist.ReduceOp.AVG)
         torch.nn.utils.clip_grad_norm_(master.parameters(), grad_clip)
         optim.step()
@@ -298,6 +394,8 @@ def main():
             last_ckpt_tokens = tokens
             save("last", True)
             save(f"step{step}_{int(tokens/1e6)}M", False)
+            log_eval(evaluate())
+            t0 = time.time(); n_since = 0      # don't count save+eval time in the next tok/s window
         if args.empty_cache_every and step % args.empty_cache_every == 0:
             torch_neuronx.empty_cache()
         if args.max_steps and step >= args.max_steps:
@@ -305,6 +403,7 @@ def main():
     if not args.max_steps:
         save("last", True)
         save("final", False)
+        log_eval(evaluate(), final=True)
         if rank == 0:
             print(f"[native] DONE {cfg['name']} @ {tokens/1e9:.2f}B tokens", flush=True)
     if wandb:
