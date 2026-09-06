@@ -10,13 +10,31 @@ See [README.md](README.md) for the experiment design, and
 **[NEURON.md](NEURON.md)** for everything about *running* this on AWS Trainium:
 environment setup, dependency pins, the XLA scoring adaptation and its silent
 traps, the eval fan-out, and the training port. Section numbers are preserved
-across both files, so cross-references still resolve — **§3, §6, §6b, §6c, §6d,
+across both files, so cross-references still resolve — **§3, §6, §6b, §6c, §6d, §6l,
 §8 are here; §1, §2, §4, §5, §7, §9 are in NEURON.md**.
 
 ---
 
 ## TL;DR
 
+- 🆕 **§6l — logit lens on all 8 bilingual finals + 10 monolingual controls**
+  (2026-09-06, CPU-only, training untouched). (1) **These 50/50 bilinguals
+  do not think in English**: the language decision lives in layers 13–15,
+  the English trace on X→X repetition peaks at ≤ .14 (fr) / .03 (de) /
+  .03 (ar) / .00 (zh) against ≈.5 in Wendler's Llama-2, is asymmetric, and
+  free text shows no latent English translation (≤ 2% over control). The
+  trace is ordered fr > de > ar ≈ zh — the script barrier again. (2) **The
+  fair tokenizer makes the output-language decision 1–2 layers earlier in
+  all 16 (pair × condition) cells**, also on single-token words; the starved
+  en-ar model keeps the English input word on top until layer 14 and picks
+  Arabic only at the unembedding (commit 16.5 vs 14.4). (3) Under fair the
+  interior layers hold 6–8 points more factual accuracy at layer 14 and lose
+  more of it at the output (Wang's "lost in transition"); under starved the
+  interior is near noise. Full-string probabilities throughout (first-token
+  numbers are tokenizer-dependent). (4) The earlier decision **survives the
+  BPB-matched control** on repetition and factual recall in all four pairs
+  (fair-5b/10b vs starved-23b: −0.6 to −1.5 layers); only the few-shot
+  translation cells carry a capability component.
 - 🆕 **§6k — cross-lingual consistency (RankC), 8 bilingual finals + the
   matched-loss control** (2026-09-04). Fair > starved on every pair at 30B
   (PolyFact and MuBench-BMLAMA agree; Arabic largest, +.03–.05), but at
@@ -2955,6 +2973,196 @@ compile, and 8–16 parallel scorers with no compile race; ~190 requests/s per
 logical core at [32, 48]. `Transformer.forward(idx)` without targets returns
 ONLY the last position's logits — every scorer here walks the blocks
 explicitly.
+
+## 6l. Logit lens: where the bilinguals switch language, and whether they think in English (2026-09-06)
+
+Replicates the three logit-lens designs the thesis cites — Wendler et al.
+2024 (translation / repetition / cloze, arXiv:2402.10588), Wang et al. 2025
+(factual recall, arXiv:2504.04264) and Schut et al. 2025 (open-ended text,
+arXiv:2502.15603) — on the **8 cooled 30B bilingual finals** plus **10
+monolingual controls** (`en/fr/ar-{fair,starved}`, `de-fair`,
+`de-starved-16b`, `zh-{fair,starved}-15b`). Code:
+`src/xscript/eval/logitlens.py`, `scripts/external_bench/{build_lens_items,
+run_logitlens,analyze_logitlens}.py`; report + figures in
+`results/logitlens/` (`report.md`, `summary.json`, `figs/fig_lens_*`; the two
+thesis figures are `fig_lens_summary.pdf` — commitment-layer deltas with the
+BPB-matched control, latent-English trace with monolingual controls, PolyFact
+accuracy by layer — and `fig_lens_example.pdf`, the Wendler/Schut-style
+layer × position argmax grid for `English: heart - العربية:` under both
+tokenizers, from `scripts/external_bench/plot_lens_figs.py`; `--variants`
+adds `fig_lens_interior` (panel c alone), `fig_lens_commit2` (translation +
+factual only) and `fig_lens_answer_examples` (answer-position argmax per
+layer for one single-token word per pair, both tokenizers)); raw
+per-layer sidecars on the trn2 box only (`/mnt/scratch/xscript_lens/raw/`,
+~20 MB/model — copy off before teardown). Ran **entirely on the host CPU**
+(bf16 AMX forward, fp32 unembedding, ~8 min/model on 24 cores) while the
+`unigram_20lang` native training held every Neuron device: nothing was
+paused.
+
+### Three deviations from the papers, all forced by the tokenizer contrast
+
+1. **Full-string, not first-token, probabilities.** All three papers read
+   P(token) for single-token words. Under `unigram_starved` only **21 of 110**
+   German, 35/93 French and 40/112 Arabic test words are one piece (fair:
+   98, 93, 112; zh 139 under both), and a fragmented word's first piece is a
+   shared high-prior prefix — so first-token numbers are not comparable
+   across tokenizer conditions (6g's `acc_tokennorm` theorem, one level
+   down). Every quantity here is the teacher-forced log-probability of the
+   **whole string** under the layer-l lens; the Wendler-faithful first-token
+   version is reported alongside on the words single under BOTH tokenizers.
+2. **A per-token language map from each tokenizer's own holdout text**
+   replaces fastText/GPT-4o: P(lang|piece) ∝ the piece's per-language rate on
+   the FineWeb2-HQ holdout, tokens without a letter routed to `other`. Only
+   **22.7k of 65.5k** starved pieces ever occur (≥3x) in five-language text
+   vs 56.1k fair pieces — the starvation, counted.
+3. **Every latent-language number has a matched control**: P(translation of
+   the SAME word) minus P(translation of a DIFFERENT word); parallel-sentence
+   token mass minus a random other sentence; partner-language monolinguals
+   that never saw English.
+
+Two traps that cost a re-run: (a) a Chinese answer written with a leading
+space tokenises as the bare `▁` piece first, so the answer-position language
+mass measured the space (zh prompts now use `中文：花`, no space); (b)
+`sp.encode(" word")` is never one piece because SentencePiece adds its own
+dummy `▁` — check single-token status on the bare word.
+
+### Result 1 — these bilinguals do NOT think in English
+
+The lens distribution is not word-like before layer 12 of 16: in layers
+8–12 the top-1 piece is the bare `▁` ("a word starts here") on >95% of
+items, and the output word's probability is ≈0 until layer 12, then rises
+to >0.8 by layer 14–15. The language-specific decision therefore lives in
+**layers 13–15** — the same near-output region where the thesis's MEXA
+curves drop.
+
+In **repetition X→X** (no English anywhere in the prompt) the peak
+probability of the English translation of the word being repeated is:
+
+| pair | fair | starved | partner-mono control |
+|---|---|---|---|
+| en-fr | .110 | .143 | .002 / .005 |
+| en-de | .032 | .003 | .000 / .000 |
+| en-ar | .012 | .027 | .000 / .000 |
+| en-zh | .000 | .000 | .000 / .000 |
+
+An English trace exists, but it is **an order of magnitude below Wendler's
+Llama-2 numbers (≈0.5)**, it is **ordered fr > de > ar ≈ zh = 0** — the
+script barrier one more time, now as "which pair has a latent pathway at
+all" — and it is **asymmetric**: repeating an English word puts ≤ .012 on
+the partner translation in every pair. The `en-fair` monolingual repeating
+German/French words shows a far larger English trace (.25/.30) because it
+half-knows those words as English cognates; a 50/50 bilingual does not
+route through English. Free text says the same (Schut's test): at lexical
+word-initial positions of FLORES sentences the mid-layer top-1 is an
+other-language token on 5–18% of positions (Latin pairs; ≤ 8% for ar/zh) and
+a MUSE **translation** of the emitted word on **≤ 2%** above the mismatched
+control, in every model. The parallel-sentence mass excess (+.03–.05 for
+de/fr, +.005–.015 for ar/zh, peaking at layer 14–15) is reproduced by the
+English monolingual (+.034) and the partner monolinguals, i.e. it is
+FLORES's cross-translation name/number overlap (6b's lexical floor), not a
+latent translation. Tokenizer effect on the trace: none consistent (de
++.035\*, ar −.014\*, fr/zh ≈ 0).
+
+### Result 2 — the fair tokenizer makes the output-language decision 1–2 layers EARLIER, in every pair
+
+Commit layer = first layer at which the lens puts ≥ 0.5 on the output
+string; fair − starved, paired over identical items both models get right:
+
+| partner | script | tr en→X | tr X→en | rep X→X | rep en→en | single-token words (rep X→X) |
+|---|---|---|---|---|---|---|
+| de | same | **−2.01\*** | **−1.76\*** | **−1.32\*** | **−1.17\*** | **−1.24\*** (n=21) |
+| fr | same | **−1.32\*** | **−1.17\*** | **−1.00\*** | **−1.10\*** | **−0.85\*** (34) |
+| ar | cross | **−2.35\*** | **−1.43\*** | **−0.82\*** | **−0.90\*** | **−0.65\*** (40) |
+| zh | cross | **−0.51\*** | **−0.87\*** | **−1.18\*** | **−1.35\*** | **−1.18\*** (139) |
+
+All 16 cells negative with CIs clear of zero, and the single-token column
+shows it is **not fragmentation arithmetic**. The extreme case is
+`en-ar-starved` translating en→ar: the English input word is still the top
+prediction at layer 14 (P = .71 vs .24 for fair) and the Arabic output only
+wins **at layer 16.5 on average, i.e. at the unembedding itself**, where
+`en-ar-fair` hands over at 14.4. The starved cross-script model stays in
+English until the last layer — the processing-level counterpart of 6b's
+"starvation delays the depth at which alignment emerges" and of the
+thesis's MEXA finding that the fair tokenizer pulls the high-alignment
+region earlier. Note what it is *not*: on continuous next-token prediction
+over FLORES text the per-position settle layer differs by ≤ 0.6 layers with
+mixed sign (zh even later under fair), so the effect is about how quickly a
+**decided** concept gets verbalised in the target language, not a generic
+shift of depth. `fig_lens_commit.pdf` is the one-figure version.
+
+### Result 3 — factual recall: the interior knows more under fair, and loses more of it at the output (Wang's "lost in transition")
+
+PolyFact, 800 facts, 4 QID-aligned candidates, 4-way accuracy by layer
+(`fig_lens_factual.pdf`): near chance until layer 12, then a steep rise.
+Partner-prompt accuracy at layer 14, fair / starved: de .398/.321, fr
+.378/.314, ar .365/.284, zh .375/.300 — the fair interior carries 6–8 points
+more of the answer two layers before the output at ≈ equal output accuracy
+(d acc_out ≤ .01). Consequently facts **right at some layer 8–15 but wrong
+at the output** outnumber the reverse under fair (de .23 vs .09, fr .16/.10,
+ar .26/.05, zh .20/.05) while under starved the two rates are equal (de
+.20/.22, fr .22/.18, zh .22/.16) — the interior is closer to noise. Wang et
+al.'s linear shortcut would therefore have something to recover here only
+under the fair tokenizer. The English rendering of the correct entity is
+also more available mid-network for partner-language questions under fair:
+log P(gold English name) − log P(mismatched English name), layers 8–15, is
+**+1.3\* (de), +0.7\* (fr), +0.9\* (ar), +1.1\* (zh) nats** higher — but the
+partner monolinguals show the same signal at +1.0–2.0 nats without ever
+seeing English (Latin-script entity names occur in every language's web
+text), so read it as string association strengthened by the tokenizer, not
+as English knowledge. Same caveat for "English candidates beat
+partner-language candidates on a German/Arabic prompt" (fair: de .547 vs
+.484, ar .434 vs .390): `de-fair` mono does .507 vs .529 and `ar-fair` .375
+vs .390, so the bilingual's excess (+.06 de, +.04 ar, +.05 zh) is the
+English contribution. Settle layer (first layer from which the 4-way
+prediction is right through the output): fair earlier on English prompts in
+all four pairs (−1.1 to −1.8\*) and on Arabic (−3.2\*), unchanged on de/fr/zh
+prompts.
+
+### Result 4 — the earlier decision survives the capability control (matched partner-language BPB)
+
+Same pipeline on 6k's BPB-matched intermediate pairs (`en-de-fair-5b` vs
+`en-de-starved-23b`, `en-{fr,ar,zh}-fair-10b` vs `-starved-23b`; the fair
+checkpoint is the LESS-trained one, so anything it still wins is not
+capability). Fair − starved commit layer, paired:
+
+| partner | rep X→X | rep en→en | rep X→X, single-token words | tr en→X | factual settle, en prompt | factual settle, X prompt |
+|---|---|---|---|---|---|---|
+| de | **−0.98\*** | **−0.90\*** | **−0.90\*** | **−0.78\*** | **−0.76\*** | +0.02 |
+| fr | **−0.62\*** | **−0.99\*** | −0.24 | **−0.42\*** | **−1.47\*** | −0.18 |
+| ar | **−0.84\*** | **−1.05\*** | **−0.49\*** | **−0.86\*** | **−1.08\*** | **−2.57\*** |
+| zh | **−1.50\*** | **−1.24\*** | **−1.50\*** | **+0.84\*** | **−1.13\*** | +0.26 |
+
+Repetition — the cleanest task (accuracy ≈ 1.0 for every checkpoint, no
+English in the X→X prompt) — keeps 60–100% of the 30B delta in all four
+pairs, on both output languages, and on the single-token subset; the
+factual settle layer on English prompts and on Arabic keeps its whole
+effect. Only the few-shot **translation** prompts wobble (zh en→X reverses,
+de/fr single-token subsets flip sign): a 5–10B fair checkpoint can barely
+do 5-shot translation (accuracy drops 0.07–0.38 against the 23B starved
+one), so those cells compare a task the weaker model half-fails. **Quote the
+repetition and factual rows as the tokenizer property; the translation rows
+at 30B carry a capability component.** The interior-accuracy gain (+.03 to
++.07 at the best interior layer) and the mid-network availability of the
+English entity name (+0.3 to +0.8 nats, 3 of 4 pairs significant) survive
+too. Consistent with 6k's own logic — where French was the only consistency
+gain to survive a BPB match — this is a case where the fair tokenizer's
+effect on processing depth is NOT a capability offset.
+
+### Caveats
+
+* ~~Fair models are better language models; Result 2 could be capability.~~
+  Addressed by Result 4 for repetition and factual recall; the translation
+  cells remain partly capability-driven.
+* One run per cell, as everywhere; CIs are over items, not seeds.
+* Logit lens, not tuned lens: early-layer readings are uninformative by
+  construction (all curves are ≈0 before layer 12), which is why every
+  statistic is about layers 12–16.
+* Cloze accuracies are 3–29% (1B models cannot do definition cloze), so the
+  cloze rows rest on 3–32 items; translation and repetition carry the
+  result.
+* The en→ar word list was written for this project (Wendler has no
+  Arabic); MUSE agrees on 85% of the 131 words it covers, disagreements
+  are printed by `build_lens_items.py` and are diacritic/article variants.
 
 ## 8. Open / next steps
 
