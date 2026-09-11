@@ -159,7 +159,10 @@ def main():
     grad_accum = global_windows // unit
     tokens_per_step = global_windows * T
     target = total_tokens(sched)
-    ckpt_table = [[1e15, args.ckpt_interval_tokens]] if args.ckpt_interval_tokens else cfg["train"]["ckpt_schedule"]
+    # base_main saves every 2B late in training; a death then costs up to 1.3B tokens
+    # (NEURON.md 10e', 2026-09-07). Keep the early grid, cap every interval at 500M.
+    ckpt_table = ([[1e15, args.ckpt_interval_tokens]] if args.ckpt_interval_tokens
+                  else [[end, min(step_, 5e8)] for end, step_ in cfg["train"]["ckpt_schedule"]])
     mixer = MixedStream(cfg["langs"], cfg["tok_name"], T, seed=cfg.get("data_seed", 1234),
                         probs=cfg.get("probs"))
     rdir = ensure(run_dir(cfg["name"]))

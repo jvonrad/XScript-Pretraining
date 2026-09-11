@@ -1037,6 +1037,34 @@ in-loop BPB was what exposed it, and the CPU fp32 re-score of the
 checkpoints (§6 scorer) confirmed the eval was reporting the truth about
 the weights, which is why the trainer, not the eval, was investigated.
 
+**Collective-timeout cascades in the cooldown (2026-09-07, 19 restarts in 15 h).**
+From ~01:00 UTC every run began dying with `NRT EXECUTION FAILED: Async
+execution failed with NRT status: 5, Operation timed out` on an all-reduce,
+preceded by `Model stop timeout (30000 ms) for TPBs` on one rank — the
+runtime's default 30 s execution timeout firing when a device or its host
+thread stalled. No ECC events, no host OOM, disk half empty. Two patterns:
+(1) the deaths cascade — when one job dies and the orchestrator relaunches
+it, a neighbour dies 60–90 s later (07:06 de, 07:07 fr, 07:09 ar, 07:10 zh;
+13:01 fr then 13:03 ar; 15:25 ar then 15:31 fr), i.e. the relaunch itself
+(16 ranks deserialising a 4.4 GB checkpoint plus their optimizer shards on a
+box at load 144) stalls the neighbour past 30 s; (2) throughput after each
+relaunch sat at ~91k tok/s per job, the box-wide power cap, so the initial
+triggers are most likely throttling stalls. Because the late checkpoint
+schedule saves only every 2B tokens, each death cost up to **1.3B tokens
+(2.4 h)**, and `en-fr` reached 26.03B three times in a row before being
+thrown back to 24.77B. Fix (in `run_native.sh`, 15:56 UTC): raise the
+runtime execution timeout (`NEURON_RT_EXEC_TIMEOUT=600`) so a transient
+stall no longer kills the job — the orchestrator's 30 min hang detector still
+catches a real hang — and checkpoint every 500M tokens
+(`--ckpt-interval-tokens 5e8` as the default EXTRA) so a death costs ≤ 1 h.
+All four were restarted from 24.767B under those settings; the
+pre-fix orchestrator log is kept as `logs/orchestrate_native2.pre-timeout-fix.log`.
+Two operational lessons on the way: `pgrep -f "orchestrate_native[.]sh"`
+still self-matches when the SAME command line later contains the literal
+script path (it killed the shell, exit 144, twice) — split the pattern into
+two variables; and `kill_run` in the orchestrator is safe because the pkill
+runs inside the container, where the host shell is invisible.
+
 ### 10f. What does NOT work — the measured dead-end ledger (don't re-try on this SDK)
 
 Compile / graph structure

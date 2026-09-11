@@ -27,14 +27,19 @@ across both files, so cross-references still resolve — **§3, §6, §6b, §6c,
   fair tokenizer makes the output-language decision 1–2 layers earlier in
   all 16 (pair × condition) cells**, also on single-token words; the starved
   en-ar model keeps the English input word on top until layer 14 and picks
-  Arabic only at the unembedding (commit 16.5 vs 14.4). (3) Under fair the
+  Arabic only at layer 15.7 against 13.9 for fair. (3) Under fair the
   interior layers hold 6–8 points more factual accuracy at layer 14 and lose
   more of it at the output (Wang's "lost in transition"); under starved the
   interior is near noise. Full-string probabilities throughout (first-token
   numbers are tokenizer-dependent). (4) The earlier decision **survives the
   BPB-matched control** on repetition and factual recall in all four pairs
-  (fair-5b/10b vs starved-23b: −0.6 to −1.5 layers); only the few-shot
-  translation cells carry a capability component.
+  (fair-5b/10b vs starved-23b: −0.6 to −1.5 layers), translation included.
+  ⛔ (5) But the **monolingual control disqualifies the cross-lingual reading**
+  of (2)–(4): `en-fair` vs `en-starved` — English-only models, English words,
+  nothing cross-lingual — give −0.54 to −0.65 layers and +0.062 interior
+  accuracy, and the fr/ar/zh monolinguals match the bilinguals on their own
+  language (mean interior gain +0.058 mono vs +0.074 bi). The depth shift is
+  what a better tokenizer does to any model; quote it as such.
 - 🆕 **§6k — cross-lingual consistency (RankC), 8 bilingual finals + the
   matched-loss control** (2026-09-04). Fair > starved on every pair at 30B
   (PolyFact and MuBench-BMLAMA agree; Arabic largest, +.03–.05), but at
@@ -2992,7 +2997,17 @@ layer × position argmax grid for `English: heart - العربية:` under both
 tokenizers, from `scripts/external_bench/plot_lens_figs.py`; `--variants`
 adds `fig_lens_interior` (panel c alone), `fig_lens_commit2` (translation +
 factual only) and `fig_lens_answer_examples` (answer-position argmax per
-layer for one single-token word per pair, both tokenizers)); raw
+layer for one single-token word per pair, both tokenizers); `--capital`
+renders `fig_lens_capital`, the same grid for "What is the capital of
+France?" asked in English and in the partner language — the starved
+en-ar/en-zh models pass through English (`London`, `Paris`) at layers
+13–15 before emitting باريس / 巴黎 at the output, the fair ones do not; raw
+`--capital-partner` gives the partner-language half alone with language
+names as group headers, in Times New Roman / Arial / DejaVu Sans; `--capitals`
+renders the same grid for Beijing/Berlin/London/Cairo in the partner language
+and for all five capitals asked in English — Paris is the same string in
+en/de/fr/ar, so Peking/Pékin/بكين/北京 is the example that shows a switch in
+every pair);
 per-layer sidecars on the trn2 box only (`/mnt/scratch/xscript_lens/raw/`,
 ~20 MB/model — copy off before teardown). Ran **entirely on the host CPU**
 (bf16 AMX forward, fp32 unembedding, ~8 min/model on 24 cores) while the
@@ -3065,22 +3080,30 @@ latent translation. Tokenizer effect on the trace: none consistent (de
 
 ### Result 2 — the fair tokenizer makes the output-language decision 1–2 layers EARLIER, in every pair
 
-Commit layer = first layer at which the lens puts ≥ 0.5 on the output
-string; fair − starved, paired over identical items both models get right:
+Commit layer = first layer FROM WHICH the lens probability of the output
+string stays at or above half of its own output-layer value — persistence,
+not first crossing, so a curve that reaches the threshold and falls back
+commits where it last rises (0–7% of items, ≤ 0.13 layers, deltas move by
+≤ 0.08; the factual settle layer below uses the same rule, so the two tasks
+are measured alike). An absolute P ≥ 0.5 rule was used first; it censored
+items whose final P stays below 0.5 to a phantom "layer 17" — 68% of
+en-ar-starved translations — and so mixed deciding late with deciding with
+low confidence. Fair − starved, paired over identical items both models
+get right:
 
 | partner | script | tr en→X | tr X→en | rep X→X | rep en→en | single-token words (rep X→X) |
 |---|---|---|---|---|---|---|
-| de | same | **−2.01\*** | **−1.76\*** | **−1.32\*** | **−1.17\*** | **−1.24\*** (n=21) |
-| fr | same | **−1.32\*** | **−1.17\*** | **−1.00\*** | **−1.10\*** | **−0.85\*** (34) |
-| ar | cross | **−2.35\*** | **−1.43\*** | **−0.82\*** | **−0.90\*** | **−0.65\*** (40) |
-| zh | cross | **−0.51\*** | **−0.87\*** | **−1.18\*** | **−1.35\*** | **−1.18\*** (139) |
+| de | same | **−1.67\*** | **−1.57\*** | **−1.25\*** | **−1.16\*** | **−1.14\*** (n=21) |
+| fr | same | **−1.21\*** | **−1.03\*** | **−0.98\*** | **−1.17\*** | **−0.88\*** (34) |
+| ar | cross | **−1.86\*** | **−1.13\*** | **−0.80\*** | **−0.86\*** | **−0.75\*** (40) |
+| zh | cross | **−0.86\*** | **−1.04\*** | **−1.18\*** | **−1.45\*** | **−1.18\*** (139) |
 
 All 16 cells negative with CIs clear of zero, and the single-token column
 shows it is **not fragmentation arithmetic**. The extreme case is
 `en-ar-starved` translating en→ar: the English input word is still the top
-prediction at layer 14 (P = .71 vs .24 for fair) and the Arabic output only
-wins **at layer 16.5 on average, i.e. at the unembedding itself**, where
-`en-ar-fair` hands over at 14.4. The starved cross-script model stays in
+prediction at layer 14 (P = .71 vs .24 for fair) and the Arabic output
+reaches half its final probability only at **layer 15.7 on average**,
+where `en-ar-fair` gets there at 13.9. The starved cross-script model stays in
 English until the last layer — the processing-level counterpart of 6b's
 "starvation delays the depth at which alignment emerges" and of the
 thesis's MEXA finding that the fair tokenizer pulls the high-alignment
@@ -3114,9 +3137,15 @@ partner-language candidates on a German/Arabic prompt" (fair: de .547 vs
 .484, ar .434 vs .390): `de-fair` mono does .507 vs .529 and `ar-fair` .375
 vs .390, so the bilingual's excess (+.06 de, +.04 ar, +.05 zh) is the
 English contribution. Settle layer (first layer from which the 4-way
-prediction is right through the output): fair earlier on English prompts in
-all four pairs (−1.1 to −1.8\*) and on Arabic (−3.2\*), unchanged on de/fr/zh
-prompts.
+prediction stays right through the output, **over facts the layer-0–6 prior
+gets wrong** — without that restriction 25–41% of facts look "settled" from
+layer 0 because the early-layer lens is a frequency prior over candidate
+names, 6e's label prior at the lens level, and the per-fact spread is 5–6
+layers). On all 2,039 PolyFact facts (`report_factual_all.md`; the 800-fact
+run gave the same picture with Chinese on the boundary): fair earlier in
+every cell — partner prompts de −0.68\*, fr −0.72\*, ar −1.53\*, zh −0.49\*
+(n = 112–224 paired facts); English prompts −0.62 to −1.30\*, all four
+significant. `fig_lens_commit2.pdf` plots these means.
 
 ### Result 4 — the earlier decision survives the capability control (matched partner-language BPB)
 
@@ -3127,26 +3156,56 @@ capability). Fair − starved commit layer, paired:
 
 | partner | rep X→X | rep en→en | rep X→X, single-token words | tr en→X | factual settle, en prompt | factual settle, X prompt |
 |---|---|---|---|---|---|---|
-| de | **−0.98\*** | **−0.90\*** | **−0.90\*** | **−0.78\*** | **−0.76\*** | +0.02 |
-| fr | **−0.62\*** | **−0.99\*** | −0.24 | **−0.42\*** | **−1.47\*** | −0.18 |
-| ar | **−0.84\*** | **−1.05\*** | **−0.49\*** | **−0.86\*** | **−1.08\*** | **−2.57\*** |
-| zh | **−1.50\*** | **−1.24\*** | **−1.50\*** | **+0.84\*** | **−1.13\*** | +0.26 |
+| de | **−0.99\*** | **−0.93\*** | **−0.85\*** | **−1.27\*** | **−0.97\*** | **−1.02\*** |
+| fr | **−0.65\*** | **−1.03\*** | **−0.33\*** | **−0.81\*** | **−0.59\*** | **−1.51\*** |
+| ar | **−0.89\*** | **−1.04\*** | **−0.74\*** | **−1.07\*** | **−1.32\*** | **−2.18\*** |
+| zh | **−1.25\*** | **−1.24\*** | **−1.25\*** | **−0.78\*** | **−0.76\*** | **−0.93\*** |
 
 Repetition — the cleanest task (accuracy ≈ 1.0 for every checkpoint, no
 English in the X→X prompt) — keeps 60–100% of the 30B delta in all four
 pairs, on both output languages, and on the single-token subset; the
-factual settle layer on English prompts and on Arabic keeps its whole
-effect. Only the few-shot **translation** prompts wobble (zh en→X reverses,
-de/fr single-token subsets flip sign): a 5–10B fair checkpoint can barely
-do 5-shot translation (accuracy drops 0.07–0.38 against the 23B starved
-one), so those cells compare a task the weaker model half-fails. **Quote the
-repetition and factual rows as the tokenizer property; the translation rows
-at 30B carry a capability component.** The interior-accuracy gain (+.03 to
+factual settle layer (prior-wrong facts, all 2,039 PolyFact facts) is earlier
+under fair in all eight prompt cells at matched BPB, most for Arabic.
+Under the relative commit rule the few-shot **translation** prompts hold as
+well (all four pairs negative, −0.8 to −1.3); the earlier absolute rule had
+flipped zh en→X to +0.84 only because 92% of the 10B fair items end below
+P = 0.5, i.e. a 5–10B fair checkpoint can barely do 5-shot translation
+(accuracy drops 0.07–0.38 against the 23B starved one). **All 24 word-task
+cells and all 8 factual cells are earlier under fair at matched BPB.**
 +.07 at the best interior layer) and the mid-network availability of the
 English entity name (+0.3 to +0.8 nats, 3 of 4 pairs significant) survive
 too. Consistent with 6k's own logic — where French was the only consistency
 gain to survive a BPB match — this is a case where the fair tokenizer's
 effect on processing depth is NOT a capability offset.
+
+### ⛔ Monolingual control: the depth effect is NOT cross-lingual
+
+`analyze_lens_mono_control.py` (report: `results/logitlens/mono_control.md`,
+pure CPU over the stored sidecars) asks whether Results 2–4 are about how a
+BILINGUAL routes between its languages, or simply what a better tokenizer does
+to any model. The decisive cell is `en-fair` vs `en-starved` — English-only
+models, one script, no partner anywhere — repeating English words:
+
+| control | d commit layer | d PolyFact acc @L14 | d settle layer |
+|---|---|---|---|
+| **English monolinguals, English words** | **−0.54 to −0.65\*** | **+0.062\*** | **−0.64\*** |
+| fr monolingual, French words | **−0.55\*** | +0.031\* | −0.67\* |
+| ar monolingual, Arabic words | **−0.75\*** | +0.072\* | −2.42\* |
+| zh monolingual (15B), Chinese words | **−2.04\*** | +0.065\* | −1.51\* |
+| bilinguals, partner words (reference) | −0.80 to −1.25\* | +0.064 to +0.081\* | −0.51 to −1.26\* |
+
+Mean interior-accuracy gain at L14: **monolingual +0.058 vs bilingual +0.074**.
+**So the effect is a tokenizer→model property, not evidence about cross-lingual
+alignment**, and §6l's Results 2–4 must not be read as a cross-lingual claim.
+Two refinements. (a) A monolingual shows it only in the language it was
+TRAINED on — `rep_en` for the fr/zh monolinguals is −0.09 / +0.10, n.s. — so it
+needs competence, not merely a shared vocabulary. (b) The bilingual effect is
+~1.3–2x the monolingual one, but mono and bi also differ in per-language token
+budget (30B vs 15B), so that residual is not attributable to bilinguality
+either. What survives as cross-lingual in §6l is the *pattern across pairs*
+(Arabic largest, matching where starvation bites hardest) and the qualitative
+English-pivot grids, not the depth shift itself.
+
 
 ### Caveats
 

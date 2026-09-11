@@ -1,0 +1,7165 @@
+{
+ "de": [
+  {
+   "en": "book",
+   "x": "Buch",
+   "ctx": "Ein ___ wird verwendet, um Geschichten zu lesen. Antwort:",
+   "cont": " Buch",
+   "demo": "Ein Buch wird verwendet, um Geschichten zu lesen. Antwort: Buch.",
+   "demos": [
+    61,
+    55,
+    47,
+    84,
+    85
+   ],
+   "ctl": 7
+  },
+  {
+   "en": "cloud",
+   "x": "Wolke",
+   "ctx": "Eine ___ ist eine sichtbare Masse aus kondensiertem Wasserdampf, die in der Atmosphäre schwebt. Antwort:",
+   "cont": " Wolke",
+   "demo": "Eine Wolke ist eine sichtbare Masse aus kondensiertem Wasserdampf, die in der Atmosphäre schwebt. Antwort: Wolke.",
+   "demos": [
+    78,
+    53,
+    67,
+    57,
+    43
+   ],
+   "ctl": 8
+  },
+  {
+   "en": "bag",
+   "x": "Tasche",
+   "ctx": "Eine ___ wird zum Tragen von Gegenständen verwendet. Antwort:",
+   "cont": " Tasche",
+   "demo": "Eine Tasche wird zum Tragen von Gegenständen verwendet. Antwort: Tasche.",
+   "demos": [
+    12,
+    102,
+    82,
+    27,
+    62
+   ],
+   "ctl": 9
+  },
+  {
+   "en": "mouth",
+   "x": "Mund",
+   "ctx": "Ein ___ wird zum Essen und Sprechen benutzt. Antwort:",
+   "cont": " Mund",
+   "demo": "Ein Mund wird zum Essen und Sprechen benutzt. Antwort: Mund.",
+   "demos": [
+    94,
+    35,
+    72,
+    32,
+    1
+   ],
+   "ctl": 10
+  },
+  {
+   "en": "soil",
+   "x": "Boden",
+   "ctx": "\"Ein ___ wird für die Anpflanzung von Bäumen und Nutzpflanzen verwendet. Antwort:",
+   "cont": " Boden",
+   "demo": "Ein Boden wird für die Anpflanzung von Bäumen und Nutzpflanzen verwendet. Antwort: Boden.",
+   "demos": [
+    82,
+    95,
+    75,
+    72,
+    44
+   ],
+   "ctl": 11
+  },
+  {
+   "en": "mountain",
+   "x": "Berg",
+   "ctx": "Ein ___ ist eine große natürliche Erhebung auf der Erdoberfläche. Antwort:",
+   "cont": " Berg",
+   "demo": "Ein Berg ist eine große natürliche Erhebung auf der Erdoberfläche. Antwort: Berg.",
+   "demos": [
+    30,
+    39,
+    78,
+    76,
+    38
+   ],
+   "ctl": 12
+  },
+  {
+   "en": "cloth",
+   "x": "Tuch",
+   "ctx": "Ein ___ wird verwendet, um Oberflächen zu reinigen oder Körper zu bedecken. Antwort:",
+   "cont": " Tuch",
+   "demo": "Ein Tuch wird verwendet, um Oberflächen zu reinigen oder Körper zu bedecken. Antwort: Tuch.",
+   "demos": [
+    65,
+    84,
+    82,
+    26,
+    89
+   ],
+   "ctl": 13
+  },
+  {
+   "en": "heart",
+   "x": "Herz",
+   "ctx": "Ein ___ ist ein Organ, das Blut durch den Körper pumpt. Antwort:",
+   "cont": " Herz",
+   "demo": "Ein Herz ist ein Organ, das Blut durch den Körper pumpt. Antwort: Herz.",
+   "demos": [
+    51,
+    48,
+    45,
+    35,
+    93
+   ],
+   "ctl": 14
+  },
+  {
+   "en": "day",
+   "x": "Tag",
+   "ctx": "Ein ___ ist ein Zeitraum von 24 Stunden, der oft als die Zeit verstanden wird, die die Erde für eine Umdrehung benötigt. Antwort:",
+   "cont": " Tag",
+   "demo": "Ein Tag ist ein Zeitraum von 24 Stunden, der oft als die Zeit verstanden wird, die die Erde für eine Umdrehung benötigt. Antwort: Tag.",
+   "demos": [
+    88,
+    18,
+    70,
+    47,
+    1
+   ],
+   "ctl": 15
+  },
+  {
+   "en": "star",
+   "x": "Stern",
+   "ctx": "Ein ___ ist ein Himmelskörper, der am Nachthimmel leuchtet. Antwort:",
+   "cont": " Stern",
+   "demo": "Ein Stern ist ein Himmelskörper, der am Nachthimmel leuchtet. Antwort: Stern.",
+   "demos": [
+    91,
+    15,
+    47,
+    13,
+    26
+   ],
+   "ctl": 16
+  },
+  {
+   "en": "spring",
+   "x": "Feder",
+   "ctx": "Eine ___ ist ein Gerät, das mechanische Energie speichert und gestaucht oder gedehnt werden kann. Antwort:",
+   "cont": " Feder",
+   "demo": "Eine Feder ist ein Gerät, das mechanische Energie speichert und gestaucht oder gedehnt werden kann. Antwort: Feder.",
+   "demos": [
+    45,
+    24,
+    51,
+    38,
+    95
+   ],
+   "ctl": 17
+  },
+  {
+   "en": "moon",
+   "x": "Mond",
+   "ctx": "Ein ___ ist ein natürlicher Satellit, der einen Planeten umkreist. Antwort:",
+   "cont": " Mond",
+   "demo": "Ein Mond ist ein natürlicher Satellit, der einen Planeten umkreist. Antwort: Mond.",
+   "demos": [
+    43,
+    23,
+    50,
+    73,
+    77
+   ],
+   "ctl": 18
+  },
+  {
+   "en": "wood",
+   "x": "Holz",
+   "ctx": "Ein ___ wird für die Herstellung von Möbeln verwendet. Antwort:",
+   "cont": " Holz",
+   "demo": "Ein Holz wird für die Herstellung von Möbeln verwendet. Antwort: Holz.",
+   "demos": [
+    16,
+    32,
+    42,
+    81,
+    88
+   ],
+   "ctl": 19
+  },
+  {
+   "en": "village",
+   "x": "Dorf",
+   "ctx": "Ein ___ ist eine kleine Gemeinschaft oder Gruppe von Häusern in einem ländlichen Gebiet. Antwort:",
+   "cont": " Dorf",
+   "demo": "Ein Dorf ist eine kleine Gemeinschaft oder Gruppe von Häusern in einem ländlichen Gebiet. Antwort: Dorf.",
+   "demos": [
+    9,
+    0,
+    88,
+    52,
+    99
+   ],
+   "ctl": 20
+  },
+  {
+   "en": "forest",
+   "x": "Wald",
+   "ctx": "Ein ___ ist ein großes Gebiet, das hauptsächlich mit Bäumen und Unterholz bedeckt ist. Antwort:",
+   "cont": " Wald",
+   "demo": "Ein Wald ist ein großes Gebiet, das hauptsächlich mit Bäumen und Unterholz bedeckt ist. Antwort: Wald.",
+   "demos": [
+    101,
+    94,
+    90,
+    68,
+    103
+   ],
+   "ctl": 21
+  },
+  {
+   "en": "grid",
+   "x": "Gitter",
+   "ctx": "Ein ___ ist ein Netz von Linien, die sich kreuzen und eine Reihe von Quadraten oder Rechtecken bilden. Antwort:",
+   "cont": " Gitter",
+   "demo": "Ein Gitter ist ein Netz von Linien, die sich kreuzen und eine Reihe von Quadraten oder Rechtecken bilden. Antwort: Gitter.",
+   "demos": [
+    77,
+    75,
+    103,
+    82,
+    71
+   ],
+   "ctl": 22
+  },
+  {
+   "en": "song",
+   "x": "Lied",
+   "ctx": "Ein ___ ist ein Musikstück mit Text, das gesungen wird. Antwort:",
+   "cont": " Lied",
+   "demo": "Ein Lied ist ein Musikstück mit Text, das gesungen wird. Antwort: Lied.",
+   "demos": [
+    66,
+    13,
+    45,
+    53,
+    51
+   ],
+   "ctl": 23
+  },
+  {
+   "en": "water",
+   "x": "Wasser",
+   "ctx": "\"A ___ ist lebensnotwendig und wird zum Trinken und Reinigen verwendet. Antwort:",
+   "cont": " Wasser",
+   "demo": "A Wasser ist lebensnotwendig und wird zum Trinken und Reinigen verwendet. Antwort: Wasser.",
+   "demos": [
+    11,
+    89,
+    77,
+    81,
+    68
+   ],
+   "ctl": 24
+  },
+  {
+   "en": "pond",
+   "x": "Teich",
+   "ctx": "Ein ___ ist ein kleines Gewässer mit ruhigem Wasser. Antwort:",
+   "cont": " Teich",
+   "demo": "Ein Teich ist ein kleines Gewässer mit ruhigem Wasser. Antwort: Teich.",
+   "demos": [
+    51,
+    42,
+    23,
+    39,
+    53
+   ],
+   "ctl": 25
+  },
+  {
+   "en": "river",
+   "x": "Fluss",
+   "ctx": "Ein ___ ist ein großer, fließender Wasserkörper, der normalerweise in ein Meer oder einen Ozean mündet. Antwort:",
+   "cont": " Fluss",
+   "demo": "Ein Fluss ist ein großer, fließender Wasserkörper, der normalerweise in ein Meer oder einen Ozean mündet. Antwort: Fluss.",
+   "demos": [
+    103,
+    62,
+    6,
+    22,
+    16
+   ],
+   "ctl": 26
+  },
+  {
+   "en": "law",
+   "x": "Gesetz",
+   "ctx": "Ein ___ ist ein System von Regeln, das eine Gesellschaft oder eine Regierung entwickelt, um mit Verbrechen, Geschäftsvereinbarungen und sozialen Beziehungen umzugehen. Antwort:",
+   "cont": " Gesetz",
+   "demo": "Ein Gesetz ist ein System von Regeln, das eine Gesellschaft oder eine Regierung entwickelt, um mit Verbrechen, Geschäftsvereinbarungen und sozialen Beziehungen umzugehen. Antwort: Gesetz.'",
+   "demos": [
+    74,
+    52,
+    35,
+    95,
+    14
+   ],
+   "ctl": 27
+  },
+  {
+   "en": "wave",
+   "x": "Welle",
+   "ctx": "Eine ___ ist eine Störung, die Energie durch Materie oder Raum überträgt. Antwort:",
+   "cont": " Welle",
+   "demo": "Eine Welle ist eine Störung, die Energie durch Materie oder Raum überträgt. Antwort: Welle.",
+   "demos": [
+    53,
+    68,
+    48,
+    33,
+    63
+   ],
+   "ctl": 28
+  },
+  {
+   "en": "ocean",
+   "x": "Ozean",
+   "ctx": "Ein ___ ist ein großer Körper aus Salzwasser, der den größten Teil der Erdoberfläche bedeckt. Antwort:",
+   "cont": " Ozean",
+   "demo": "Ein Ozean ist ein großer Körper aus Salzwasser, der den größten Teil der Erdoberfläche bedeckt. Antwort: Ozean.",
+   "demos": [
+    3,
+    73,
+    20,
+    26,
+    7
+   ],
+   "ctl": 29
+  },
+  {
+   "en": "cave",
+   "x": "Höhle",
+   "ctx": "Eine ___ ist ein natürlicher unterirdischer Raum, der groß genug ist, um von einem Menschen betreten zu werden. Antwort:",
+   "cont": " Höhle",
+   "demo": "Eine Höhle ist ein natürlicher unterirdischer Raum, der groß genug ist, um von einem Menschen betreten zu werden. Antwort: Höhle.",
+   "demos": [
+    102,
+    71,
+    56,
+    17,
+    73
+   ],
+   "ctl": 30
+  },
+  {
+   "en": "sea",
+   "x": "Meer",
+   "ctx": "Ein ___ ist ein großer Salzwasserkörper, der kleiner als ein Ozean ist. Antwort:",
+   "cont": " Meer",
+   "demo": "Ein Meer ist ein großer Salzwasserkörper, der kleiner als ein Ozean ist. Antwort: Meer.",
+   "demos": [
+    74,
+    22,
+    79,
+    94,
+    27
+   ],
+   "ctl": 31
+  },
+  {
+   "en": "lake",
+   "x": "See",
+   "ctx": "Ein ___ ist eine große Wasserfläche, die von Land umgeben ist. Antwort:",
+   "cont": " See",
+   "demo": "Ein See ist eine große Wasserfläche, die von Land umgeben ist. Antwort: See.",
+   "demos": [
+    9,
+    31,
+    93,
+    56,
+    37
+   ],
+   "ctl": 32
+  },
+  {
+   "en": "source",
+   "x": "Quelle",
+   "ctx": "Eine ___ wird verwendet, um Informationen oder Daten bereitzustellen. Antwort:",
+   "cont": " Quelle",
+   "demo": "Eine Quelle wird verwendet, um Informationen oder Daten bereitzustellen. Antwort: Quelle.",
+   "demos": [
+    13,
+    21,
+    60,
+    22,
+    42
+   ],
+   "ctl": 33
+  },
+  {
+   "en": "fire",
+   "x": "Feuer",
+   "ctx": "Ein ___ wird zum Kochen und zum Wärmen verwendet. Antwort:",
+   "cont": " Feuer",
+   "demo": "Ein Feuer wird zum Kochen und zum Wärmen verwendet. Antwort: Feuer.",
+   "demos": [
+    45,
+    42,
+    78,
+    6,
+    49
+   ],
+   "ctl": 34
+  },
+  {
+   "en": "point",
+   "x": "Punkt",
+   "ctx": "Ein ___ ist ein bestimmter Ort im Raum. Antwort:",
+   "cont": " Punkt",
+   "demo": "Ein Punkt ist ein bestimmter Ort im Raum. Antwort: Punkt.",
+   "demos": [
+    95,
+    90,
+    22,
+    68,
+    24
+   ],
+   "ctl": 35
+  },
+  {
+   "en": "painting",
+   "x": "Gemälde",
+   "ctx": "Ein ___ ist ein Kunstwerk, das an die Wand gehängt werden kann. Antwort:",
+   "cont": " Gemälde",
+   "demo": "Ein Gemälde ist ein Kunstwerk, das an die Wand gehängt werden kann. Antwort: Gemälde.",
+   "demos": [
+    94,
+    25,
+    59,
+    67,
+    36
+   ],
+   "ctl": 36
+  },
+  {
+   "en": "station",
+   "x": "Bahnhof",
+   "ctx": "Ein ___ ist ein Ort, an dem Züge oder Busse regelmäßig halten, damit die Fahrgäste ein- oder aussteigen können. Antwort:",
+   "cont": " Bahnhof",
+   "demo": "Ein Bahnhof ist ein Ort, an dem Züge oder Busse regelmäßig halten, damit die Fahrgäste ein- oder aussteigen können. Antwort: Bahnhof.",
+   "demos": [
+    53,
+    27,
+    69,
+    6,
+    62
+   ],
+   "ctl": 37
+  },
+  {
+   "en": "rice",
+   "x": "Reis",
+   "ctx": "Ein ___ ist ein Getreide, das in der Küche häufig verwendet wird und in vielen Ländern ein Grundnahrungsmittel ist. Antwort:",
+   "cont": " Reis",
+   "demo": "Ein Reis ist ein Getreide, das in der Küche häufig verwendet wird und in vielen Ländern ein Grundnahrungsmittel ist. Antwort: Reis.",
+   "demos": [
+    62,
+    18,
+    29,
+    90,
+    74
+   ],
+   "ctl": 38
+  },
+  {
+   "en": "red",
+   "x": "rot",
+   "ctx": "A ___ ist eine Farbe, die oft mit Liebe und Leidenschaft assoziiert wird. Antwort:",
+   "cont": " rot",
+   "demo": "A \"Rot\" ist eine Farbe, die oft mit Liebe und Leidenschaft assoziiert wird. Antwort: rot.'",
+   "demos": [
+    8,
+    94,
+    27,
+    2,
+    83
+   ],
+   "ctl": 39
+  },
+  {
+   "en": "line",
+   "x": "Linie",
+   "ctx": "Eine ___ ist eine schmale, durchgehende Markierung, wie sie mit einem Stift, Bleistift oder Pinsel gemacht wird. Antwort:",
+   "cont": " Linie",
+   "demo": "Eine Linie ist eine schmale, durchgehende Markierung, wie sie mit einem Stift, Bleistift oder Pinsel gemacht wird. Antwort: Linie.",
+   "demos": [
+    36,
+    1,
+    74,
+    12,
+    17
+   ],
+   "ctl": 40
+  },
+  {
+   "en": "flower",
+   "x": "Blume",
+   "ctx": "Eine ___ wird oft verschenkt und ist in Gärten zu finden. Antwort:",
+   "cont": " Blume",
+   "demo": "Eine Blume wird oft verschenkt und ist in Gärten zu finden. Antwort: Blume.",
+   "demos": [
+    17,
+    20,
+    95,
+    30,
+    38
+   ],
+   "ctl": 41
+  },
+  {
+   "en": "tea",
+   "x": "Tee",
+   "ctx": "Ein ___ ist ein Getränk, das oft zur Entspannung oder zum Aufwärmen getrunken wird. Antwort:",
+   "cont": " Tee",
+   "demo": "Ein Tee ist ein Getränk, das oft zur Entspannung oder zum Aufwärmen getrunken wird. Antwort: Tee.",
+   "demos": [
+    48,
+    11,
+    14,
+    75,
+    103
+   ],
+   "ctl": 42
+  },
+  {
+   "en": "foot",
+   "x": "Fuß",
+   "ctx": "Ein ___ wird zum Gehen und Laufen verwendet. Antwort:",
+   "cont": " Fuß",
+   "demo": "Ein Fuß wird zum Gehen und Laufen verwendet. Antwort: Fuß.",
+   "demos": [
+    74,
+    77,
+    21,
+    29,
+    61
+   ],
+   "ctl": 43
+  },
+  {
+   "en": "door",
+   "x": "Tür",
+   "ctx": "Eine ___ wird zum Betreten oder Verlassen eines Raumes verwendet. Antwort:",
+   "cont": " Tür",
+   "demo": "Eine Tür wird zum Betreten oder Verlassen eines Raumes verwendet. Antwort: Tür.",
+   "demos": [
+    62,
+    86,
+    42,
+    79,
+    52
+   ],
+   "ctl": 44
+  },
+  {
+   "en": "snow",
+   "x": "Schnee",
+   "ctx": "\"Ein ___ ist eine Form von Niederschlag, der im Winter vom Himmel fällt. Antwort:",
+   "cont": " Schnee",
+   "demo": "Ein Schnee ist eine Form von Niederschlag, der im Winter vom Himmel fällt. Antwort: Schnee.",
+   "demos": [
+    48,
+    77,
+    97,
+    51,
+    91
+   ],
+   "ctl": 45
+  },
+  {
+   "en": "horse",
+   "x": "Pferd",
+   "ctx": "Ein ___ ist ein großes, vierbeiniges Haustier, das in der Regel zum Reiten und für Rennen verwendet wird. Antwort:",
+   "cont": " Pferd",
+   "demo": "Ein Pferd ist ein großes, vierbeiniges Haustier, das in der Regel zum Reiten und für Rennen verwendet wird. Antwort: Pferd.",
+   "demos": [
+    91,
+    52,
+    13,
+    101,
+    72
+   ],
+   "ctl": 46
+  },
+  {
+   "en": "two",
+   "x": "zwei",
+   "ctx": "Die Zahl ___ ist die Summe von eins plus eins. Antwort:",
+   "cont": " zwei",
+   "demo": "Die Zahl zwei ist die Summe von eins plus eins. Antwort: zwei.",
+   "demos": [
+    68,
+    83,
+    8,
+    72,
+    84
+   ],
+   "ctl": 47
+  },
+  {
+   "en": "three",
+   "x": "drei",
+   "ctx": "Die Zahl, die auf die Zwei folgt, ist die ___. Antwort:",
+   "cont": " drei",
+   "demo": "Die Zahl, die auf die Zwei folgt, ist die Drei. Antwort: drei.",
+   "demos": [
+    82,
+    37,
+    2,
+    30,
+    58
+   ],
+   "ctl": 48
+  },
+  {
+   "en": "four",
+   "x": "vier",
+   "ctx": "Die Zahl ___ ist die ganze Zahl, die auf die Drei folgt. Antwort:",
+   "cont": " vier",
+   "demo": "Die Zahl vier ist die ganze Zahl, die auf die Drei folgt. Antwort: vier.",
+   "demos": [
+    7,
+    43,
+    90,
+    55,
+    81
+   ],
+   "ctl": 49
+  },
+  {
+   "en": "five",
+   "x": "fünf",
+   "ctx": "Die Zahl, die auf die Vier folgt, ist die ___. Antwort:",
+   "cont": " fünf",
+   "demo": "Die Zahl, die auf die Vier folgt, ist die Fünf. Antwort: fünf.",
+   "demos": [
+    60,
+    13,
+    53,
+    26,
+    2
+   ],
+   "ctl": 50
+  },
+  {
+   "en": "six",
+   "x": "sechs",
+   "ctx": "Die Zahl nach der Fünf ist ___. Antwort:",
+   "cont": " sechs",
+   "demo": "Die Zahl nach der Fünf ist \"Sechs\". Antwort: sechs.",
+   "demos": [
+    6,
+    35,
+    14,
+    39,
+    79
+   ],
+   "ctl": 51
+  },
+  {
+   "en": "ten",
+   "x": "zehn",
+   "ctx": "Die Zahl nach der Neun ist die ___. Antwort:",
+   "cont": " zehn",
+   "demo": "Die Zahl nach der Neun ist die \"Zehn\". Antwort: zehn.",
+   "demos": [
+    85,
+    70,
+    101,
+    48,
+    71
+   ],
+   "ctl": 52
+  },
+  {
+   "en": "head",
+   "x": "Kopf",
+   "ctx": "Ein ___ ist ein Teil des Körpers, der das Gehirn, die Augen, die Ohren, die Nase und den Mund enthält. Antwort:",
+   "cont": " Kopf",
+   "demo": "Ein Kopf ist ein Teil des Körpers, der das Gehirn, die Augen, die Ohren, die Nase und den Mund enthält. Antwort: Kopf.'",
+   "demos": [
+    94,
+    44,
+    86,
+    36,
+    13
+   ],
+   "ctl": 53
+  },
+  {
+   "en": "strip",
+   "x": "Streifen",
+   "ctx": "Ein ___ ist ein langes, schmales Stück eines bestimmten Materials. Antwort:",
+   "cont": " Streifen",
+   "demo": "Ein Streifen ist ein langes, schmales Stück eines bestimmten Materials. Antwort: Streifen.",
+   "demos": [
+    100,
+    92,
+    31,
+    32,
+    0
+   ],
+   "ctl": 54
+  },
+  {
+   "en": "street",
+   "x": "Straße",
+   "ctx": "Eine ___ ist eine öffentliche Straße in einer Stadt, einer Gemeinde oder einem Dorf. Antwort:",
+   "cont": " Straße",
+   "demo": "Eine Straße ist eine öffentliche Straße in einer Stadt, einer Gemeinde oder einem Dorf. Antwort: Straße.",
+   "demos": [
+    103,
+    39,
+    51,
+    42,
+    31
+   ],
+   "ctl": 55
+  },
+  {
+   "en": "part",
+   "x": "Teil",
+   "ctx": "Ein ___ wird verwendet, um ein Ganzes zu bilden. Antwort:",
+   "cont": " Teil",
+   "demo": "Ein Teil wird verwendet, um ein Ganzes zu bilden. Antwort: Teil.",
+   "demos": [
+    72,
+    47,
+    35,
+    64,
+    90
+   ],
+   "ctl": 56
+  },
+  {
+   "en": "eye",
+   "x": "Auge",
+   "ctx": "Ein ___ dient dazu, alles um uns herum zu sehen. Antwort:",
+   "cont": " Auge",
+   "demo": "Ein Auge dient dazu, alles um uns herum zu sehen. Antwort: Auge.",
+   "demos": [
+    77,
+    75,
+    64,
+    0,
+    40
+   ],
+   "ctl": 57
+  },
+  {
+   "en": "field",
+   "x": "Feld",
+   "ctx": "Ein ___ ist eine große offene Fläche, auf der Pflanzen angebaut werden. Antwort:",
+   "cont": " Feld",
+   "demo": "Ein Feld ist eine große offene Fläche, auf der Pflanzen angebaut werden. Antwort: Feld.",
+   "demos": [
+    12,
+    91,
+    15,
+    70,
+    67
+   ],
+   "ctl": 58
+  },
+  {
+   "en": "site",
+   "x": "Standort",
+   "ctx": "Ein ___ ist ein Ort, an dem etwas gebaut wird, wurde oder wird. Antwort:",
+   "cont": " Standort",
+   "demo": "Ein Standort ist ein Ort, an dem etwas gebaut wird, wurde oder wird. Antwort: Standort.",
+   "demos": [
+    7,
+    5,
+    25,
+    30,
+    80
+   ],
+   "ctl": 59
+  },
+  {
+   "en": "word",
+   "x": "Wort",
+   "ctx": "Ein ___ ist ein einzelnes bedeutungsvolles sprachliches oder schriftliches Element, das zusammen mit anderen (oder manchmal auch allein) zur Bildung eines Satzes verwendet wird und in der Regel mit einem Leerzeichen auf beiden Seiten geschrieben oder gedruckt wird. Antwort:",
+   "cont": " Wort",
+   "demo": "Ein Wort ist ein einzelnes bedeutungsvolles sprachliches oder schriftliches Element, das zusammen mit anderen (oder manchmal auch allein) zur Bildung eines Satzes verwendet wird und in der Regel mit einem Leerzeichen auf beiden Seiten geschrieben oder gedruckt wird. Antwort: Wort.",
+   "demos": [
+    85,
+    20,
+    9,
+    26,
+    64
+   ],
+   "ctl": 60
+  },
+  {
+   "en": "pair",
+   "x": "Paar",
+   "ctx": "\"Ein ___ ist ein Satz von zwei Dingen, die zusammen verwendet oder als Einheit betrachtet werden. Antwort:",
+   "cont": " Paar",
+   "demo": "Ein Paar ist ein Satz von zwei Dingen, die zusammen verwendet oder als Einheit betrachtet werden. Antwort: Paar.",
+   "demos": [
+    22,
+    59,
+    29,
+    56,
+    17
+   ],
+   "ctl": 61
+  },
+  {
+   "en": "seat",
+   "x": "Sitz",
+   "ctx": "Ein ___ wird zum Sitzen und Ausruhen verwendet. Antwort:",
+   "cont": " Sitz",
+   "demo": "Ein Sitz wird zum Sitzen und Ausruhen verwendet. Antwort: Sitz.",
+   "demos": [
+    64,
+    18,
+    12,
+    33,
+    23
+   ],
+   "ctl": 62
+  },
+  {
+   "en": "light",
+   "x": "Licht",
+   "ctx": "Ein ___ wird verwendet, um dunkle Räume zu beleuchten. Antwort:",
+   "cont": " Licht",
+   "demo": "Ein Licht wird verwendet, um dunkle Räume zu beleuchten. Antwort: Licht.",
+   "demos": [
+    16,
+    46,
+    73,
+    4,
+    86
+   ],
+   "ctl": 63
+  },
+  {
+   "en": "north",
+   "x": "Norden",
+   "ctx": "\"Der ___ ist eine Himmelsrichtung, die oft mit kalten und polaren Regionen in Verbindung gebracht wird. Antwort:",
+   "cont": " Norden",
+   "demo": "Der Norden ist eine Himmelsrichtung, die oft mit kalten und polaren Regionen in Verbindung gebracht wird. Antwort: Norden.",
+   "demos": [
+    49,
+    72,
+    96,
+    31,
+    63
+   ],
+   "ctl": 64
+  },
+  {
+   "en": "machine",
+   "x": "Maschine",
+   "ctx": "Eine ___ wird verwendet, um eine bestimmte Aufgabe zu erfüllen oder etwas zu produzieren. Antwort:",
+   "cont": " Maschine",
+   "demo": "Eine Maschine wird verwendet, um eine bestimmte Aufgabe zu erfüllen oder etwas zu produzieren. Antwort: Maschine.",
+   "demos": [
+    86,
+    35,
+    92,
+    95,
+    52
+   ],
+   "ctl": 65
+  },
+  {
+   "en": "time",
+   "x": "Zeit",
+   "ctx": "\"Eine \"Uhr\" wird zur Messung der ___ verwendet. Antwort:",
+   "cont": " Zeit",
+   "demo": "Eine \"Uhr\" wird zur Messung der Zeit verwendet. Antwort: Zeit.",
+   "demos": [
+    62,
+    23,
+    49,
+    63,
+    102
+   ],
+   "ctl": 66
+  },
+  {
+   "en": "benefit",
+   "x": "Nutzen",
+   "ctx": "Ein ___ ist etwas, das das Wohlbefinden fördert oder steigert. Antwort:",
+   "cont": " Nutzen",
+   "demo": "Ein Nutzen ist etwas, das das Wohlbefinden fördert oder steigert. Antwort: Nutzen.",
+   "demos": [
+    84,
+    91,
+    73,
+    67,
+    15
+   ],
+   "ctl": 67
+  },
+  {
+   "en": "province",
+   "x": "Provinz",
+   "ctx": "Eine ___ ist eine Hauptverwaltungseinheit bestimmter Länder oder Reiche. Antwort:",
+   "cont": " Provinz",
+   "demo": "Eine Provinz ist eine Hauptverwaltungseinheit bestimmter Länder oder Reiche. Antwort: Provinz.",
+   "demos": [
+    91,
+    66,
+    83,
+    95,
+    60
+   ],
+   "ctl": 68
+  },
+  {
+   "en": "exchange",
+   "x": "Börse",
+   "ctx": "Eine ___ ist ein Ort, an dem Aktien, Anleihen oder andere Wertpapiere gekauft und verkauft werden. Antwort:",
+   "cont": " Börse",
+   "demo": "Eine Börse ist ein Ort, an dem Aktien, Anleihen oder andere Wertpapiere gekauft und verkauft werden. Antwort: Börse.",
+   "demos": [
+    89,
+    85,
+    40,
+    54,
+    80
+   ],
+   "ctl": 69
+  },
+  {
+   "en": "middle",
+   "x": "Mitte",
+   "ctx": "\"Die ___ ist der Punkt, der von den Seiten oder äußeren Begrenzungen einer Sache gleich weit entfernt ist. Antwort:",
+   "cont": " Mitte",
+   "demo": "Die Mitte ist der Punkt, der von den Seiten oder äußeren Begrenzungen einer Sache gleich weit entfernt ist. Antwort: Mitte.",
+   "demos": [
+    59,
+    20,
+    80,
+    60,
+    46
+   ],
+   "ctl": 70
+  },
+  {
+   "en": "friend",
+   "x": "Freund",
+   "ctx": "Ein ___ ist jemand, mit dem Sie eine enge persönliche Beziehung haben. Antwort:",
+   "cont": " Freund",
+   "demo": "Ein Freund ist jemand, mit dem Sie eine enge persönliche Beziehung haben. Antwort: Freund.",
+   "demos": [
+    15,
+    44,
+    82,
+    72,
+    29
+   ],
+   "ctl": 71
+  },
+  {
+   "en": "color",
+   "x": "Farbe",
+   "ctx": "\"Eine ___ wird verwendet, um das Aussehen von Objekten zu identifizieren oder zu beschreiben. Antwort:",
+   "cont": " Farbe",
+   "demo": "Eine Farbe wird verwendet, um das Aussehen von Objekten zu identifizieren oder zu beschreiben. Antwort: Farbe.",
+   "demos": [
+    5,
+    83,
+    58,
+    11,
+    40
+   ],
+   "ctl": 72
+  },
+  {
+   "en": "kind",
+   "x": "Art",
+   "ctx": "\"Eine ___ ist eine Kategorie oder ein Typ von etwas. Antwort:",
+   "cont": " Art",
+   "demo": "Eine Art ist eine Kategorie oder ein Typ von etwas. Antwort: Art.",
+   "demos": [
+    32,
+    44,
+    103,
+    50,
+    29
+   ],
+   "ctl": 73
+  },
+  {
+   "en": "judge",
+   "x": "Richter",
+   "ctx": "Ein ___ ist eine Person, die entweder allein oder als Teil eines Gremiums von Richtern den Vorsitz in einem Gerichtsverfahren führt. Antwort:",
+   "cont": " Richter",
+   "demo": "Ein Richter ist eine Person, die entweder allein oder als Teil eines Gremiums von Richtern den Vorsitz in einem Gerichtsverfahren führt. Antwort: Richter.",
+   "demos": [
+    29,
+    11,
+    60,
+    88,
+    46
+   ],
+   "ctl": 74
+  },
+  {
+   "en": "school",
+   "x": "Schule",
+   "ctx": "Eine ___ ist ein Ort, an dem Schüler lernen. Antwort:",
+   "cont": " Schule",
+   "demo": "Eine Schule ist ein Ort, an dem Schüler lernen. Antwort: Schule.",
+   "demos": [
+    90,
+    70,
+    32,
+    104,
+    75
+   ],
+   "ctl": 75
+  },
+  {
+   "en": "tie",
+   "x": "Krawatte",
+   "ctx": "Eine ___ wird als Teil der formellen Kleidung um den Hals getragen. Antwort:",
+   "cont": " Krawatte",
+   "demo": "Eine Krawatte wird als Teil der formellen Kleidung um den Hals getragen. Antwort: Krawatte.",
+   "demos": [
+    74,
+    80,
+    104,
+    42,
+    101
+   ],
+   "ctl": 76
+  },
+  {
+   "en": "example",
+   "x": "Beispiel",
+   "ctx": "Ein ___ wird verwendet, um einen Punkt oder ein Konzept zu illustrieren. Antwort:",
+   "cont": " Beispiel",
+   "demo": "Ein Beispiel wird verwendet, um einen Punkt oder ein Konzept zu illustrieren. Antwort: Beispiel.",
+   "demos": [
+    25,
+    78,
+    98,
+    40,
+    11
+   ],
+   "ctl": 77
+  },
+  {
+   "en": "face",
+   "x": "Gesicht",
+   "ctx": "Ein ___ ist der vordere Teil des Kopfes einer Person, einschließlich der Stirn, der Augen, der Nase und des Mundes. Antwort:",
+   "cont": " Gesicht",
+   "demo": "Ein Gesicht ist der vordere Teil des Kopfes einer Person, einschließlich der Stirn, der Augen, der Nase und des Mundes. Antwort: Gesicht.",
+   "demos": [
+    35,
+    18,
+    50,
+    69,
+    33
+   ],
+   "ctl": 78
+  },
+  {
+   "en": "bridge",
+   "x": "Brücke",
+   "ctx": "Eine ___ wird verwendet, um zwei Gebiete zu verbinden, die durch Hindernisse wie Flüsse oder Straßen getrennt sind. Antwort:",
+   "cont": " Brücke",
+   "demo": "Eine Brücke wird verwendet, um zwei Gebiete zu verbinden, die durch Hindernisse wie Flüsse oder Straßen getrennt sind. Antwort: Brücke.",
+   "demos": [
+    90,
+    75,
+    51,
+    22,
+    97
+   ],
+   "ctl": 79
+  },
+  {
+   "en": "item",
+   "x": "Gegenstand",
+   "ctx": "Ein ___ ist eine Sache, die nicht spezifiziert oder nicht identifiziert ist. Antwort:",
+   "cont": " Gegenstand",
+   "demo": "Ein Gegenstand ist eine Sache, die nicht spezifiziert oder nicht identifiziert ist. Antwort: Gegenstand.",
+   "demos": [
+    89,
+    6,
+    74,
+    32,
+    91
+   ],
+   "ctl": 80
+  },
+  {
+   "en": "delete",
+   "x": "löschen",
+   "ctx": "Ein ___ wird verwendet, um Text oder Daten zu entfernen. Antwort:",
+   "cont": " löschen",
+   "demo": "Ein \"Löschen\" wird verwendet, um Text oder Daten zu entfernen. Antwort: löschen.",
+   "demos": [
+    100,
+    5,
+    9,
+    102,
+    42
+   ],
+   "ctl": 81
+  },
+  {
+   "en": "group",
+   "x": "Gruppe",
+   "ctx": "Eine ___ ist eine Anzahl von Menschen oder Dingen, die sich an einem bestimmten Ort befinden, die versammelt sind oder zusammengehören. Antwort: '",
+   "cont": " Gruppe",
+   "demo": "Eine Gruppe ist eine Anzahl von Menschen oder Dingen, die sich an einem bestimmten Ort befinden, die versammelt sind oder zusammengehören. Antwort: 'Gruppe'.'",
+   "demos": [
+    48,
+    99,
+    82,
+    20,
+    101
+   ],
+   "ctl": 82
+  },
+  {
+   "en": "beauty",
+   "x": "Schönheit",
+   "ctx": "___ ist eine Eigenschaft, die ein Wahrnehmungserlebnis von Freude oder Befriedigung vermittelt. Antwort:",
+   "cont": " Schönheit",
+   "demo": "Schönheit\" ist eine Eigenschaft, die ein Wahrnehmungserlebnis von Freude oder Befriedigung vermittelt. Antwort: Schönheit.'",
+   "demos": [
+    20,
+    8,
+    36,
+    91,
+    71
+   ],
+   "ctl": 83
+  },
+  {
+   "en": "platform",
+   "x": "Plattform",
+   "ctx": "Eine ___ wird verwendet, um etwas zu stützen oder zu erhöhen. Antwort:",
+   "cont": " Plattform",
+   "demo": "Eine Plattform wird verwendet, um etwas zu stützen oder zu erhöhen. Antwort: Plattform.",
+   "demos": [
+    75,
+    87,
+    36,
+    53,
+    67
+   ],
+   "ctl": 84
+  },
+  {
+   "en": "house",
+   "x": "Haus",
+   "ctx": "Ein ___ ist ein Ort, an dem Menschen leben. Antwort:",
+   "cont": " Haus",
+   "demo": "Ein Haus ist ein Ort, an dem Menschen leben. Antwort: Haus.",
+   "demos": [
+    61,
+    13,
+    51,
+    58,
+    88
+   ],
+   "ctl": 85
+  },
+  {
+   "en": "sun",
+   "x": "Sonne",
+   "ctx": "Die ___ ist ein Stern im Zentrum des Sonnensystems, der die Erde mit Licht und Wärme versorgt. Antwort:",
+   "cont": " Sonne",
+   "demo": "Die Sonne ist ein Stern im Zentrum des Sonnensystems, der die Erde mit Licht und Wärme versorgt. Antwort: Sonne.",
+   "demos": [
+    45,
+    102,
+    52,
+    43,
+    46
+   ],
+   "ctl": 86
+  },
+  {
+   "en": "history",
+   "x": "Geschichte",
+   "ctx": "\"Das Studium vergangener Ereignisse, insbesondere im Bereich der menschlichen Angelegenheiten, wird als ___ bezeichnet. Antwort:",
+   "cont": " Geschichte",
+   "demo": "\"Das Studium vergangener Ereignisse, insbesondere im Bereich der menschlichen Angelegenheiten, wird als Geschichte bezeichnet. Antwort: Geschichte.",
+   "demos": [
+    98,
+    46,
+    49,
+    55,
+    92
+   ],
+   "ctl": 87
+  },
+  {
+   "en": "valley",
+   "x": "Tal",
+   "ctx": "Ein ___ ist ein niedriges Gebiet zwischen Hügeln oder Bergen, durch das normalerweise ein Fluss fließt. Antwort:",
+   "cont": " Tal",
+   "demo": "Ein Tal ist ein niedriges Gebiet zwischen Hügeln oder Bergen, durch das normalerweise ein Fluss fließt. Antwort: Tal.",
+   "demos": [
+    31,
+    2,
+    69,
+    43,
+    34
+   ],
+   "ctl": 88
+  },
+  {
+   "en": "square",
+   "x": "Quadrat",
+   "ctx": "Ein ___ ist eine Form mit vier gleichen Seiten und vier rechten Winkeln. Antwort:",
+   "cont": " Quadrat",
+   "demo": "Ein Quadrat ist eine Form mit vier gleichen Seiten und vier rechten Winkeln. Antwort: Quadrat.",
+   "demos": [
+    39,
+    30,
+    100,
+    70,
+    51
+   ],
+   "ctl": 89
+  },
+  {
+   "en": "south",
+   "x": "Süden",
+   "ctx": "\"Der ___ ist eine dem Norden entgegengesetzte Himmelsrichtung. Antwort:",
+   "cont": " Süden",
+   "demo": "Der Süden ist eine dem Norden entgegengesetzte Himmelsrichtung. Antwort: Süden.",
+   "demos": [
+    38,
+    63,
+    53,
+    103,
+    48
+   ],
+   "ctl": 90
+  },
+  {
+   "en": "virtue",
+   "x": "Tugend",
+   "ctx": "Eine ___ ist eine Eigenschaft, die als moralisch gut oder wünschenswert bei einer Person angesehen wird. Antwort:",
+   "cont": " Tugend",
+   "demo": "Eine Tugend ist eine Eigenschaft, die als moralisch gut oder wünschenswert bei einer Person angesehen wird. Antwort: Tugend.",
+   "demos": [
+    80,
+    36,
+    10,
+    51,
+    73
+   ],
+   "ctl": 91
+  },
+  {
+   "en": "tribe",
+   "x": "Stamm",
+   "ctx": "Ein ___ ist eine soziale Abteilung in einer traditionellen Gesellschaft, die aus Familien oder Gemeinschaften besteht, die durch soziale, wirtschaftliche, religiöse oder blutsmäßige Bindungen verbunden sind. Antwort:",
+   "cont": " Stamm",
+   "demo": "Ein Stamm ist eine soziale Abteilung in einer traditionellen Gesellschaft, die aus Familien oder Gemeinschaften besteht, die durch soziale, wirtschaftliche, religiöse oder blutsmäßige Bindungen verbunden sind. Antwort: Stamm.",
+   "demos": [
+    5,
+    55,
+    60,
+    54,
+    59
+   ],
+   "ctl": 92
+  },
+  {
+   "en": "city",
+   "x": "Stadt",
+   "ctx": "Eine ___ ist eine große menschliche Siedlung, in der Menschen leben und arbeiten. Antwort:",
+   "cont": " Stadt",
+   "demo": "Eine Stadt ist eine große menschliche Siedlung, in der Menschen leben und arbeiten. Antwort: Stadt.",
+   "demos": [
+    9,
+    61,
+    23,
+    88,
+    55
+   ],
+   "ctl": 93
+  },
+  {
+   "en": "language",
+   "x": "Sprache",
+   "ctx": "Eine ___ wird verwendet, um Gedanken und Ideen zu kommunizieren. Antwort:",
+   "cont": " Sprache",
+   "demo": "Eine Sprache wird verwendet, um Gedanken und Ideen zu kommunizieren. Antwort: Sprache.",
+   "demos": [
+    13,
+    0,
+    33,
+    37,
+    93
+   ],
+   "ctl": 94
+  },
+  {
+   "en": "speed",
+   "x": "Geschwindigkeit",
+   "ctx": "\"Eine ___ wird verwendet, um zu messen, wie schnell sich etwas bewegt. Antwort:",
+   "cont": " Geschwindigkeit",
+   "demo": "Eine Geschwindigkeit wird verwendet, um zu messen, wie schnell sich etwas bewegt. Antwort: Geschwindigkeit.",
+   "demos": [
+    37,
+    11,
+    67,
+    1,
+    92
+   ],
+   "ctl": 95
+  },
+  {
+   "en": "ground",
+   "x": "Boden",
+   "ctx": "\"Ein ___ ist der Platz, auf dem wir gehen und Häuser bauen. Antwort:",
+   "cont": " Boden",
+   "demo": "Ein Boden ist der Platz, auf dem wir gehen und Häuser bauen. Antwort: Boden.",
+   "demos": [
+    23,
+    3,
+    62,
+    83,
+    72
+   ],
+   "ctl": 96
+  },
+  {
+   "en": "attempt",
+   "x": "Versuch",
+   "ctx": "Ein ___ wird unternommen, wenn man versucht, etwas zu erreichen. Antwort:",
+   "cont": " Versuch",
+   "demo": "Ein Versuch wird unternommen, wenn man versucht, etwas zu erreichen. Antwort: Versuch.",
+   "demos": [
+    43,
+    65,
+    47,
+    18,
+    1
+   ],
+   "ctl": 97
+  },
+  {
+   "en": "defeat",
+   "x": "Niederlage",
+   "ctx": "\"Eine ___ erlebt man, wenn man einen Wettbewerb oder eine Schlacht verliert. Antwort:",
+   "cont": " Niederlage",
+   "demo": "Eine Niederlage erlebt man, wenn man einen Wettbewerb oder eine Schlacht verliert. Antwort: Niederlage.",
+   "demos": [
+    38,
+    60,
+    86,
+    63,
+    10
+   ],
+   "ctl": 98
+  },
+  {
+   "en": "tail",
+   "x": "Schwanz",
+   "ctx": "Ein ___ ist ein Teil des Körpers eines Tieres, der sich von der Basis der Wirbelsäule aus erstreckt. Antwort:",
+   "cont": " Schwanz",
+   "demo": "Ein Schwanz ist ein Teil des Körpers eines Tieres, der sich von der Basis der Wirbelsäule aus erstreckt. Antwort: Schwanz.",
+   "demos": [
+    105,
+    57,
+    21,
+    54,
+    26
+   ],
+   "ctl": 99
+  },
+  {
+   "en": "mother",
+   "x": "Mutter",
+   "ctx": "Eine ___ ist eine Frau, die ein Kind zur Welt gebracht hat. Antwort:",
+   "cont": " Mutter",
+   "demo": "Eine Mutter ist eine Frau, die ein Kind zur Welt gebracht hat. Antwort: Mutter.",
+   "demos": [
+    11,
+    57,
+    99,
+    79,
+    66
+   ],
+   "ctl": 100
+  },
+  {
+   "en": "east",
+   "x": "Osten",
+   "ctx": "\"Der ___ ist eine Himmelsrichtung, die dem Westen entgegengesetzt ist. Antwort:",
+   "cont": " Osten",
+   "demo": "Der Osten ist eine Himmelsrichtung, die dem Westen entgegengesetzt ist. Antwort: Osten.",
+   "demos": [
+    0,
+    88,
+    4,
+    103,
+    19
+   ],
+   "ctl": 101
+  },
+  {
+   "en": "speech",
+   "x": "Rede",
+   "ctx": "\"Eine ___ ist eine förmliche Ansprache oder ein Vortrag, der vor einem Publikum gehalten wird. Antwort:",
+   "cont": " Rede",
+   "demo": "Eine Rede ist eine förmliche Ansprache oder ein Vortrag, der vor einem Publikum gehalten wird. Antwort: Rede.",
+   "demos": [
+    10,
+    56,
+    8,
+    57,
+    62
+   ],
+   "ctl": 102
+  },
+  {
+   "en": "child",
+   "x": "Kind",
+   "ctx": "Ein ___ ist ein junges menschliches Wesen unter dem Alter der Pubertät. Antwort:",
+   "cont": " Kind",
+   "demo": "Ein Kind ist ein junges menschliches Wesen unter dem Alter der Pubertät. Antwort: Kind.'",
+   "demos": [
+    91,
+    56,
+    27,
+    13,
+    28
+   ],
+   "ctl": 103
+  },
+  {
+   "en": "tower",
+   "x": "Turm",
+   "ctx": "Ein ___ ist ein hohes Bauwerk, das für verschiedene Zwecke wie Beobachtung, Kommunikation oder Lagerung genutzt werden kann. Antwort:",
+   "cont": " Turm",
+   "demo": "Ein Turm ist ein hohes Bauwerk, das für verschiedene Zwecke wie Beobachtung, Kommunikation oder Lagerung genutzt werden kann. Antwort: Turm.",
+   "demos": [
+    83,
+    53,
+    73,
+    45,
+    34
+   ],
+   "ctl": 104
+  },
+  {
+   "en": "hair",
+   "x": "Haar",
+   "ctx": "Ein ___ befindet sich auf dem Kopf von Menschen und Tieren. Antwort:",
+   "cont": " Haar",
+   "demo": "Ein Haar befindet sich auf dem Kopf von Menschen und Tieren. Antwort: Haar.",
+   "demos": [
+    77,
+    34,
+    20,
+    54,
+    46
+   ],
+   "ctl": 105
+  },
+  {
+   "en": "household",
+   "x": "Haushalt",
+   "ctx": "Ein ___ ist eine Bezeichnung für eine Wohneinheit, in der Menschen leben. Antwort:",
+   "cont": " Haushalt",
+   "demo": "Ein Haushalt ist eine Bezeichnung für eine Wohneinheit, in der Menschen leben. Antwort: Haushalt.",
+   "demos": [
+    39,
+    87,
+    86,
+    47,
+    74
+   ],
+   "ctl": 0
+  },
+  {
+   "en": "section",
+   "x": "Abschnitt",
+   "ctx": "Ein ___ ist ein bestimmter Teil oder eine Unterteilung von etwas. Antwort:",
+   "cont": " Abschnitt",
+   "demo": "Ein Abschnitt ist ein bestimmter Teil oder eine Unterteilung von etwas. Antwort: Abschnitt.",
+   "demos": [
+    45,
+    11,
+    37,
+    28,
+    57
+   ],
+   "ctl": 1
+  },
+  {
+   "en": "office",
+   "x": "Büro",
+   "ctx": "Ein ___ ist ein Ort, an dem Menschen normalerweise ihre Arbeit verrichten. Antwort:",
+   "cont": " Büro",
+   "demo": "Ein Büro ist ein Ort, an dem Menschen normalerweise ihre Arbeit verrichten. Antwort: Büro.",
+   "demos": [
+    46,
+    25,
+    11,
+    79,
+    98
+   ],
+   "ctl": 2
+  },
+  {
+   "en": "rise",
+   "x": "Anstieg",
+   "ctx": "\"Ein ___ wird verwendet, um einen Anstieg oder eine Aufwärtsbewegung zu beschreiben. Antwort:",
+   "cont": " Anstieg",
+   "demo": "Ein Anstieg wird verwendet, um einen Anstieg oder eine Aufwärtsbewegung zu beschreiben. Antwort: Anstieg.",
+   "demos": [
+    49,
+    67,
+    86,
+    31,
+    70
+   ],
+   "ctl": 3
+  },
+  {
+   "en": "left",
+   "x": "links",
+   "ctx": "Ein ___ ist eine Richtung, die der rechten entgegengesetzt ist. Antwort:",
+   "cont": " links",
+   "demo": "Ein links ist eine Richtung, die der rechten entgegengesetzt ist. Antwort: links.'",
+   "demos": [
+    26,
+    64,
+    85,
+    62,
+    25
+   ],
+   "ctl": 4
+  },
+  {
+   "en": "power",
+   "x": "Macht",
+   "ctx": "\"Eine ___ wird benutzt, um Menschen oder Dinge zu kontrollieren oder zu beeinflussen. Antwort:",
+   "cont": " Macht",
+   "demo": "Eine Macht wird benutzt, um Menschen oder Dinge zu kontrollieren oder zu beeinflussen. Antwort: Macht.",
+   "demos": [
+    54,
+    44,
+    39,
+    80,
+    51
+   ],
+   "ctl": 5
+  },
+  {
+   "en": "summer",
+   "x": "Sommer",
+   "ctx": "\"Der ___ ist eine Jahreszeit, die für ihr warmes Wetter bekannt ist. Antwort:",
+   "cont": " Sommer",
+   "demo": "Der Sommer ist eine Jahreszeit, die für ihr warmes Wetter bekannt ist. Antwort: Sommer.",
+   "demos": [
+    104,
+    103,
+    44,
+    101,
+    82
+   ],
+   "ctl": 6
+  }
+ ],
+ "fr": [
+  {
+   "en": "cloud",
+   "x": "nuage",
+   "ctx": "Un ___ est une masse visible de vapeur d'eau condensée flottant dans l'atmosphère. Réponse :",
+   "cont": " nuage",
+   "demo": "Un nuage est une masse visible de vapeur d'eau condensée flottant dans l'atmosphère. Réponse : nuage.",
+   "demos": [
+    73,
+    18,
+    71,
+    75,
+    24
+   ],
+   "ctl": 7
+  },
+  {
+   "en": "bag",
+   "x": "sac",
+   "ctx": "Un ___ est utilisé pour transporter des objets. Réponse :",
+   "cont": " sac",
+   "demo": "Un sac est utilisé pour transporter des objets. Réponse : sac.",
+   "demos": [
+    68,
+    65,
+    93,
+    77,
+    14
+   ],
+   "ctl": 8
+  },
+  {
+   "en": "mouth",
+   "x": "bouche",
+   "ctx": "La ___ sert à manger et à parler. Réponse : la",
+   "cont": " bouche",
+   "demo": "La bouche sert à manger et à parler. Réponse : la bouche.",
+   "demos": [
+    82,
+    54,
+    10,
+    32,
+    71
+   ],
+   "ctl": 9
+  },
+  {
+   "en": "soil",
+   "x": "sol",
+   "ctx": "\"Un ___ est utilisé pour planter des arbres et des cultures. Réponse :",
+   "cont": " sol",
+   "demo": "\"Un sol est utilisé pour planter des arbres et des cultures. Réponse : sol.",
+   "demos": [
+    75,
+    19,
+    94,
+    23,
+    79
+   ],
+   "ctl": 10
+  },
+  {
+   "en": "mountain",
+   "x": "montagne",
+   "ctx": "Une ___ est une grande élévation naturelle de la surface de la terre. Réponse :",
+   "cont": " montagne",
+   "demo": "Une montagne est une grande élévation naturelle de la surface de la terre. Réponse : montagne.",
+   "demos": [
+    49,
+    97,
+    70,
+    60,
+    85
+   ],
+   "ctl": 11
+  },
+  {
+   "en": "heart",
+   "x": "cœur",
+   "ctx": "Le ___ est un organe qui pompe le sang dans tout le corps. Réponse : le",
+   "cont": " cœur",
+   "demo": "Le cœur est un organe qui pompe le sang dans tout le corps. Réponse : le cœur.",
+   "demos": [
+    34,
+    65,
+    7,
+    51,
+    96
+   ],
+   "ctl": 12
+  },
+  {
+   "en": "hand",
+   "x": "main",
+   "ctx": "Une ___ est utilisée pour saisir ou tenir des objets. Réponse : la",
+   "cont": " main",
+   "demo": "Une main est utilisée pour saisir ou tenir des objets. Réponse : la main.",
+   "demos": [
+    56,
+    55,
+    91,
+    3,
+    85
+   ],
+   "ctl": 13
+  },
+  {
+   "en": "day",
+   "x": "jour",
+   "ctx": "Un ___ est une période de 24 heures, souvent comprise comme le temps nécessaire à la Terre pour effectuer une rotation. Réponse :",
+   "cont": " jour",
+   "demo": "Un jour est une période de 24 heures, souvent comprise comme le temps nécessaire à la Terre pour effectuer une rotation. Réponse : jour.",
+   "demos": [
+    15,
+    48,
+    37,
+    87,
+    69
+   ],
+   "ctl": 14
+  },
+  {
+   "en": "star",
+   "x": "étoile",
+   "ctx": "Une ___ est un corps céleste qui brille dans le ciel nocturne. Réponse :",
+   "cont": " étoile",
+   "demo": "Une étoile est un corps céleste qui brille dans le ciel nocturne. Réponse : étoile.",
+   "demos": [
+    65,
+    88,
+    1,
+    18,
+    78
+   ],
+   "ctl": 15
+  },
+  {
+   "en": "spring",
+   "x": "ressort",
+   "ctx": "Un ___ est un dispositif qui emmagasine de l'énergie mécanique et qui peut être comprimé ou étiré. Réponse : le",
+   "cont": " ressort",
+   "demo": "Un ressort est un dispositif qui emmagasine de l'énergie mécanique et qui peut être comprimé ou étiré. Réponse : le ressort.",
+   "demos": [
+    80,
+    71,
+    20,
+    59,
+    48
+   ],
+   "ctl": 16
+  },
+  {
+   "en": "moon",
+   "x": "lune",
+   "ctx": "Une ___ est un satellite naturel qui tourne autour d'une planète. Réponse :",
+   "cont": " lune",
+   "demo": "Une lune est un satellite naturel qui tourne autour d'une planète. Réponse : lune.",
+   "demos": [
+    37,
+    89,
+    54,
+    95,
+    59
+   ],
+   "ctl": 17
+  },
+  {
+   "en": "wood",
+   "x": "bois",
+   "ctx": "Un ___ est utilisé pour fabriquer des meubles. Réponse : le",
+   "cont": " bois",
+   "demo": "Un bois est utilisé pour fabriquer des meubles. Réponse : le bois.",
+   "demos": [
+    91,
+    66,
+    93,
+    73,
+    67
+   ],
+   "ctl": 18
+  },
+  {
+   "en": "forest",
+   "x": "forêt",
+   "ctx": "Une ___ est une vaste zone couverte principalement d'arbres et de sous-bois. Réponse :",
+   "cont": " forêt",
+   "demo": "Une forêt est une vaste zone couverte principalement d'arbres et de sous-bois. Réponse : forêt.",
+   "demos": [
+    93,
+    81,
+    58,
+    45,
+    69
+   ],
+   "ctl": 19
+  },
+  {
+   "en": "grid",
+   "x": "grille",
+   "ctx": "Une ___ est un réseau de lignes qui se croisent pour former une série de carrés ou de rectangles. Réponse :",
+   "cont": " grille",
+   "demo": "Une grille est un réseau de lignes qui se croisent pour former une série de carrés ou de rectangles. Réponse : grille.",
+   "demos": [
+    44,
+    39,
+    32,
+    58,
+    72
+   ],
+   "ctl": 20
+  },
+  {
+   "en": "song",
+   "x": "chanson",
+   "ctx": "Une ___ est un morceau de musique avec des paroles qui est chanté. Réponse :",
+   "cont": " chanson",
+   "demo": "Une chanson est un morceau de musique avec des paroles qui est chanté. Réponse : chanson.",
+   "demos": [
+    33,
+    95,
+    81,
+    25,
+    86
+   ],
+   "ctl": 21
+  },
+  {
+   "en": "pond",
+   "x": "étang",
+   "ctx": "Un ___ est une petite étendue d'eau calme. Réponse :",
+   "cont": " étang",
+   "demo": "Un étang est une petite étendue d'eau calme. Réponse : étang.",
+   "demos": [
+    63,
+    83,
+    10,
+    40,
+    25
+   ],
+   "ctl": 22
+  },
+  {
+   "en": "sand",
+   "x": "sable",
+   "ctx": "\"Un ___ est utilisé pour construire des châteaux à la plage. Réponse :",
+   "cont": " sable",
+   "demo": "\"Un sable est utilisé pour construire des châteaux à la plage. Réponse : sable.",
+   "demos": [
+    43,
+    78,
+    41,
+    21,
+    4
+   ],
+   "ctl": 23
+  },
+  {
+   "en": "law",
+   "x": "loi",
+   "ctx": "Une ___ est un système de règles qu'une société ou un gouvernement élabore pour lutter contre la criminalité, les accords commerciaux et les relations sociales. Réponse :",
+   "cont": " loi",
+   "demo": "Une loi est un système de règles qu'une société ou un gouvernement élabore pour lutter contre la criminalité, les accords commerciaux et les relations sociales. Réponse : loi.",
+   "demos": [
+    52,
+    48,
+    67,
+    19,
+    69
+   ],
+   "ctl": 24
+  },
+  {
+   "en": "wave",
+   "x": "onde",
+   "ctx": "Une ___ est une perturbation qui transfère de l'énergie dans la matière ou l'espace. Réponse :",
+   "cont": " onde",
+   "demo": "Une onde est une perturbation qui transfère de l'énergie dans la matière ou l'espace. Réponse : onde.",
+   "demos": [
+    5,
+    51,
+    36,
+    10,
+    30
+   ],
+   "ctl": 25
+  },
+  {
+   "en": "ocean",
+   "x": "océan",
+   "ctx": "Un ___ est une grande étendue d'eau salée qui recouvre la majeure partie de la surface de la terre. Réponse :",
+   "cont": " océan",
+   "demo": "Un océan est une grande étendue d'eau salée qui recouvre la majeure partie de la surface de la terre. Réponse : océan.",
+   "demos": [
+    74,
+    35,
+    3,
+    31,
+    18
+   ],
+   "ctl": 26
+  },
+  {
+   "en": "cave",
+   "x": "grotte",
+   "ctx": "Une ___ est un espace souterrain naturel suffisamment grand pour qu'un être humain puisse y pénétrer. Réponse :",
+   "cont": " grotte",
+   "demo": "Une grotte est un espace souterrain naturel suffisamment grand pour qu'un être humain puisse y pénétrer. Réponse : grotte.",
+   "demos": [
+    18,
+    14,
+    3,
+    57,
+    24
+   ],
+   "ctl": 27
+  },
+  {
+   "en": "sea",
+   "x": "mer",
+   "ctx": "Une ___ est une grande étendue d'eau salée plus petite qu'un océan. Réponse :",
+   "cont": " mer",
+   "demo": "Une mer est une grande étendue d'eau salée plus petite qu'un océan. Réponse : mer.",
+   "demos": [
+    43,
+    62,
+    16,
+    8,
+    68
+   ],
+   "ctl": 28
+  },
+  {
+   "en": "lake",
+   "x": "lac",
+   "ctx": "Un ___ est une grande étendue d'eau entourée de terre. Réponse :",
+   "cont": " lac",
+   "demo": "Un lac est une grande étendue d'eau entourée de terre. Réponse : lac.",
+   "demos": [
+    81,
+    54,
+    65,
+    49,
+    34
+   ],
+   "ctl": 29
+  },
+  {
+   "en": "station",
+   "x": "gare",
+   "ctx": "Une ___ est un endroit où les trains ou les bus s'arrêtent régulièrement pour que les passagers puissent monter ou descendre. Réponse :",
+   "cont": " gare",
+   "demo": "Une gare est un endroit où les trains ou les bus s'arrêtent régulièrement pour que les passagers puissent monter ou descendre. Réponse : gare.",
+   "demos": [
+    17,
+    68,
+    11,
+    13,
+    91
+   ],
+   "ctl": 30
+  },
+  {
+   "en": "rice",
+   "x": "riz",
+   "ctx": "Le ___ est une céréale couramment utilisée en cuisine et constitue un aliment de base dans de nombreux pays. Réponse : Le",
+   "cont": " riz",
+   "demo": "Le riz est une céréale couramment utilisée en cuisine et constitue un aliment de base dans de nombreux pays. Réponse : Le riz.",
+   "demos": [
+    87,
+    34,
+    46,
+    28,
+    36
+   ],
+   "ctl": 31
+  },
+  {
+   "en": "red",
+   "x": "rouge",
+   "ctx": "Le ___ est une couleur souvent associée à l'amour et à la passion. Réponse :",
+   "cont": " rouge",
+   "demo": "Le rouge est une couleur souvent associée à l'amour et à la passion. Réponse : rouge.",
+   "demos": [
+    36,
+    74,
+    18,
+    53,
+    98
+   ],
+   "ctl": 32
+  },
+  {
+   "en": "line",
+   "x": "ligne",
+   "ctx": "Une ___ est une marque étroite et continue, comme celle faite par un stylo, un crayon ou un pinceau. Réponse :",
+   "cont": " ligne",
+   "demo": "Une ligne est une marque étroite et continue, comme celle faite par un stylo, un crayon ou un pinceau. Réponse : ligne.",
+   "demos": [
+    6,
+    10,
+    49,
+    83,
+    43
+   ],
+   "ctl": 33
+  },
+  {
+   "en": "net",
+   "x": "filet",
+   "ctx": "Un ___ est utilisé dans des sports comme le volley-ball et le tennis pour diviser l'aire de jeu. Réponse : le",
+   "cont": " filet",
+   "demo": "Un filet est utilisé dans des sports comme le volley-ball et le tennis pour diviser l'aire de jeu. Réponse : le filet.",
+   "demos": [
+    41,
+    42,
+    57,
+    20,
+    80
+   ],
+   "ctl": 34
+  },
+  {
+   "en": "flower",
+   "x": "fleur",
+   "ctx": "Une ___ est souvent offerte en cadeau et se trouve dans les jardins. Réponse :",
+   "cont": " fleur",
+   "demo": "Une fleur est souvent offerte en cadeau et se trouve dans les jardins. Réponse : fleur.",
+   "demos": [
+    62,
+    31,
+    42,
+    48,
+    5
+   ],
+   "ctl": 35
+  },
+  {
+   "en": "tea",
+   "x": "thé",
+   "ctx": "Un ___ est une boisson souvent consommée pour se détendre ou se réchauffer. Réponse : le",
+   "cont": " thé",
+   "demo": "Un thé est une boisson souvent consommée pour se détendre ou se réchauffer. Réponse : le thé.",
+   "demos": [
+    17,
+    83,
+    61,
+    54,
+    72
+   ],
+   "ctl": 36
+  },
+  {
+   "en": "foot",
+   "x": "pied",
+   "ctx": "Le ___ sert à marcher et à courir. Réponse : le",
+   "cont": " pied",
+   "demo": "Le pied sert à marcher et à courir. Réponse : le pied.",
+   "demos": [
+    61,
+    1,
+    24,
+    78,
+    28
+   ],
+   "ctl": 37
+  },
+  {
+   "en": "gold",
+   "x": "or",
+   "ctx": "\"Un ___ est un métal précieux qui est souvent utilisé dans la fabrication de bijoux. Réponse : \"l'",
+   "cont": " or",
+   "demo": "\"Un or est un métal précieux qui est souvent utilisé dans la fabrication de bijoux. Réponse : \"l'or\".",
+   "demos": [
+    85,
+    97,
+    33,
+    70,
+    61
+   ],
+   "ctl": 38
+  },
+  {
+   "en": "door",
+   "x": "porte",
+   "ctx": "Une ___ est utilisée pour entrer ou sortir d'une pièce. Réponse :",
+   "cont": " porte",
+   "demo": "Une porte est utilisée pour entrer ou sortir d'une pièce. Réponse : porte.",
+   "demos": [
+    81,
+    56,
+    79,
+    20,
+    86
+   ],
+   "ctl": 39
+  },
+  {
+   "en": "snow",
+   "x": "neige",
+   "ctx": "\"Une ___ est une forme de précipitation qui tombe du ciel en hiver. Réponse :",
+   "cont": " neige",
+   "demo": "\"Une neige est une forme de précipitation qui tombe du ciel en hiver. Réponse : neige.",
+   "demos": [
+    19,
+    0,
+    11,
+    99,
+    80
+   ],
+   "ctl": 40
+  },
+  {
+   "en": "horse",
+   "x": "cheval",
+   "ctx": "Un ___ est un grand animal domestique à quatre pattes, couramment utilisé pour l'équitation et les courses. Réponse :",
+   "cont": " cheval",
+   "demo": "Un cheval est un grand animal domestique à quatre pattes, couramment utilisé pour l'équitation et les courses. Réponse : cheval.",
+   "demos": [
+    92,
+    59,
+    94,
+    83,
+    2
+   ],
+   "ctl": 41
+  },
+  {
+   "en": "one",
+   "x": "un",
+   "ctx": "___ un est un nombre qui vient après zéro et avant deux. Réponse :",
+   "cont": " un",
+   "demo": "Un un est un nombre qui vient après zéro et avant deux. Réponse : un.",
+   "demos": [
+    68,
+    37,
+    94,
+    54,
+    30
+   ],
+   "ctl": 42
+  },
+  {
+   "en": "two",
+   "x": "deux",
+   "ctx": "Le nombre ___ est la somme de un plus un. Réponse :",
+   "cont": " deux",
+   "demo": "Le nombre deux est la somme de un plus un. Réponse : deux.",
+   "demos": [
+    15,
+    47,
+    0,
+    61,
+    43
+   ],
+   "ctl": 43
+  },
+  {
+   "en": "three",
+   "x": "trois",
+   "ctx": "Le nombre qui vient après deux est ___. Réponse :",
+   "cont": " trois",
+   "demo": "Le nombre qui vient après deux est trois. Réponse : trois.",
+   "demos": [
+    20,
+    18,
+    35,
+    84,
+    77
+   ],
+   "ctl": 44
+  },
+  {
+   "en": "four",
+   "x": "quatre",
+   "ctx": "Le nombre ___ est le nombre entier qui vient après trois. Réponse :",
+   "cont": " quatre",
+   "demo": "Le nombre quatre est le nombre entier qui vient après trois. Réponse : quatre.",
+   "demos": [
+    64,
+    10,
+    97,
+    88,
+    61
+   ],
+   "ctl": 45
+  },
+  {
+   "en": "five",
+   "x": "cinq",
+   "ctx": "Le chiffre qui vient après quatre est ___. Réponse :",
+   "cont": " cinq",
+   "demo": "Le chiffre qui vient après quatre est cinq. Réponse : cinq.",
+   "demos": [
+    16,
+    60,
+    44,
+    90,
+    42
+   ],
+   "ctl": 46
+  },
+  {
+   "en": "seven",
+   "x": "sept",
+   "ctx": "Le chiffre ___ vient après le six. Réponse :",
+   "cont": " sept",
+   "demo": "Le chiffre sept vient après le six. Réponse : sept.",
+   "demos": [
+    67,
+    70,
+    31,
+    9,
+    72
+   ],
+   "ctl": 47
+  },
+  {
+   "en": "eight",
+   "x": "huit",
+   "ctx": "Le chiffre ___ vient après le sept. Réponse :",
+   "cont": " huit",
+   "demo": "Le chiffre huit vient après le sept. Réponse : huit.",
+   "demos": [
+    86,
+    74,
+    44,
+    71,
+    88
+   ],
+   "ctl": 48
+  },
+  {
+   "en": "nine",
+   "x": "neuf",
+   "ctx": "Le chiffre qui vient après huit est ___. Réponse :",
+   "cont": " neuf",
+   "demo": "Le chiffre qui vient après huit est neuf. Réponse : neuf.",
+   "demos": [
+    11,
+    19,
+    48,
+    14,
+    2
+   ],
+   "ctl": 49
+  },
+  {
+   "en": "ten",
+   "x": "dix",
+   "ctx": "Le chiffre qui vient après neuf est ___. Réponse :",
+   "cont": " dix",
+   "demo": "Le chiffre qui vient après neuf est dix. Réponse : dix.",
+   "demos": [
+    2,
+    39,
+    63,
+    24,
+    71
+   ],
+   "ctl": 50
+  },
+  {
+   "en": "head",
+   "x": "tête",
+   "ctx": "Une ___ est une partie du corps qui contient le cerveau, les yeux, les oreilles, le nez et la bouche. Réponse : tête :",
+   "cont": " tête",
+   "demo": "Une tête est une partie du corps qui contient le cerveau, les yeux, les oreilles, le nez et la bouche. Réponse : tête : tête.",
+   "demos": [
+    48,
+    31,
+    39,
+    56,
+    71
+   ],
+   "ctl": 51
+  },
+  {
+   "en": "strip",
+   "x": "bande",
+   "ctx": "Une ___ est un morceau long et étroit d'un certain matériau. Réponse :",
+   "cont": " bande",
+   "demo": "Une bande est un morceau long et étroit d'un certain matériau. Réponse : bande.",
+   "demos": [
+    92,
+    11,
+    58,
+    2,
+    1
+   ],
+   "ctl": 52
+  },
+  {
+   "en": "street",
+   "x": "rue",
+   "ctx": "Une ___ est une voie publique dans une ville ou un village. Réponse :",
+   "cont": " rue",
+   "demo": "Une rue est une voie publique dans une ville ou un village. Réponse : rue.",
+   "demos": [
+    47,
+    19,
+    39,
+    88,
+    73
+   ],
+   "ctl": 53
+  },
+  {
+   "en": "eye",
+   "x": "œil",
+   "ctx": "Un ___ sert à voir tout ce qui nous entoure. Réponse :",
+   "cont": " œil",
+   "demo": "Un œil sert à voir tout ce qui nous entoure. Réponse : œil.",
+   "demos": [
+    18,
+    3,
+    23,
+    81,
+    59
+   ],
+   "ctl": 54
+  },
+  {
+   "en": "field",
+   "x": "champ",
+   "ctx": "Un ___ est une vaste zone de terre ouverte où l'on cultive des plantes. Réponse :",
+   "cont": " champ",
+   "demo": "Un champ est une vaste zone de terre ouverte où l'on cultive des plantes. Réponse : champ.",
+   "demos": [
+    34,
+    61,
+    59,
+    0,
+    18
+   ],
+   "ctl": 55
+  },
+  {
+   "en": "dance",
+   "x": "danse",
+   "ctx": "Une ___ est une forme d'art qui implique des mouvements du corps, généralement rythmés et en musique. Réponse : la",
+   "cont": " danse",
+   "demo": "Une danse est une forme d'art qui implique des mouvements du corps, généralement rythmés et en musique. Réponse : la danse.",
+   "demos": [
+    37,
+    42,
+    12,
+    88,
+    43
+   ],
+   "ctl": 56
+  },
+  {
+   "en": "word",
+   "x": "mot",
+   "ctx": "Un ___ est un élément de discours ou d'écriture unique et distinct, utilisé avec d'autres (ou parfois seul) pour former une phrase et généralement représenté avec un espace de part et d'autre lorsqu'il est écrit ou imprimé. Réponse :",
+   "cont": " mot",
+   "demo": "Un mot est un élément de discours ou d'écriture unique et distinct, utilisé avec d'autres (ou parfois seul) pour former une phrase et généralement représenté avec un espace de part et d'autre lorsqu'il est écrit ou imprimé. Réponse : mot.",
+   "demos": [
+    18,
+    76,
+    39,
+    67,
+    75
+   ],
+   "ctl": 57
+  },
+  {
+   "en": "seat",
+   "x": "siège",
+   "ctx": "Un ___ sert à s'asseoir et à se reposer. Réponse :",
+   "cont": " siège",
+   "demo": "Un siège sert à s'asseoir et à se reposer. Réponse : siège.",
+   "demos": [
+    40,
+    50,
+    33,
+    97,
+    95
+   ],
+   "ctl": 58
+  },
+  {
+   "en": "light",
+   "x": "lumière",
+   "ctx": "Une ___ est utilisée pour éclairer les espaces sombres. Réponse :",
+   "cont": " lumière",
+   "demo": "Une lumière est utilisée pour éclairer les espaces sombres. Réponse : lumière.",
+   "demos": [
+    2,
+    90,
+    24,
+    44,
+    11
+   ],
+   "ctl": 59
+  },
+  {
+   "en": "thousand",
+   "x": "mille",
+   "ctx": "Un ___ est une valeur numérique qui vient après neuf cent quatre-vingt-dix-neuf. Réponse :",
+   "cont": " mille",
+   "demo": "Un mille est une valeur numérique qui vient après neuf cent quatre-vingt-dix-neuf. Réponse : mille.",
+   "demos": [
+    96,
+    25,
+    77,
+    82,
+    64
+   ],
+   "ctl": 60
+  },
+  {
+   "en": "north",
+   "x": "nord",
+   "ctx": "\"Le ___ est une direction cardinale souvent associée aux régions froides et polaires. Réponse :",
+   "cont": " nord",
+   "demo": "\"Le nord est une direction cardinale souvent associée aux régions froides et polaires. Réponse : nord.",
+   "demos": [
+    32,
+    87,
+    59,
+    19,
+    20
+   ],
+   "ctl": 61
+  },
+  {
+   "en": "time",
+   "x": "temps",
+   "ctx": "\"Une \"horloge\" est utilisée pour mesurer le ___. Réponse : le",
+   "cont": " temps",
+   "demo": "\"Une \"horloge\" est utilisée pour mesurer le temps. Réponse : le temps\".",
+   "demos": [
+    25,
+    59,
+    61,
+    46,
+    15
+   ],
+   "ctl": 62
+  },
+  {
+   "en": "exchange",
+   "x": "bourse",
+   "ctx": "Une ___ est un lieu où l'on achète et vend des actions, des obligations ou d'autres titres. Réponse :",
+   "cont": " bourse",
+   "demo": "Une bourse est un lieu où l'on achète et vend des actions, des obligations ou d'autres titres. Réponse : bourse.",
+   "demos": [
+    78,
+    65,
+    44,
+    39,
+    37
+   ],
+   "ctl": 63
+  },
+  {
+   "en": "middle",
+   "x": "milieu",
+   "ctx": "\"Le ___ est le point qui se trouve à égale distance des côtés ou des limites extérieures d'une chose. Réponse : \"le",
+   "cont": " milieu",
+   "demo": "\"Le milieu est le point qui se trouve à égale distance des côtés ou des limites extérieures d'une chose. Réponse : \"le milieu.",
+   "demos": [
+    3,
+    90,
+    51,
+    60,
+    5
+   ],
+   "ctl": 64
+  },
+  {
+   "en": "color",
+   "x": "couleur",
+   "ctx": "\"Une ___ est utilisée pour identifier ou décrire l'apparence des objets. Réponse :",
+   "cont": " couleur",
+   "demo": "\"Une couleur est utilisée pour identifier ou décrire l'apparence des objets. Réponse : couleur.",
+   "demos": [
+    88,
+    94,
+    1,
+    61,
+    51
+   ],
+   "ctl": 65
+  },
+  {
+   "en": "kind",
+   "x": "genre",
+   "ctx": "\"Un ___ est une catégorie ou un type de chose. Réponse :",
+   "cont": " genre",
+   "demo": "\"Un genre est une catégorie ou un type de chose. Réponse : genre.",
+   "demos": [
+    52,
+    4,
+    10,
+    75,
+    13
+   ],
+   "ctl": 66
+  },
+  {
+   "en": "judge",
+   "x": "juge",
+   "ctx": "Un ___ est une personne qui préside une procédure judiciaire, seule ou en tant que membre d'un collège de juges. Réponse :",
+   "cont": " juge",
+   "demo": "Un juge est une personne qui préside une procédure judiciaire, seule ou en tant que membre d'un collège de juges. Réponse : juge.",
+   "demos": [
+    1,
+    99,
+    20,
+    36,
+    97
+   ],
+   "ctl": 67
+  },
+  {
+   "en": "school",
+   "x": "école",
+   "ctx": "Une ___ est un lieu où les élèves se rendent pour apprendre. Réponse : \"l'",
+   "cont": " école",
+   "demo": "Une école est un lieu où les élèves se rendent pour apprendre. Réponse : \"l'école\".",
+   "demos": [
+    58,
+    44,
+    74,
+    22,
+    30
+   ],
+   "ctl": 68
+  },
+  {
+   "en": "tie",
+   "x": "cravate",
+   "ctx": "Une ___ est portée autour du cou dans le cadre d'une tenue de soirée. Réponse :",
+   "cont": " cravate",
+   "demo": "Une cravate est portée autour du cou dans le cadre d'une tenue de soirée. Réponse : cravate.",
+   "demos": [
+    5,
+    57,
+    85,
+    52,
+    55
+   ],
+   "ctl": 69
+  },
+  {
+   "en": "example",
+   "x": "exemple",
+   "ctx": "Un ___ est utilisé pour illustrer un point ou un concept. Réponse :",
+   "cont": " exemple",
+   "demo": "Un exemple est utilisé pour illustrer un point ou un concept. Réponse : exemple.",
+   "demos": [
+    9,
+    34,
+    70,
+    33,
+    81
+   ],
+   "ctl": 70
+  },
+  {
+   "en": "face",
+   "x": "visage",
+   "ctx": "Le ___ est la partie avant de la tête d'une personne, comprenant le front, les yeux, le nez et la bouche. Réponse : le",
+   "cont": " visage",
+   "demo": "Le visage est la partie avant de la tête d'une personne, comprenant le front, les yeux, le nez et la bouche. Réponse : le visage.",
+   "demos": [
+    80,
+    98,
+    44,
+    52,
+    73
+   ],
+   "ctl": 71
+  },
+  {
+   "en": "bridge",
+   "x": "pont",
+   "ctx": "Un ___ est utilisé pour relier deux zones séparées par des obstacles tels que des rivières ou des routes. Réponse :",
+   "cont": " pont",
+   "demo": "Un pont est utilisé pour relier deux zones séparées par des obstacles tels que des rivières ou des routes. Réponse : pont.",
+   "demos": [
+    42,
+    48,
+    76,
+    49,
+    27
+   ],
+   "ctl": 72
+  },
+  {
+   "en": "delete",
+   "x": "supprimer",
+   "ctx": "Un \"delete\" est utilisé pour ___ du texte ou des données. Réponse :",
+   "cont": " supprimer",
+   "demo": "Un \"delete\" est utilisé pour supprimer du texte ou des données. Réponse : supprimer.",
+   "demos": [
+    4,
+    75,
+    5,
+    62,
+    31
+   ],
+   "ctl": 73
+  },
+  {
+   "en": "beauty",
+   "x": "beauté",
+   "ctx": "La ___ est une caractéristique qui procure une expérience perceptive de plaisir ou de satisfaction. Réponse :",
+   "cont": " beauté",
+   "demo": "La beauté est une caractéristique qui procure une expérience perceptive de plaisir ou de satisfaction. Réponse : beauté.",
+   "demos": [
+    46,
+    77,
+    90,
+    52,
+    94
+   ],
+   "ctl": 74
+  },
+  {
+   "en": "platform",
+   "x": "plate-forme",
+   "ctx": "Une ___ est utilisée pour soutenir ou élever quelque chose. Réponse :",
+   "cont": " plate-forme",
+   "demo": "Une plate-forme est utilisée pour soutenir ou élever quelque chose. Réponse : plate-forme.",
+   "demos": [
+    70,
+    64,
+    37,
+    15,
+    96
+   ],
+   "ctl": 75
+  },
+  {
+   "en": "house",
+   "x": "maison",
+   "ctx": "Une ___ est un endroit où les gens vivent. Réponse :",
+   "cont": " maison",
+   "demo": "Une maison est un endroit où les gens vivent. Réponse : maison.",
+   "demos": [
+    14,
+    58,
+    79,
+    52,
+    53
+   ],
+   "ctl": 76
+  },
+  {
+   "en": "sun",
+   "x": "soleil",
+   "ctx": "Le ___ est une étoile au centre du système solaire qui fournit de la lumière et de la chaleur à la Terre. Réponse : Le",
+   "cont": " soleil",
+   "demo": "Le soleil est une étoile au centre du système solaire qui fournit de la lumière et de la chaleur à la Terre. Réponse : Le soleil.",
+   "demos": [
+    25,
+    1,
+    90,
+    2,
+    16
+   ],
+   "ctl": 77
+  },
+  {
+   "en": "meeting",
+   "x": "réunion",
+   "ctx": "Une ___ est un rassemblement de personnes dans un but précis, souvent pour discuter ou prendre des décisions. Réponse :",
+   "cont": " réunion",
+   "demo": "Une réunion est un rassemblement de personnes dans un but précis, souvent pour discuter ou prendre des décisions. Réponse : réunion.",
+   "demos": [
+    5,
+    59,
+    83,
+    77,
+    68
+   ],
+   "ctl": 78
+  },
+  {
+   "en": "history",
+   "x": "histoire",
+   "ctx": "\"L'étude des événements passés, en particulier dans le domaine des affaires humaines, est connue sous le nom d'___. Réponse : \"l'",
+   "cont": " histoire",
+   "demo": "\"L'étude des événements passés, en particulier dans le domaine des affaires humaines, est connue sous le nom d'histoire. Réponse : \"l'histoire\".",
+   "demos": [
+    9,
+    80,
+    88,
+    22,
+    97
+   ],
+   "ctl": 79
+  },
+  {
+   "en": "valley",
+   "x": "vallée",
+   "ctx": "Une ___ est une zone basse entre des collines ou des montagnes, généralement traversée par une rivière. Réponse :",
+   "cont": " vallée",
+   "demo": "Une vallée est une zone basse entre des collines ou des montagnes, généralement traversée par une rivière. Réponse : vallée.",
+   "demos": [
+    7,
+    5,
+    16,
+    56,
+    75
+   ],
+   "ctl": 80
+  },
+  {
+   "en": "square",
+   "x": "carré",
+   "ctx": "Un ___ est une forme ayant quatre côtés égaux et quatre angles droits. Réponse :",
+   "cont": " carré",
+   "demo": "Un carré est une forme ayant quatre côtés égaux et quatre angles droits. Réponse : carré.",
+   "demos": [
+    19,
+    64,
+    73,
+    87,
+    9
+   ],
+   "ctl": 81
+  },
+  {
+   "en": "generation",
+   "x": "génération",
+   "ctx": "\"Une ___ est un terme utilisé pour décrire toutes les personnes nées et vivant à peu près à la même époque. Réponse :",
+   "cont": " génération",
+   "demo": "\"Une génération est un terme utilisé pour décrire toutes les personnes nées et vivant à peu près à la même époque. Réponse : génération.",
+   "demos": [
+    35,
+    83,
+    3,
+    80,
+    90
+   ],
+   "ctl": 82
+  },
+  {
+   "en": "south",
+   "x": "sud",
+   "ctx": "\"Le ___ est une direction cardinale opposée au nord. Réponse :",
+   "cont": " sud",
+   "demo": "\"Le sud est une direction cardinale opposée au nord. Réponse : sud.",
+   "demos": [
+    98,
+    12,
+    49,
+    8,
+    57
+   ],
+   "ctl": 83
+  },
+  {
+   "en": "virtue",
+   "x": "vertu",
+   "ctx": "Une ___ est une qualité considérée comme moralement bonne ou souhaitable chez une personne. Réponse :",
+   "cont": " vertu",
+   "demo": "Une vertu est une qualité considérée comme moralement bonne ou souhaitable chez une personne. Réponse : vertu.",
+   "demos": [
+    12,
+    52,
+    81,
+    84,
+    98
+   ],
+   "ctl": 84
+  },
+  {
+   "en": "tribe",
+   "x": "tribu",
+   "ctx": "Une ___ est une division sociale dans une société traditionnelle composée de familles ou de communautés liées par des liens sociaux, économiques, religieux ou de sang. Réponse : la",
+   "cont": " tribu",
+   "demo": "Une tribu est une division sociale dans une société traditionnelle composée de familles ou de communautés liées par des liens sociaux, économiques, religieux ou de sang. Réponse : la tribu.",
+   "demos": [
+    60,
+    2,
+    88,
+    95,
+    21
+   ],
+   "ctl": 85
+  },
+  {
+   "en": "city",
+   "x": "ville",
+   "ctx": "Une ___ est un grand établissement humain où les gens vivent et travaillent. Réponse :",
+   "cont": " ville",
+   "demo": "Une ville est un grand établissement humain où les gens vivent et travaillent. Réponse : ville.",
+   "demos": [
+    67,
+    26,
+    73,
+    7,
+    68
+   ],
+   "ctl": 86
+  },
+  {
+   "en": "speed",
+   "x": "vitesse",
+   "ctx": "\"Une ___ est utilisée pour mesurer la vitesse de déplacement d'un objet. Réponse :",
+   "cont": " vitesse",
+   "demo": "\"Une vitesse est utilisée pour mesurer la vitesse de déplacement d'un objet. Réponse : vitesse.",
+   "demos": [
+    45,
+    4,
+    60,
+    24,
+    11
+   ],
+   "ctl": 87
+  },
+  {
+   "en": "ground",
+   "x": "sol",
+   "ctx": "\"Un ___ est l'endroit où l'on marche et où l'on construit des maisons. Réponse :",
+   "cont": " sol",
+   "demo": "\"Un sol est l'endroit où l'on marche et où l'on construit des maisons. Réponse : sol.",
+   "demos": [
+    40,
+    55,
+    93,
+    47,
+    51
+   ],
+   "ctl": 88
+  },
+  {
+   "en": "advance",
+   "x": "avancer",
+   "ctx": "___ est un terme utilisé pour décrire le fait d'aller de l'avant ou de faire des progrès. Réponse :",
+   "cont": " avancer",
+   "demo": "\"Avancer\" est un terme utilisé pour décrire le fait d'aller de l'avant ou de faire des progrès. Réponse : avancer.",
+   "demos": [
+    12,
+    69,
+    33,
+    11,
+    76
+   ],
+   "ctl": 89
+  },
+  {
+   "en": "attempt",
+   "x": "tentative",
+   "ctx": "On parle de ___ lorsqu'on essaie de réaliser quelque chose. Réponse :",
+   "cont": " tentative",
+   "demo": "On parle de tentative lorsqu'on essaie de réaliser quelque chose. Réponse : tentative.",
+   "demos": [
+    37,
+    34,
+    70,
+    76,
+    0
+   ],
+   "ctl": 90
+  },
+  {
+   "en": "defeat",
+   "x": "défaite",
+   "ctx": "\"Une ___ est ressentie lorsque l'on perd une compétition ou une bataille. Réponse :",
+   "cont": " défaite",
+   "demo": "\"Une défaite est ressentie lorsque l'on perd une compétition ou une bataille. Réponse : défaite.",
+   "demos": [
+    86,
+    32,
+    21,
+    81,
+    85
+   ],
+   "ctl": 91
+  },
+  {
+   "en": "tail",
+   "x": "queue",
+   "ctx": "La ___ est la partie du corps d'un animal qui s'étend à partir de la base de la colonne vertébrale. Réponse : la",
+   "cont": " queue",
+   "demo": "La queue est la partie du corps d'un animal qui s'étend à partir de la base de la colonne vertébrale. Réponse : la queue.",
+   "demos": [
+    68,
+    69,
+    5,
+    43,
+    25
+   ],
+   "ctl": 92
+  },
+  {
+   "en": "mother",
+   "x": "mère",
+   "ctx": "Une ___ est une femme qui a donné naissance à un enfant. Réponse :",
+   "cont": " mère",
+   "demo": "Une mère est une femme qui a donné naissance à un enfant. Réponse : mère.",
+   "demos": [
+    43,
+    96,
+    74,
+    36,
+    44
+   ],
+   "ctl": 93
+  },
+  {
+   "en": "east",
+   "x": "est",
+   "ctx": "\"L'___ est une direction cardinale opposée à l'ouest. Réponse :",
+   "cont": " est",
+   "demo": "\"L'est est une direction cardinale opposée à l'ouest. Réponse : est.",
+   "demos": [
+    58,
+    53,
+    59,
+    16,
+    33
+   ],
+   "ctl": 94
+  },
+  {
+   "en": "return",
+   "x": "retour",
+   "ctx": "Un ___ est utilisé pour rendre un article acheté. Réponse :",
+   "cont": " retour",
+   "demo": "Un retour est utilisé pour rendre un article acheté. Réponse : retour.",
+   "demos": [
+    99,
+    57,
+    45,
+    29,
+    61
+   ],
+   "ctl": 95
+  },
+  {
+   "en": "speech",
+   "x": "discours",
+   "ctx": "\"Un ___ est une allocution formelle ou un discours prononcé devant un auditoire. Réponse :",
+   "cont": " discours",
+   "demo": "\"Un discours est une allocution formelle ou un discours prononcé devant un auditoire. Réponse : discours.",
+   "demos": [
+    77,
+    25,
+    15,
+    51,
+    95
+   ],
+   "ctl": 96
+  },
+  {
+   "en": "child",
+   "x": "enfant",
+   "ctx": "Un ___ est un jeune être humain n'ayant pas atteint l'âge de la puberté. Réponse :",
+   "cont": " enfant",
+   "demo": "Un enfant est un jeune être humain n'ayant pas atteint l'âge de la puberté. Réponse : enfant.",
+   "demos": [
+    11,
+    10,
+    65,
+    96,
+    14
+   ],
+   "ctl": 97
+  },
+  {
+   "en": "tower",
+   "x": "tour",
+   "ctx": "Une ___ est une structure haute qui peut être utilisée à diverses fins telles que l'observation, la communication ou le stockage. Réponse :",
+   "cont": " tour",
+   "demo": "Une tour est une structure haute qui peut être utilisée à diverses fins telles que l'observation, la communication ou le stockage. Réponse : tour.",
+   "demos": [
+    1,
+    20,
+    9,
+    69,
+    57
+   ],
+   "ctl": 98
+  },
+  {
+   "en": "household",
+   "x": "ménage",
+   "ctx": "Un ___ est un terme utilisé pour décrire une unité résidentielle où vivent des personnes. Réponse :",
+   "cont": " ménage",
+   "demo": "Un ménage est un terme utilisé pour décrire une unité résidentielle où vivent des personnes. Réponse : ménage.",
+   "demos": [
+    75,
+    74,
+    98,
+    84,
+    77
+   ],
+   "ctl": 99
+  },
+  {
+   "en": "office",
+   "x": "bureau",
+   "ctx": "Un ___ est un endroit où les gens font habituellement leur travail. Réponse :",
+   "cont": " bureau",
+   "demo": "Un bureau est un endroit où les gens font habituellement leur travail. Réponse : bureau.",
+   "demos": [
+    40,
+    29,
+    9,
+    98,
+    2
+   ],
+   "ctl": 0
+  },
+  {
+   "en": "rock",
+   "x": "roche",
+   "ctx": "Une ___ est un matériau minéral solide faisant partie de la surface de la terre. Réponse :",
+   "cont": " roche",
+   "demo": "Une roche est un matériau minéral solide faisant partie de la surface de la terre. Réponse : roche.",
+   "demos": [
+    35,
+    22,
+    68,
+    48,
+    72
+   ],
+   "ctl": 1
+  },
+  {
+   "en": "rise",
+   "x": "hausse",
+   "ctx": "\"Une ___ est utilisée pour décrire une augmentation ou un mouvement vers le haut. Réponse :",
+   "cont": " hausse",
+   "demo": "\"Une hausse est utilisée pour décrire une augmentation ou un mouvement vers le haut. Réponse : hausse.",
+   "demos": [
+    2,
+    60,
+    7,
+    68,
+    21
+   ],
+   "ctl": 2
+  },
+  {
+   "en": "left",
+   "x": "gauche",
+   "ctx": "Une ___ est une direction opposée à la droite. Réponse :",
+   "cont": " gauche",
+   "demo": "Une gauche est une direction opposée à la droite. Réponse : gauche.",
+   "demos": [
+    6,
+    7,
+    86,
+    93,
+    2
+   ],
+   "ctl": 3
+  },
+  {
+   "en": "sound",
+   "x": "son",
+   "ctx": "Un ___ est quelque chose que l'on entend. Réponse :",
+   "cont": " son",
+   "demo": "Un son est quelque chose que l'on entend. Réponse : son.",
+   "demos": [
+    11,
+    73,
+    47,
+    51,
+    93
+   ],
+   "ctl": 4
+  },
+  {
+   "en": "power",
+   "x": "pouvoir",
+   "ctx": "\"Un ___ est utilisé pour contrôler ou influencer des personnes ou des choses. Réponse :",
+   "cont": " pouvoir",
+   "demo": "\"Un pouvoir est utilisé pour contrôler ou influencer des personnes ou des choses. Réponse : pouvoir.",
+   "demos": [
+    31,
+    12,
+    36,
+    4,
+    53
+   ],
+   "ctl": 5
+  },
+  {
+   "en": "summer",
+   "x": "été",
+   "ctx": "\"L'___ est une saison connue pour son temps chaud. Réponse : \"l'",
+   "cont": " été",
+   "demo": "\"L'été est une saison connue pour son temps chaud. Réponse : \"l'été\".",
+   "demos": [
+    57,
+    82,
+    43,
+    50,
+    96
+   ],
+   "ctl": 6
+  }
+ ],
+ "zh": [
+  {
+   "en": "book",
+   "x": "书",
+   "ctx": "___用来阅读故事。答案：",
+   "cont": "书",
+   "demo": "书用来阅读故事。答案：书。",
+   "demos": [
+    28,
+    133,
+    125,
+    84,
+    23
+   ],
+   "ctl": 7
+  },
+  {
+   "en": "cloud",
+   "x": "云",
+   "ctx": "___是大气中浮动的凝结水蒸气的可见质量。答案：",
+   "cont": "云",
+   "demo": "云是大气中浮动的凝结水蒸气的可见质量。答案：云。",
+   "demos": [
+    13,
+    77,
+    117,
+    29,
+    9
+   ],
+   "ctl": 8
+  },
+  {
+   "en": "bag",
+   "x": "包",
+   "ctx": "___用来携带物品。答案：",
+   "cont": "包",
+   "demo": "包用来携带物品。答案：包。",
+   "demos": [
+    46,
+    93,
+    38,
+    1,
+    127
+   ],
+   "ctl": 9
+  },
+  {
+   "en": "mouth",
+   "x": "口",
+   "ctx": "___用来吃食物和说话。答案：",
+   "cont": "口",
+   "demo": "口用来吃食物和说话。答案：口。",
+   "demos": [
+    98,
+    27,
+    131,
+    56,
+    136
+   ],
+   "ctl": 10
+  },
+  {
+   "en": "soil",
+   "x": "土",
+   "ctx": "___用于种植树木和作物。答案：",
+   "cont": "土",
+   "demo": "土用于种植树木和作物。答案：土。",
+   "demos": [
+    57,
+    60,
+    2,
+    45,
+    93
+   ],
+   "ctl": 11
+  },
+  {
+   "en": "mountain",
+   "x": "山",
+   "ctx": "___是地球表面的大自然升高地。答案：",
+   "cont": "山",
+   "demo": "山是地球表面的大自然升高地。答案：山。",
+   "demos": [
+    20,
+    133,
+    107,
+    41,
+    75
+   ],
+   "ctl": 12
+  },
+  {
+   "en": "cloth",
+   "x": "布",
+   "ctx": "___用来清洁表面或覆盖身体。答案：",
+   "cont": "布",
+   "demo": "布用来清洁表面或覆盖身体。答案：布。",
+   "demos": [
+    96,
+    84,
+    28,
+    56,
+    128
+   ],
+   "ctl": 13
+  },
+  {
+   "en": "heart",
+   "x": "心",
+   "ctx": "___是一个泵血贯穿全身的器官。答案：",
+   "cont": "心",
+   "demo": "心是一个泵血贯穿全身的器官。答案：心。",
+   "demos": [
+    121,
+    87,
+    92,
+    110,
+    93
+   ],
+   "ctl": 14
+  },
+  {
+   "en": "hand",
+   "x": "手",
+   "ctx": "___用来抓取或持有物体。答案：",
+   "cont": "手",
+   "demo": "手用来抓取或持有物体。答案：手。",
+   "demos": [
+    73,
+    39,
+    11,
+    87,
+    71
+   ],
+   "ctl": 15
+  },
+  {
+   "en": "day",
+   "x": "日",
+   "ctx": "___是24小时的时期，通常理解为地球完成一次自转所需的时间。答案：",
+   "cont": "日",
+   "demo": "日是24小时的时期，通常理解为地球完成一次自转所需的时间。答案：日。",
+   "demos": [
+    96,
+    69,
+    40,
+    48,
+    20
+   ],
+   "ctl": 16
+  },
+  {
+   "en": "star",
+   "x": "星",
+   "ctx": "___是夜空中发光的天体。答案：",
+   "cont": "星",
+   "demo": "星是夜空中发光的天体。答案：星。",
+   "demos": [
+    18,
+    14,
+    121,
+    25,
+    76
+   ],
+   "ctl": 17
+  },
+  {
+   "en": "spring",
+   "x": "春",
+   "ctx": "___是一种储存机械能量并且可以被压缩或拉伸的装置。答案：",
+   "cont": "春",
+   "demo": "春是一种储存机械能量并且可以被压缩或拉伸的装置。答案：春。",
+   "demos": [
+    96,
+    123,
+    23,
+    62,
+    40
+   ],
+   "ctl": 18
+  },
+  {
+   "en": "moon",
+   "x": "月",
+   "ctx": "___是绕着行星运转的自然卫星。答案：",
+   "cont": "月",
+   "demo": "月是绕着行星运转的自然卫星。答案：月。",
+   "demos": [
+    128,
+    89,
+    38,
+    69,
+    5
+   ],
+   "ctl": 19
+  },
+  {
+   "en": "wood",
+   "x": "木",
+   "ctx": "___用来制作家具。答案：",
+   "cont": "木",
+   "demo": "木用来制作家具。答案：木。",
+   "demos": [
+    107,
+    15,
+    8,
+    128,
+    57
+   ],
+   "ctl": 20
+  },
+  {
+   "en": "village",
+   "x": "村",
+   "ctx": "___是乡村地区一小群房屋的社区或群体。答案：",
+   "cont": "村",
+   "demo": "村是乡村地区一小群房屋的社区或群体。答案：村。",
+   "demos": [
+    84,
+    85,
+    138,
+    78,
+    122
+   ],
+   "ctl": 21
+  },
+  {
+   "en": "forest",
+   "x": "林",
+   "ctx": "___是主要覆盖着树木和下层植被的大面积地区。答案：",
+   "cont": "林",
+   "demo": "林是主要覆盖着树木和下层植被的大面积地区。答案：林。",
+   "demos": [
+    90,
+    50,
+    121,
+    102,
+    116
+   ],
+   "ctl": 22
+  },
+  {
+   "en": "fruit",
+   "x": "果",
+   "ctx": "___是一种通常甜的并且来自植物的食物类型。答案：",
+   "cont": "果",
+   "demo": "果是一种通常甜的并且来自植物的食物类型。答案：果。",
+   "demos": [
+    111,
+    115,
+    26,
+    119,
+    44
+   ],
+   "ctl": 23
+  },
+  {
+   "en": "grid",
+   "x": "格",
+   "ctx": "___是一个线条相互交叉形成一系列方形或长方形的网络。答案：",
+   "cont": "格",
+   "demo": "格是一个线条相互交叉形成一系列方形或长方形的网络。答案：格。",
+   "demos": [
+    132,
+    20,
+    6,
+    129,
+    69
+   ],
+   "ctl": 24
+  },
+  {
+   "en": "song",
+   "x": "歌",
+   "ctx": "___是一首带有歌词的音乐作品。答案：",
+   "cont": "歌",
+   "demo": "歌是一首带有歌词的音乐作品。答案：歌。",
+   "demos": [
+    24,
+    110,
+    5,
+    23,
+    106
+   ],
+   "ctl": 25
+  },
+  {
+   "en": "water",
+   "x": "水",
+   "ctx": "___对生命至关重要，用于饮用和清洁。答案：",
+   "cont": "水",
+   "demo": "水对生命至关重要，用于饮用和清洁。答案：水。",
+   "demos": [
+    89,
+    101,
+    72,
+    79,
+    39
+   ],
+   "ctl": 26
+  },
+  {
+   "en": "Han",
+   "x": "汉",
+   "ctx": "___是《星球大战》系列中的一个角色。答案：",
+   "cont": "汉",
+   "demo": "汉是《星球大战》系列中的一个角色。答案：汉。",
+   "demos": [
+    79,
+    85,
+    120,
+    74,
+    125
+   ],
+   "ctl": 27
+  },
+  {
+   "en": "pond",
+   "x": "池",
+   "ctx": "___是一小片静止的水体。答案：",
+   "cont": "池",
+   "demo": "池是一小片静止的水体。答案：池。",
+   "demos": [
+    4,
+    47,
+    14,
+    105,
+    62
+   ],
+   "ctl": 28
+  },
+  {
+   "en": "sand",
+   "x": "沙",
+   "ctx": "___用来在海滩上建造城堡。答案：",
+   "cont": "沙",
+   "demo": "沙用来在海滩上建造城堡。答案：沙。",
+   "demos": [
+    127,
+    8,
+    111,
+    57,
+    49
+   ],
+   "ctl": 29
+  },
+  {
+   "en": "river",
+   "x": "河",
+   "ctx": "___是一大片流动的水体，通常流入海洋或海。答案：",
+   "cont": "河",
+   "demo": "河是一大片流动的水体，通常流入海洋或海。答案：河。",
+   "demos": [
+    26,
+    77,
+    96,
+    121,
+    9
+   ],
+   "ctl": 30
+  },
+  {
+   "en": "law",
+   "x": "法",
+   "ctx": "___是一个社会或政府为了处理犯罪、商业协议和社会关系而发展的规则系统。答案：",
+   "cont": "法",
+   "demo": "法是一个社会或政府为了处理犯罪、商业协议和社会关系而发展的规则系统。答案：法。",
+   "demos": [
+    32,
+    128,
+    90,
+    82,
+    12
+   ],
+   "ctl": 31
+  },
+  {
+   "en": "wave",
+   "x": "波",
+   "ctx": "___是一种通过物质或空间传递能量的扰动。答案：",
+   "cont": "波",
+   "demo": "波是一种通过物质或空间传递能量的扰动。答案：波。",
+   "demos": [
+    76,
+    63,
+    6,
+    134,
+    52
+   ],
+   "ctl": 32
+  },
+  {
+   "en": "ocean",
+   "x": "洋",
+   "ctx": "___是覆盖地球大部分表面的大片盐水。答案：",
+   "cont": "洋",
+   "demo": "洋是覆盖地球大部分表面的大片盐水。答案：洋。",
+   "demos": [
+    60,
+    101,
+    10,
+    114,
+    22
+   ],
+   "ctl": 33
+  },
+  {
+   "en": "cave",
+   "x": "洞",
+   "ctx": "___是自然形成的、足够人进入的地下空间。答案：",
+   "cont": "洞",
+   "demo": "洞是自然形成的、足够人进入的地下空间。答案：洞。",
+   "demos": [
+    98,
+    16,
+    103,
+    109,
+    114
+   ],
+   "ctl": 34
+  },
+  {
+   "en": "sea",
+   "x": "海",
+   "ctx": "___是比洋小的大片盐水。答案：",
+   "cont": "海",
+   "demo": "海是比洋小的大片盐水。答案：海。",
+   "demos": [
+    127,
+    24,
+    51,
+    114,
+    134
+   ],
+   "ctl": 35
+  },
+  {
+   "en": "lake",
+   "x": "湖",
+   "ctx": "___是被陆地包围的大片水体。答案：",
+   "cont": "湖",
+   "demo": "湖是被陆地包围的大片水体。答案：湖。",
+   "demos": [
+    111,
+    30,
+    101,
+    11,
+    127
+   ],
+   "ctl": 36
+  },
+  {
+   "en": "source",
+   "x": "源",
+   "ctx": "___用来提供信息或数据。答案：",
+   "cont": "源",
+   "demo": "源用来提供信息或数据。答案：源。",
+   "demos": [
+    12,
+    69,
+    60,
+    99,
+    13
+   ],
+   "ctl": 37
+  },
+  {
+   "en": "fire",
+   "x": "火",
+   "ctx": "___用于烹饪和提供温暖。答案：",
+   "cont": "火",
+   "demo": "火用于烹饪和提供温暖。答案：火。",
+   "demos": [
+    21,
+    95,
+    86,
+    54,
+    83
+   ],
+   "ctl": 38
+  },
+  {
+   "en": "point",
+   "x": "点",
+   "ctx": "___是空间中的一个特定位置。答案：",
+   "cont": "点",
+   "demo": "点是空间中的一个特定位置。答案：点。",
+   "demos": [
+    27,
+    131,
+    8,
+    104,
+    3
+   ],
+   "ctl": 39
+  },
+  {
+   "en": "version",
+   "x": "版",
+   "ctx": "___用来表示某物发展中的不同形态或阶段。答案：",
+   "cont": "版",
+   "demo": "版用来表示某物发展中的不同形态或阶段。答案：版。",
+   "demos": [
+    51,
+    34,
+    74,
+    130,
+    82
+   ],
+   "ctl": 40
+  },
+  {
+   "en": "ball",
+   "x": "球",
+   "ctx": "___用来进行足球和篮球等运动。答案：",
+   "cont": "球",
+   "demo": "球用来进行足球和篮球等运动。答案：球。",
+   "demos": [
+    61,
+    137,
+    46,
+    20,
+    106
+   ],
+   "ctl": 41
+  },
+  {
+   "en": "painting",
+   "x": "画",
+   "ctx": "___是可以挂在墙上的艺术作品。答案：",
+   "cont": "画",
+   "demo": "画是可以挂在墙上的艺术作品。答案：画。",
+   "demos": [
+    121,
+    40,
+    14,
+    125,
+    45
+   ],
+   "ctl": 42
+  },
+  {
+   "en": "station",
+   "x": "站",
+   "ctx": "___是火车或公共汽车定期停靠以便乘客上下车的地方。答案：",
+   "cont": "站",
+   "demo": "站是火车或公共汽车定期停靠以便乘客上下车的地方。答案：站。",
+   "demos": [
+    94,
+    95,
+    20,
+    107,
+    27
+   ],
+   "ctl": 43
+  },
+  {
+   "en": "rice",
+   "x": "米",
+   "ctx": "___是常用于烹饪并在许多国家是主食的谷物。答案：",
+   "cont": "米",
+   "demo": "米是常用于烹饪并在许多国家是主食的谷物。答案：米。",
+   "demos": [
+    123,
+    115,
+    14,
+    122,
+    107
+   ],
+   "ctl": 44
+  },
+  {
+   "en": "red",
+   "x": "红",
+   "ctx": "___是常与爱情和激情相关联的颜色。答案：",
+   "cont": "红",
+   "demo": "红是常与爱情和激情相关联的颜色。答案：红。",
+   "demos": [
+    47,
+    133,
+    36,
+    77,
+    46
+   ],
+   "ctl": 45
+  },
+  {
+   "en": "line",
+   "x": "线",
+   "ctx": "___是由笔、铅笔或画笔等制成的狭长连续标记。答案：",
+   "cont": "线",
+   "demo": "线是由笔、铅笔或画笔等制成的狭长连续标记。答案：线。",
+   "demos": [
+    74,
+    129,
+    91,
+    31,
+    44
+   ],
+   "ctl": 46
+  },
+  {
+   "en": "net",
+   "x": "网",
+   "ctx": "___在排球和网球等运动中用来划分比赛区域。答案：",
+   "cont": "网",
+   "demo": "网在排球和网球等运动中用来划分比赛区域。答案：网。",
+   "demos": [
+    95,
+    134,
+    133,
+    55,
+    30
+   ],
+   "ctl": 47
+  },
+  {
+   "en": "flower",
+   "x": "花",
+   "ctx": "___常作为礼物赠送，并可在花园中找到。答案：",
+   "cont": "花",
+   "demo": "花常作为礼物赠送，并可在花园中找到。答案：花。",
+   "demos": [
+    61,
+    92,
+    136,
+    3,
+    53
+   ],
+   "ctl": 48
+  },
+  {
+   "en": "tea",
+   "x": "茶",
+   "ctx": "___是一种常用于放松或取暖的饮料。答案：",
+   "cont": "茶",
+   "demo": "茶是一种常用于放松或取暖的饮料。答案：茶。",
+   "demos": [
+    41,
+    22,
+    50,
+    7,
+    84
+   ],
+   "ctl": 49
+  },
+  {
+   "en": "foot",
+   "x": "足",
+   "ctx": "___用于行走和跑步。答案：",
+   "cont": "足",
+   "demo": "足用于行走和跑步。答案：足。",
+   "demos": [
+    113,
+    2,
+    105,
+    112,
+    118
+   ],
+   "ctl": 50
+  },
+  {
+   "en": "gold",
+   "x": "金",
+   "ctx": "___是常用于珠宝的贵金属。答案：",
+   "cont": "金",
+   "demo": "金是常用于珠宝的贵金属。答案：金。",
+   "demos": [
+    134,
+    85,
+    71,
+    136,
+    37
+   ],
+   "ctl": 51
+  },
+  {
+   "en": "door",
+   "x": "门",
+   "ctx": "___用于进入或离开房间。答案：",
+   "cont": "门",
+   "demo": "门用于进入或离开房间。答案：门。",
+   "demos": [
+    39,
+    86,
+    46,
+    124,
+    89
+   ],
+   "ctl": 52
+  },
+  {
+   "en": "snow",
+   "x": "雪",
+   "ctx": "___是在冬季从天空降落的一种降水形式。答案：",
+   "cont": "雪",
+   "demo": "雪是在冬季从天空降落的一种降水形式。答案：雪。",
+   "demos": [
+    20,
+    11,
+    115,
+    61,
+    35
+   ],
+   "ctl": 53
+  },
+  {
+   "en": "horse",
+   "x": "马",
+   "ctx": "___是一种大型家养动物，有四条腿，常用于骑乘和赛跑。答案：",
+   "cont": "马",
+   "demo": "马是一种大型家养动物，有四条腿，常用于骑乘和赛跑。答案：马。",
+   "demos": [
+    95,
+    34,
+    83,
+    23,
+    122
+   ],
+   "ctl": 54
+  },
+  {
+   "en": "yellow",
+   "x": "黄",
+   "ctx": "___常见于香蕉。答案：",
+   "cont": "黄",
+   "demo": "黄常见于香蕉。答案：黄。",
+   "demos": [
+    23,
+    128,
+    119,
+    14,
+    86
+   ],
+   "ctl": 55
+  },
+  {
+   "en": "white",
+   "x": "白",
+   "ctx": "___常见于粉笔，用于在黑板上写字。答案：",
+   "cont": "白",
+   "demo": "白常见于粉笔，用于在黑板上写字。答案：白。",
+   "demos": [
+    87,
+    78,
+    28,
+    30,
+    57
+   ],
+   "ctl": 56
+  },
+  {
+   "en": "one",
+   "x": "一",
+   "ctx": "___是在零之后、二之前的数字。答案：",
+   "cont": "一",
+   "demo": "一是在零之后、二之前的数字。答案：一。",
+   "demos": [
+    98,
+    118,
+    11,
+    73,
+    85
+   ],
+   "ctl": 57
+  },
+  {
+   "en": "two",
+   "x": "二",
+   "ctx": "___是一加一的和。答案：",
+   "cont": "二",
+   "demo": "二是一加一的和。答案：二。",
+   "demos": [
+    85,
+    74,
+    47,
+    128,
+    79
+   ],
+   "ctl": 58
+  },
+  {
+   "en": "three",
+   "x": "三",
+   "ctx": "___是在二之后的数字。答案：",
+   "cont": "三",
+   "demo": "三是在二之后的数字。答案：三。",
+   "demos": [
+    64,
+    134,
+    26,
+    25,
+    3
+   ],
+   "ctl": 59
+  },
+  {
+   "en": "four",
+   "x": "四",
+   "ctx": "___是在三之后的整数。答案：",
+   "cont": "四",
+   "demo": "四是在三之后的整数。答案：四。",
+   "demos": [
+    94,
+    4,
+    130,
+    57,
+    31
+   ],
+   "ctl": 60
+  },
+  {
+   "en": "five",
+   "x": "五",
+   "ctx": "___是在四之后的数字。答案：",
+   "cont": "五",
+   "demo": "五是在四之后的数字。答案：五。",
+   "demos": [
+    62,
+    18,
+    116,
+    111,
+    27
+   ],
+   "ctl": 61
+  },
+  {
+   "en": "six",
+   "x": "六",
+   "ctx": "___是在五之后的数字。答案：",
+   "cont": "六",
+   "demo": "六是在五之后的数字。答案：六。",
+   "demos": [
+    23,
+    75,
+    121,
+    11,
+    73
+   ],
+   "ctl": 62
+  },
+  {
+   "en": "seven",
+   "x": "七",
+   "ctx": "___是在六之后的数字。答案：",
+   "cont": "七",
+   "demo": "七是在六之后的数字。答案：七。",
+   "demos": [
+    13,
+    122,
+    113,
+    117,
+    103
+   ],
+   "ctl": 63
+  },
+  {
+   "en": "eight",
+   "x": "八",
+   "ctx": "___是在七之后的数字。答案：",
+   "cont": "八",
+   "demo": "八是在七之后的数字。答案：八。",
+   "demos": [
+    93,
+    38,
+    71,
+    111,
+    11
+   ],
+   "ctl": 64
+  },
+  {
+   "en": "nine",
+   "x": "九",
+   "ctx": "___是在八之后的数字。答案：",
+   "cont": "九",
+   "demo": "九是在八之后的数字。答案：九。",
+   "demos": [
+    21,
+    61,
+    62,
+    124,
+    69
+   ],
+   "ctl": 65
+  },
+  {
+   "en": "ten",
+   "x": "十",
+   "ctx": "___是在九之后的数字。答案：",
+   "cont": "十",
+   "demo": "十是在九之后的数字。答案：十。",
+   "demos": [
+    127,
+    40,
+    45,
+    106,
+    82
+   ],
+   "ctl": 66
+  },
+  {
+   "en": "head",
+   "x": "头",
+   "ctx": "___是身体的一部分，包含大脑、眼睛、耳朵、鼻子和嘴巴。答案：",
+   "cont": "头",
+   "demo": "头是身体的一部分，包含大脑、眼睛、耳朵、鼻子和嘴巴。答案：头。",
+   "demos": [
+    77,
+    131,
+    35,
+    34,
+    74
+   ],
+   "ctl": 67
+  },
+  {
+   "en": "shop",
+   "x": "店",
+   "ctx": "___是你可以购买商品或服务的地方。答案：",
+   "cont": "店",
+   "demo": "店是你可以购买商品或服务的地方。答案：店。",
+   "demos": [
+    51,
+    49,
+    129,
+    2,
+    9
+   ],
+   "ctl": 68
+  },
+  {
+   "en": "strip",
+   "x": "条",
+   "ctx": "___是某种材料的长而窄的一片。答案：",
+   "cont": "条",
+   "demo": "条是某种材料的长而窄的一片。答案：条。",
+   "demos": [
+    25,
+    126,
+    102,
+    71,
+    117
+   ],
+   "ctl": 69
+  },
+  {
+   "en": "street",
+   "x": "街",
+   "ctx": "___是城市、镇或村庄中的公共道路。答案：",
+   "cont": "街",
+   "demo": "街是城市、镇或村庄中的公共道路。答案：街。",
+   "demos": [
+    24,
+    20,
+    60,
+    108,
+    59
+   ],
+   "ctl": 70
+  },
+  {
+   "en": "part",
+   "x": "部",
+   "ctx": "___用来构成一个整体。答案：",
+   "cont": "部",
+   "demo": "部用来构成一个整体。答案：部。",
+   "demos": [
+    71,
+    68,
+    134,
+    54,
+    89
+   ],
+   "ctl": 71
+  },
+  {
+   "en": "eye",
+   "x": "目",
+   "ctx": "___用来看我们周围的一切。答案：",
+   "cont": "目",
+   "demo": "目用来看我们周围的一切。答案：目。",
+   "demos": [
+    86,
+    112,
+    64,
+    6,
+    31
+   ],
+   "ctl": 72
+  },
+  {
+   "en": "field",
+   "x": "场",
+   "ctx": "___是开阔土地的广阔区域，用来种植作物。答案：",
+   "cont": "场",
+   "demo": "场是开阔土地的广阔区域，用来种植作物。答案：场。",
+   "demos": [
+    73,
+    53,
+    40,
+    76,
+    0
+   ],
+   "ctl": 73
+  },
+  {
+   "en": "site",
+   "x": "址",
+   "ctx": "___是某事物是、曾是或将要建立的位置。答案：",
+   "cont": "址",
+   "demo": "址是某事物是、曾是或将要建立的位置。答案：址。",
+   "demos": [
+    95,
+    79,
+    56,
+    83,
+    97
+   ],
+   "ctl": 74
+  },
+  {
+   "en": "meaning",
+   "x": "意",
+   "ctx": "___用来找出词语的意义。答案：",
+   "cont": "意",
+   "demo": "意用来找出词语的意义。答案：意。",
+   "demos": [
+    27,
+    116,
+    128,
+    69,
+    77
+   ],
+   "ctl": 75
+  },
+  {
+   "en": "dance",
+   "x": "舞",
+   "ctx": "___是一种艺术形式，涉及到身体的运动，通常是有节奏的并伴随音乐。答案：",
+   "cont": "舞",
+   "demo": "舞是一种艺术形式，涉及到身体的运动，通常是有节奏的并伴随音乐。答案：舞。",
+   "demos": [
+    64,
+    107,
+    126,
+    93,
+    40
+   ],
+   "ctl": 76
+  },
+  {
+   "en": "word",
+   "x": "字",
+   "ctx": "___是语言中单独的、有意义的元素，与其他字一起（或有时单独）用来构成句子，当书写或打印时，通常在两边显示为空格。答案：",
+   "cont": "字",
+   "demo": "字是语言中单独的、有意义的元素，与其他字一起（或有时单独）用来构成句子，当书写或打印时，通常在两边显示为空格。答案：字。",
+   "demos": [
+    87,
+    71,
+    114,
+    116,
+    55
+   ],
+   "ctl": 77
+  },
+  {
+   "en": "pair",
+   "x": "双",
+   "ctx": "___是一起使用或被视为一个单位的两件事物的集合。答案：",
+   "cont": "双",
+   "demo": "双是一起使用或被视为一个单位的两件事物的集合。答案：双。",
+   "demos": [
+    129,
+    59,
+    79,
+    130,
+    109
+   ],
+   "ctl": 78
+  },
+  {
+   "en": "seat",
+   "x": "座",
+   "ctx": "___用来坐和休息。答案：",
+   "cont": "座",
+   "demo": "座用来坐和休息。答案：座。",
+   "demos": [
+    86,
+    47,
+    5,
+    71,
+    64
+   ],
+   "ctl": 79
+  },
+  {
+   "en": "light",
+   "x": "光",
+   "ctx": "___用来照亮黑暗的空间。答案：",
+   "cont": "光",
+   "demo": "光用来照亮黑暗的空间。答案：光。",
+   "demos": [
+    85,
+    117,
+    104,
+    24,
+    1
+   ],
+   "ctl": 80
+  },
+  {
+   "en": "thousand",
+   "x": "千",
+   "ctx": "___是在九百九十九之后的数值。答案：",
+   "cont": "千",
+   "demo": "千是在九百九十九之后的数值。答案：千。",
+   "demos": [
+    99,
+    36,
+    112,
+    11,
+    124
+   ],
+   "ctl": 81
+  },
+  {
+   "en": "north",
+   "x": "北",
+   "ctx": "___是一个经常与寒冷和极地地区相关的基本方向。答案：",
+   "cont": "北",
+   "demo": "北是一个经常与寒冷和极地地区相关的基本方向。答案：北。",
+   "demos": [
+    53,
+    113,
+    66,
+    94,
+    32
+   ],
+   "ctl": 82
+  },
+  {
+   "en": "machine",
+   "x": "机",
+   "ctx": "___用来执行特定任务或生产某物。答案：",
+   "cont": "机",
+   "demo": "机用来执行特定任务或生产某物。答案：机。",
+   "demos": [
+    92,
+    40,
+    107,
+    89,
+    12
+   ],
+   "ctl": 83
+  },
+  {
+   "en": "time",
+   "x": "时",
+   "ctx": "___用来测量时间。答案：",
+   "cont": "时",
+   "demo": "时用来测量时间。答案：时。",
+   "demos": [
+    73,
+    115,
+    108,
+    122,
+    38
+   ],
+   "ctl": 84
+  },
+  {
+   "en": "benefit",
+   "x": "利",
+   "ctx": "___是促进或增强福祉的东西。答案：",
+   "cont": "利",
+   "demo": "利是促进或增强福祉的东西。答案：利。",
+   "demos": [
+    40,
+    104,
+    86,
+    72,
+    76
+   ],
+   "ctl": 85
+  },
+  {
+   "en": "position",
+   "x": "位",
+   "ctx": "___是某人或某物位于或被放置的地方。答案：",
+   "cont": "位",
+   "demo": "位是某人或某物位于或被放置的地方。答案：位。",
+   "demos": [
+    110,
+    120,
+    33,
+    9,
+    20
+   ],
+   "ctl": 86
+  },
+  {
+   "en": "province",
+   "x": "省",
+   "ctx": "___是某些国家或帝国的主要行政划分。答案：",
+   "cont": "省",
+   "demo": "省是某些国家或帝国的主要行政划分。答案：省。",
+   "demos": [
+    94,
+    76,
+    39,
+    41,
+    86
+   ],
+   "ctl": 87
+  },
+  {
+   "en": "exchange",
+   "x": "交",
+   "ctx": "___是股票、债券或其他证券被买卖的地方。答案：",
+   "cont": "交",
+   "demo": "交是股票、债券或其他证券被买卖的地方。答案：交。",
+   "demos": [
+    12,
+    41,
+    65,
+    0,
+    111
+   ],
+   "ctl": 88
+  },
+  {
+   "en": "middle",
+   "x": "中",
+   "ctx": "___是距离某物的边缘或外界等距离的点。答案：",
+   "cont": "中",
+   "demo": "中是距离某物的边缘或外界等距离的点。答案：中。",
+   "demos": [
+    101,
+    6,
+    0,
+    136,
+    84
+   ],
+   "ctl": 89
+  },
+  {
+   "en": "friend",
+   "x": "友",
+   "ctx": "___是你与之共享亲密个人关系的人。答案：",
+   "cont": "友",
+   "demo": "友是你与之共享亲密个人关系的人。答案：友。",
+   "demos": [
+    7,
+    130,
+    18,
+    54,
+    11
+   ],
+   "ctl": 90
+  },
+  {
+   "en": "color",
+   "x": "色",
+   "ctx": "___用来识别或描述物体的外观。答案：",
+   "cont": "色",
+   "demo": "色用来识别或描述物体的外观。答案：色。",
+   "demos": [
+    71,
+    57,
+    1,
+    77,
+    9
+   ],
+   "ctl": 91
+  },
+  {
+   "en": "kind",
+   "x": "种",
+   "ctx": "___是某物的类别或类型。答案：",
+   "cont": "种",
+   "demo": "种是某物的类别或类型。答案：种。",
+   "demos": [
+    73,
+    126,
+    64,
+    75,
+    83
+   ],
+   "ctl": 92
+  },
+  {
+   "en": "judge",
+   "x": "判",
+   "ctx": "___是在法庭程序中主持审判的人，无论是独自一人还是作为评判团的一部分。答案：",
+   "cont": "判",
+   "demo": "判是在法庭程序中主持审判的人，无论是独自一人还是作为评判团的一部分。答案：判。",
+   "demos": [
+    101,
+    134,
+    71,
+    41,
+    91
+   ],
+   "ctl": 93
+  },
+  {
+   "en": "school",
+   "x": "校",
+   "ctx": "___是学生去学习的地方。答案：",
+   "cont": "校",
+   "demo": "校是学生去学习的地方。答案：校。",
+   "demos": [
+    88,
+    126,
+    46,
+    37,
+    20
+   ],
+   "ctl": 94
+  },
+  {
+   "en": "structure",
+   "x": "构",
+   "ctx": "___是具有特定目的或功能的建筑物。答案：",
+   "cont": "构",
+   "demo": "构是具有特定目的或功能的建筑物。答案：构。",
+   "demos": [
+    6,
+    63,
+    28,
+    74,
+    36
+   ],
+   "ctl": 95
+  },
+  {
+   "en": "tie",
+   "x": "结",
+   "ctx": "___是作为正式服装的一部分围绕脖子的。答案：",
+   "cont": "结",
+   "demo": "结是作为正式服装的一部分围绕脖子的。答案：结。",
+   "demos": [
+    39,
+    63,
+    114,
+    1,
+    60
+   ],
+   "ctl": 96
+  },
+  {
+   "en": "example",
+   "x": "例",
+   "ctx": "___用来阐释一个观点或概念。答案：",
+   "cont": "例",
+   "demo": "例用来阐释一个观点或概念。答案：例。",
+   "demos": [
+    91,
+    129,
+    134,
+    62,
+    8
+   ],
+   "ctl": 97
+  },
+  {
+   "en": "face",
+   "x": "面",
+   "ctx": "___是人的头的前部，包括额头、眼睛、鼻子和嘴巴。答案：",
+   "cont": "面",
+   "demo": "面是人的头的前部，包括额头、眼睛、鼻子和嘴巴。答案：面。",
+   "demos": [
+    6,
+    82,
+    11,
+    117,
+    112
+   ],
+   "ctl": 98
+  },
+  {
+   "en": "bridge",
+   "x": "桥",
+   "ctx": "___用来连接被河流或道路等障碍分隔的两个地区。答案：",
+   "cont": "桥",
+   "demo": "桥用来连接被河流或道路等障碍分隔的两个地区。答案：桥。",
+   "demos": [
+    0,
+    5,
+    34,
+    56,
+    64
+   ],
+   "ctl": 99
+  },
+  {
+   "en": "item",
+   "x": "项",
+   "ctx": "___是未指定或未识别的事物。答案：",
+   "cont": "项",
+   "demo": "项是未指定或未识别的事物。答案：项。",
+   "demos": [
+    136,
+    105,
+    62,
+    125,
+    90
+   ],
+   "ctl": 100
+  },
+  {
+   "en": "delete",
+   "x": "删",
+   "ctx": "___用来移除文本或数据。答案：",
+   "cont": "删",
+   "demo": "删用来移除文本或数据。答案：删。",
+   "demos": [
+    31,
+    27,
+    18,
+    14,
+    73
+   ],
+   "ctl": 101
+  },
+  {
+   "en": "group",
+   "x": "群",
+   "ctx": "___是一些位于一起、聚集在一起或被归类在一起的人或物。答案：",
+   "cont": "群",
+   "demo": "群是一些位于一起、聚集在一起或被归类在一起的人或物。答案：群。",
+   "demos": [
+    93,
+    116,
+    4,
+    28,
+    105
+   ],
+   "ctl": 102
+  },
+  {
+   "en": "talent",
+   "x": "才",
+   "ctx": "___是天生的才能或技能。答案：",
+   "cont": "才",
+   "demo": "才是天生的才能或技能。答案：才。",
+   "demos": [
+    78,
+    35,
+    72,
+    116,
+    86
+   ],
+   "ctl": 103
+  },
+  {
+   "en": "beauty",
+   "x": "美",
+   "ctx": "___是提供愉悦或满足感知体验的特征。答案：",
+   "cont": "美",
+   "demo": "美是提供愉悦或满足感知体验的特征。答案：美。",
+   "demos": [
+    111,
+    63,
+    107,
+    36,
+    10
+   ],
+   "ctl": 104
+  },
+  {
+   "en": "platform",
+   "x": "台",
+   "ctx": "___用来支持或抬高某物。答案：",
+   "cont": "台",
+   "demo": "台用来支持或抬高某物。答案：台。",
+   "demos": [
+    85,
+    67,
+    13,
+    22,
+    52
+   ],
+   "ctl": 105
+  },
+  {
+   "en": "house",
+   "x": "屋",
+   "ctx": "___是人们居住的地方。答案：",
+   "cont": "屋",
+   "demo": "屋是人们居住的地方。答案：屋。",
+   "demos": [
+    13,
+    58,
+    15,
+    42,
+    6
+   ],
+   "ctl": 106
+  },
+  {
+   "en": "sun",
+   "x": "阳",
+   "ctx": "___是太阳系中心的一颗恒星，为地球提供光和热。答案：",
+   "cont": "阳",
+   "demo": "阳是太阳系中心的一颗恒星，为地球提供光和热。答案：阳。",
+   "demos": [
+    87,
+    36,
+    92,
+    69,
+    88
+   ],
+   "ctl": 107
+  },
+  {
+   "en": "meeting",
+   "x": "会",
+   "ctx": "___是为特定目的聚集的人，通常用于讨论或决策。答案：",
+   "cont": "会",
+   "demo": "会是为特定目的聚集的人，通常用于讨论或决策。答案：会。",
+   "demos": [
+    28,
+    127,
+    44,
+    74,
+    54
+   ],
+   "ctl": 108
+  },
+  {
+   "en": "history",
+   "x": "史",
+   "ctx": "___是对过去事件的研究，尤其是人类事务。答案：",
+   "cont": "史",
+   "demo": "史是对过去事件的研究，尤其是人类事务。答案：史。",
+   "demos": [
+    37,
+    43,
+    33,
+    4,
+    103
+   ],
+   "ctl": 109
+  },
+  {
+   "en": "valley",
+   "x": "谷",
+   "ctx": "___是山丘或山脉之间的低地，通常有河流穿过。答案：",
+   "cont": "谷",
+   "demo": "谷是山丘或山脉之间的低地，通常有河流穿过。答案：谷。",
+   "demos": [
+    58,
+    109,
+    7,
+    62,
+    82
+   ],
+   "ctl": 110
+  },
+  {
+   "en": "square",
+   "x": "方",
+   "ctx": "___是四边相等且四个角都是直角的形状。答案：",
+   "cont": "方",
+   "demo": "方是四边相等且四个角都是直角的形状。答案：方。",
+   "demos": [
+    107,
+    20,
+    10,
+    57,
+    11
+   ],
+   "ctl": 111
+  },
+  {
+   "en": "generation",
+   "x": "代",
+   "ctx": "___用来描述大约同时代出生和生活的所有人。答案：",
+   "cont": "代",
+   "demo": "代用来描述大约同时代出生和生活的所有人。答案：代。",
+   "demos": [
+    113,
+    136,
+    111,
+    82,
+    80
+   ],
+   "ctl": 112
+  },
+  {
+   "en": "south",
+   "x": "南",
+   "ctx": "___是指向北的基本方向的相反方向。答案：",
+   "cont": "南",
+   "demo": "南是指向北的基本方向的相反方向。答案：南。",
+   "demos": [
+    9,
+    98,
+    45,
+    48,
+    11
+   ],
+   "ctl": 113
+  },
+  {
+   "en": "virtue",
+   "x": "德",
+   "ctx": "___是人中被视为道德上好或可取的品质。答案：",
+   "cont": "德",
+   "demo": "德是人中被视为道德上好或可取的品质。答案：德。",
+   "demos": [
+    79,
+    98,
+    121,
+    133,
+    110
+   ],
+   "ctl": 114
+  },
+  {
+   "en": "tribe",
+   "x": "族",
+   "ctx": "___是传统社会中由家庭或社区通过社会、经济、宗教或血缘关系链接的社会分支。答案：",
+   "cont": "族",
+   "demo": "族是传统社会中由家庭或社区通过社会、经济、宗教或血缘关系链接的社会分支。答案：族。",
+   "demos": [
+    55,
+    81,
+    45,
+    23,
+    0
+   ],
+   "ctl": 115
+  },
+  {
+   "en": "city",
+   "x": "城",
+   "ctx": "___是人们居住和工作的大型人类聚居地。答案：",
+   "cont": "城",
+   "demo": "城是人们居住和工作的大型人类聚居地。答案：城。",
+   "demos": [
+    12,
+    45,
+    102,
+    118,
+    17
+   ],
+   "ctl": 116
+  },
+  {
+   "en": "language",
+   "x": "语",
+   "ctx": "___用来交流思想和观点。答案：",
+   "cont": "语",
+   "demo": "语用来交流思想和观点。答案：语。",
+   "demos": [
+    24,
+    90,
+    63,
+    138,
+    124
+   ],
+   "ctl": 117
+  },
+  {
+   "en": "speed",
+   "x": "速",
+   "ctx": "___用来测量某物移动的快慢。答案：",
+   "cont": "速",
+   "demo": "速用来测量某物移动的快慢。答案：速。",
+   "demos": [
+    84,
+    116,
+    90,
+    95,
+    126
+   ],
+   "ctl": 118
+  },
+  {
+   "en": "ground",
+   "x": "地",
+   "ctx": "___是我们行走和建造房屋的地方。答案：",
+   "cont": "地",
+   "demo": "地是我们行走和建造房屋的地方。答案：地。",
+   "demos": [
+    77,
+    4,
+    44,
+    61,
+    83
+   ],
+   "ctl": 119
+  },
+  {
+   "en": "advance",
+   "x": "进",
+   "ctx": "___是用来描述向前移动或取得进展的术语。答案：",
+   "cont": "进",
+   "demo": "进是用来描述向前移动或取得进展的术语。答案：进。",
+   "demos": [
+    34,
+    118,
+    94,
+    59,
+    8
+   ],
+   "ctl": 120
+  },
+  {
+   "en": "attempt",
+   "x": "试",
+   "ctx": "___是尝试达成某事的行为。答案：",
+   "cont": "试",
+   "demo": "试是尝试达成某事的行为。答案：试。",
+   "demos": [
+    86,
+    123,
+    13,
+    19,
+    133
+   ],
+   "ctl": 121
+  },
+  {
+   "en": "defeat",
+   "x": "败",
+   "ctx": "___是在竞赛或战斗中输掉时的体验。答案：",
+   "cont": "败",
+   "demo": "败是在竞赛或战斗中输掉时的体验。答案：败。",
+   "demos": [
+    129,
+    45,
+    131,
+    23,
+    92
+   ],
+   "ctl": 122
+  },
+  {
+   "en": "tail",
+   "x": "尾",
+   "ctx": "___是动物身体从脊柱基部延伸出的部分。答案：",
+   "cont": "尾",
+   "demo": "尾是动物身体从脊柱基部延伸出的部分。答案：尾。",
+   "demos": [
+    76,
+    96,
+    81,
+    41,
+    102
+   ],
+   "ctl": 123
+  },
+  {
+   "en": "mother",
+   "x": "母",
+   "ctx": "___是生下孩子的女性。答案：",
+   "cont": "母",
+   "demo": "母是生下孩子的女性。答案：母。",
+   "demos": [
+    76,
+    64,
+    77,
+    1,
+    120
+   ],
+   "ctl": 124
+  },
+  {
+   "en": "east",
+   "x": "东",
+   "ctx": "___是西的相反基本方向。答案：",
+   "cont": "东",
+   "demo": "东是西的相反基本方向。答案：东。",
+   "demos": [
+    125,
+    111,
+    74,
+    73,
+    96
+   ],
+   "ctl": 125
+  },
+  {
+   "en": "return",
+   "x": "回",
+   "ctx": "___用来归还购买的物品。答案：",
+   "cont": "回",
+   "demo": "回用来归还购买的物品。答案：回。",
+   "demos": [
+    4,
+    112,
+    17,
+    36,
+    51
+   ],
+   "ctl": 126
+  },
+  {
+   "en": "speech",
+   "x": "话",
+   "ctx": "___是对听众发表的正式讲话或演说。答案：",
+   "cont": "话",
+   "demo": "话是对听众发表的正式讲话或演说。答案：话。",
+   "demos": [
+    82,
+    31,
+    81,
+    126,
+    13
+   ],
+   "ctl": 127
+  },
+  {
+   "en": "child",
+   "x": "子",
+   "ctx": "___是未到青春期的年轻人类。答案：",
+   "cont": "子",
+   "demo": "子是未到青春期的年轻人类。答案：子。",
+   "demos": [
+    50,
+    126,
+    80,
+    110,
+    106
+   ],
+   "ctl": 128
+  },
+  {
+   "en": "tower",
+   "x": "塔",
+   "ctx": "___是一种高耸的结构，可用于观察、通信或存储等各种目的。答案：",
+   "cont": "塔",
+   "demo": "塔是一种高耸的结构，可用于观察、通信或存储等各种目的。答案：塔。",
+   "demos": [
+    112,
+    77,
+    61,
+    66,
+    95
+   ],
+   "ctl": 129
+  },
+  {
+   "en": "hair",
+   "x": "发",
+   "ctx": "___位于人类和动物头上。答案：",
+   "cont": "发",
+   "demo": "发位于人类和动物头上。答案：发。",
+   "demos": [
+    72,
+    79,
+    125,
+    4,
+    15
+   ],
+   "ctl": 130
+  },
+  {
+   "en": "flat",
+   "x": "平",
+   "ctx": "___是通常用于阅读的平面物体。答案：",
+   "cont": "平",
+   "demo": "平是通常用于阅读的平面物体。答案：平。",
+   "demos": [
+    56,
+    107,
+    41,
+    104,
+    33
+   ],
+   "ctl": 131
+  },
+  {
+   "en": "male",
+   "x": "男",
+   "ctx": "___是男性的一个例子。答案：",
+   "cont": "男",
+   "demo": "男是男性的一个例子。答案：男。",
+   "demos": [
+    91,
+    2,
+    82,
+    46,
+    64
+   ],
+   "ctl": 132
+  },
+  {
+   "en": "electric",
+   "x": "电",
+   "ctx": "___用来为设备供电。答案：",
+   "cont": "电",
+   "demo": "电用来为设备供电。答案：电。",
+   "demos": [
+    96,
+    53,
+    62,
+    31,
+    122
+   ],
+   "ctl": 133
+  },
+  {
+   "en": "household",
+   "x": "户",
+   "ctx": "___是用来描述人们居住的住宅单元的术语。答案：",
+   "cont": "户",
+   "demo": "户是用来描述人们居住的住宅单元的术语。答案：户。",
+   "demos": [
+    5,
+    1,
+    109,
+    21,
+    124
+   ],
+   "ctl": 134
+  },
+  {
+   "en": "person",
+   "x": "人",
+   "ctx": "___是被视为个体的人类。答案：",
+   "cont": "人",
+   "demo": "人是被视为个体的人类。答案：人。",
+   "demos": [
+    138,
+    52,
+    51,
+    114,
+    17
+   ],
+   "ctl": 135
+  },
+  {
+   "en": "section",
+   "x": "段",
+   "ctx": "___是某物的明显部分或子分区。答案：",
+   "cont": "段",
+   "demo": "段是某物的明显部分或子分区。答案：段。",
+   "demos": [
+    2,
+    28,
+    14,
+    7,
+    54
+   ],
+   "ctl": 136
+  },
+  {
+   "en": "official",
+   "x": "官",
+   "ctx": "___是组织或政府中拥有权威职位的人。答案：",
+   "cont": "官",
+   "demo": "官是组织或政府中拥有权威职位的人。答案：官。",
+   "demos": [
+    56,
+    13,
+    120,
+    3,
+    101
+   ],
+   "ctl": 137
+  },
+  {
+   "en": "hundred",
+   "x": "百",
+   "ctx": "___是数值，等于10个十。答案：",
+   "cont": "百",
+   "demo": "百是数值，等于10个十。答案：百。",
+   "demos": [
+    78,
+    47,
+    73,
+    130,
+    51
+   ],
+   "ctl": 138
+  },
+  {
+   "en": "office",
+   "x": "局",
+   "ctx": "___是人们通常进行工作的地方。答案：",
+   "cont": "局",
+   "demo": "局是人们通常进行工作的地方。答案：局。",
+   "demos": [
+    7,
+    82,
+    114,
+    35,
+    108
+   ],
+   "ctl": 0
+  },
+  {
+   "en": "rock",
+   "x": "岩",
+   "ctx": "___是构成地球表面部分的固体矿物材料。答案：",
+   "cont": "岩",
+   "demo": "岩是构成地球表面部分的固体矿物材料。答案：岩。",
+   "demos": [
+    50,
+    118,
+    25,
+    73,
+    130
+   ],
+   "ctl": 1
+  },
+  {
+   "en": "rise",
+   "x": "起",
+   "ctx": "___用来描述增加或向上移动。答案：",
+   "cont": "起",
+   "demo": "起用来描述增加或向上移动。答案：起。",
+   "demos": [
+    3,
+    23,
+    133,
+    14,
+    132
+   ],
+   "ctl": 2
+  },
+  {
+   "en": "left",
+   "x": "左",
+   "ctx": "___是右的相反方向。答案：",
+   "cont": "左",
+   "demo": "左是右的相反方向。答案：左。",
+   "demos": [
+    75,
+    29,
+    30,
+    73,
+    19
+   ],
+   "ctl": 3
+  },
+  {
+   "en": "sound",
+   "x": "音",
+   "ctx": "___是我们听到的东西。答案：",
+   "cont": "音",
+   "demo": "音是我们听到的东西。答案：音。",
+   "demos": [
+    54,
+    77,
+    103,
+    3,
+    116
+   ],
+   "ctl": 4
+  },
+  {
+   "en": "power",
+   "x": "力",
+   "ctx": "___用来控制或影响人或物。答案：",
+   "cont": "力",
+   "demo": "力用来控制或影响人或物。答案：力。",
+   "demos": [
+    57,
+    13,
+    126,
+    68,
+    100
+   ],
+   "ctl": 5
+  },
+  {
+   "en": "summer",
+   "x": "夏",
+   "ctx": "___是以温暖的天气为特征的季节。答案：",
+   "cont": "夏",
+   "demo": "夏是以温暖的天气为特征的季节。答案：夏。",
+   "demos": [
+    120,
+    117,
+    27,
+    79,
+    75
+   ],
+   "ctl": 6
+  }
+ ],
+ "en": [
+  {
+   "en": "book",
+   "x": "book",
+   "ctx": "A ___ is used to read stories. Answer:",
+   "cont": " book",
+   "demo": "A book is used to read stories. Answer: book.",
+   "demos": [
+    60,
+    36,
+    130,
+    117,
+    10
+   ],
+   "ctl": 7
+  },
+  {
+   "en": "cloud",
+   "x": "cloud",
+   "ctx": "A ___ is a visible mass of condensed water vapor floating in the atmosphere. Answer:",
+   "cont": " cloud",
+   "demo": "A cloud is a visible mass of condensed water vapor floating in the atmosphere. Answer: cloud.",
+   "demos": [
+    3,
+    101,
+    19,
+    43,
+    2
+   ],
+   "ctl": 8
+  },
+  {
+   "en": "bag",
+   "x": "bag",
+   "ctx": "A ___ is used to carry items. Answer:",
+   "cont": " bag",
+   "demo": "A bag is used to carry items. Answer: bag.",
+   "demos": [
+    17,
+    22,
+    68,
+    20,
+    45
+   ],
+   "ctl": 9
+  },
+  {
+   "en": "mouth",
+   "x": "mouth",
+   "ctx": "A ___ is used to eat food and speak. Answer:",
+   "cont": " mouth",
+   "demo": "A mouth is used to eat food and speak. Answer: mouth.",
+   "demos": [
+    116,
+    22,
+    9,
+    63,
+    5
+   ],
+   "ctl": 10
+  },
+  {
+   "en": "soil",
+   "x": "soil",
+   "ctx": "\"A ___ is used for planting trees and crops. Answer:",
+   "cont": " soil",
+   "demo": "A soil is used for planting trees and crops. Answer: soil.",
+   "demos": [
+    40,
+    71,
+    17,
+    13,
+    61
+   ],
+   "ctl": 11
+  },
+  {
+   "en": "mountain",
+   "x": "mountain",
+   "ctx": "A ___ is a large natural elevation of the earth's surface. Answer:",
+   "cont": " mountain",
+   "demo": "A mountain is a large natural elevation of the earth's surface. Answer: mountain.",
+   "demos": [
+    6,
+    72,
+    46,
+    57,
+    71
+   ],
+   "ctl": 12
+  },
+  {
+   "en": "cloth",
+   "x": "cloth",
+   "ctx": "A ___ is used to clean surfaces or cover bodies. Answer:",
+   "cont": " cloth",
+   "demo": "A cloth is used to clean surfaces or cover bodies. Answer: cloth.",
+   "demos": [
+    46,
+    96,
+    98,
+    104,
+    63
+   ],
+   "ctl": 13
+  },
+  {
+   "en": "heart",
+   "x": "heart",
+   "ctx": "A ___ is an organ that pumps blood throughout the body. Answer:",
+   "cont": " heart",
+   "demo": "A heart is an organ that pumps blood throughout the body. Answer: heart.",
+   "demos": [
+    69,
+    13,
+    59,
+    56,
+    93
+   ],
+   "ctl": 14
+  },
+  {
+   "en": "hand",
+   "x": "hand",
+   "ctx": "A ___ is used to grasp or hold objects. Answer:",
+   "cont": " hand",
+   "demo": "A hand is used to grasp or hold objects. Answer: hand.",
+   "demos": [
+    100,
+    101,
+    62,
+    42,
+    76
+   ],
+   "ctl": 15
+  },
+  {
+   "en": "day",
+   "x": "day",
+   "ctx": "A ___ is a period of 24 hours, often understood as the time it takes for the Earth to complete one rotation. Answer:",
+   "cont": " day",
+   "demo": "A day is a period of 24 hours, often understood as the time it takes for the Earth to complete one rotation. Answer: day.",
+   "demos": [
+    128,
+    12,
+    109,
+    88,
+    95
+   ],
+   "ctl": 16
+  },
+  {
+   "en": "star",
+   "x": "star",
+   "ctx": "A ___ is a celestial body that shines in the night sky. Answer:",
+   "cont": " star",
+   "demo": "A star is a celestial body that shines in the night sky. Answer: star.",
+   "demos": [
+    27,
+    34,
+    95,
+    45,
+    102
+   ],
+   "ctl": 17
+  },
+  {
+   "en": "spring",
+   "x": "spring",
+   "ctx": "A ___ is a device that stores mechanical energy and can be compressed or stretched. Answer:",
+   "cont": " spring",
+   "demo": "A spring is a device that stores mechanical energy and can be compressed or stretched. Answer: spring.",
+   "demos": [
+    72,
+    88,
+    114,
+    95,
+    25
+   ],
+   "ctl": 18
+  },
+  {
+   "en": "moon",
+   "x": "moon",
+   "ctx": "A ___ is a natural satellite that orbits around a planet. Answer:",
+   "cont": " moon",
+   "demo": "A moon is a natural satellite that orbits around a planet. Answer: moon.",
+   "demos": [
+    64,
+    80,
+    29,
+    91,
+    45
+   ],
+   "ctl": 19
+  },
+  {
+   "en": "wood",
+   "x": "wood",
+   "ctx": "A ___ is used to make furniture. Answer:",
+   "cont": " wood",
+   "demo": "A wood is used to make furniture. Answer: wood.",
+   "demos": [
+    42,
+    82,
+    56,
+    120,
+    75
+   ],
+   "ctl": 20
+  },
+  {
+   "en": "village",
+   "x": "village",
+   "ctx": "A ___ is a small community or group of houses in a rural area. Answer:",
+   "cont": " village",
+   "demo": "A village is a small community or group of houses in a rural area. Answer: village.",
+   "demos": [
+    131,
+    17,
+    115,
+    120,
+    68
+   ],
+   "ctl": 21
+  },
+  {
+   "en": "forest",
+   "x": "forest",
+   "ctx": "A ___ is a large area covered chiefly with trees and undergrowth. Answer:",
+   "cont": " forest",
+   "demo": "A forest is a large area covered chiefly with trees and undergrowth. Answer: forest.",
+   "demos": [
+    39,
+    48,
+    31,
+    123,
+    61
+   ],
+   "ctl": 22
+  },
+  {
+   "en": "fruit",
+   "x": "fruit",
+   "ctx": "'A ___ is a type of food that is often sweet and comes from a plant. Answer:",
+   "cont": " fruit",
+   "demo": "A fruit is a type of food that is often sweet and comes from a plant. Answer: fruit.",
+   "demos": [
+    12,
+    32,
+    28,
+    123,
+    29
+   ],
+   "ctl": 23
+  },
+  {
+   "en": "grid",
+   "x": "grid",
+   "ctx": "A ___ is a network of lines that cross each other to form a series of squares or rectangles. Answer:",
+   "cont": " grid",
+   "demo": "A grid is a network of lines that cross each other to form a series of squares or rectangles. Answer: grid.",
+   "demos": [
+    28,
+    27,
+    111,
+    62,
+    83
+   ],
+   "ctl": 24
+  },
+  {
+   "en": "song",
+   "x": "song",
+   "ctx": "A ___ is a piece of music with words that is sung. Answer:",
+   "cont": " song",
+   "demo": "A song is a piece of music with words that is sung. Answer: song.",
+   "demos": [
+    63,
+    28,
+    78,
+    7,
+    8
+   ],
+   "ctl": 25
+  },
+  {
+   "en": "water",
+   "x": "water",
+   "ctx": "\"A ___ is essential for life and is used for drinking and cleaning. Answer:",
+   "cont": " water",
+   "demo": "A water is essential for life and is used for drinking and cleaning. Answer: water.",
+   "demos": [
+    131,
+    40,
+    123,
+    61,
+    24
+   ],
+   "ctl": 26
+  },
+  {
+   "en": "pond",
+   "x": "pond",
+   "ctx": "A ___ is a small body of still water. Answer:",
+   "cont": " pond",
+   "demo": "A pond is a small body of still water. Answer: pond.",
+   "demos": [
+    105,
+    112,
+    80,
+    19,
+    4
+   ],
+   "ctl": 27
+  },
+  {
+   "en": "sand",
+   "x": "sand",
+   "ctx": "\"A ___ is used to build castles at the beach. Answer:",
+   "cont": " sand",
+   "demo": "A sand is used to build castles at the beach. Answer: sand.",
+   "demos": [
+    86,
+    43,
+    31,
+    102,
+    22
+   ],
+   "ctl": 28
+  },
+  {
+   "en": "river",
+   "x": "river",
+   "ctx": "A ___ is a large, flowing body of water that usually empties into a sea or ocean. Answer:",
+   "cont": " river",
+   "demo": "A river is a large, flowing body of water that usually empties into a sea or ocean. Answer: river.",
+   "demos": [
+    14,
+    83,
+    106,
+    120,
+    16
+   ],
+   "ctl": 29
+  },
+  {
+   "en": "law",
+   "x": "law",
+   "ctx": "'A ___ is a system of rules that a society or government develops in order to deal with crime, business agreements, and social relationships. Answer:",
+   "cont": " law",
+   "demo": "A law is a system of rules that a society or government develops in order to deal with crime, business agreements, and social relationships. Answer: law.",
+   "demos": [
+    67,
+    38,
+    37,
+    64,
+    47
+   ],
+   "ctl": 30
+  },
+  {
+   "en": "wave",
+   "x": "wave",
+   "ctx": "A ___ is a disturbance that transfers energy through matter or space. Answer:",
+   "cont": " wave",
+   "demo": "A wave is a disturbance that transfers energy through matter or space. Answer: wave.",
+   "demos": [
+    126,
+    53,
+    94,
+    72,
+    113
+   ],
+   "ctl": 31
+  },
+  {
+   "en": "ocean",
+   "x": "ocean",
+   "ctx": "An ___ is a large body of salt water that covers most of the earth's surface. Answer:",
+   "cont": " ocean",
+   "demo": "An ocean is a large body of salt water that covers most of the earth's surface. Answer: ocean.",
+   "demos": [
+    62,
+    52,
+    72,
+    63,
+    106
+   ],
+   "ctl": 32
+  },
+  {
+   "en": "cave",
+   "x": "cave",
+   "ctx": "A ___ is a natural underground space large enough for a human to enter. Answer:",
+   "cont": " cave",
+   "demo": "A cave is a natural underground space large enough for a human to enter. Answer: cave.",
+   "demos": [
+    13,
+    69,
+    103,
+    19,
+    105
+   ],
+   "ctl": 33
+  },
+  {
+   "en": "sea",
+   "x": "sea",
+   "ctx": "A ___ is a large body of saltwater that is smaller than an ocean. Answer:",
+   "cont": " sea",
+   "demo": "A sea is a large body of saltwater that is smaller than an ocean. Answer: sea.",
+   "demos": [
+    29,
+    36,
+    8,
+    31,
+    54
+   ],
+   "ctl": 34
+  },
+  {
+   "en": "lake",
+   "x": "lake",
+   "ctx": "A ___ is a large body of water surrounded by land. Answer:",
+   "cont": " lake",
+   "demo": "A lake is a large body of water surrounded by land. Answer: lake.",
+   "demos": [
+    37,
+    54,
+    120,
+    12,
+    81
+   ],
+   "ctl": 35
+  },
+  {
+   "en": "source",
+   "x": "source",
+   "ctx": "A ___ is used to provide information or data. Answer:",
+   "cont": " source",
+   "demo": "A source is used to provide information or data. Answer: source.",
+   "demos": [
+    106,
+    0,
+    122,
+    119,
+    96
+   ],
+   "ctl": 36
+  },
+  {
+   "en": "fire",
+   "x": "fire",
+   "ctx": "A ___ is used for cooking and providing warmth. Answer:",
+   "cont": " fire",
+   "demo": "A fire is used for cooking and providing warmth. Answer: fire.",
+   "demos": [
+    73,
+    6,
+    14,
+    82,
+    130
+   ],
+   "ctl": 37
+  },
+  {
+   "en": "point",
+   "x": "point",
+   "ctx": "A ___ is a specific location in space. Answer:",
+   "cont": " point",
+   "demo": "A point is a specific location in space. Answer: point.",
+   "demos": [
+    103,
+    130,
+    46,
+    109,
+    74
+   ],
+   "ctl": 38
+  },
+  {
+   "en": "version",
+   "x": "version",
+   "ctx": "A ___ is used to denote different forms or stages in the development of something. Answer:",
+   "cont": " version",
+   "demo": "A version is used to denote different forms or stages in the development of something. Answer: version.",
+   "demos": [
+    28,
+    14,
+    116,
+    54,
+    85
+   ],
+   "ctl": 39
+  },
+  {
+   "en": "ball",
+   "x": "ball",
+   "ctx": "A ___ is used to play sports like soccer and basketball. Answer:",
+   "cont": " ball",
+   "demo": "A ball is used to play sports like soccer and basketball. Answer: ball.",
+   "demos": [
+    35,
+    82,
+    81,
+    71,
+    55
+   ],
+   "ctl": 40
+  },
+  {
+   "en": "painting",
+   "x": "painting",
+   "ctx": "A ___ is a piece of art that can be hung on a wall. Answer:",
+   "cont": " painting",
+   "demo": "A painting is a piece of art that can be hung on a wall. Answer: painting.",
+   "demos": [
+    71,
+    36,
+    93,
+    37,
+    3
+   ],
+   "ctl": 41
+  },
+  {
+   "en": "station",
+   "x": "station",
+   "ctx": "A ___ is a place where trains or buses regularly stop so that passengers can get on or off. Answer:",
+   "cont": " station",
+   "demo": "A station is a place where trains or buses regularly stop so that passengers can get on or off. Answer: station.",
+   "demos": [
+    43,
+    77,
+    87,
+    42,
+    100
+   ],
+   "ctl": 42
+  },
+  {
+   "en": "rice",
+   "x": "rice",
+   "ctx": "A ___ is a grain that is commonly used in cooking and is a staple food in many countries. Answer:",
+   "cont": " rice",
+   "demo": "A rice is a grain that is commonly used in cooking and is a staple food in many countries. Answer: rice.",
+   "demos": [
+    75,
+    80,
+    92,
+    34,
+    131
+   ],
+   "ctl": 43
+  },
+  {
+   "en": "red",
+   "x": "red",
+   "ctx": "'A ___ is a color often associated with love and passion. Answer:",
+   "cont": " red",
+   "demo": "A red is a color often associated with love and passion. Answer: red.",
+   "demos": [
+    46,
+    121,
+    73,
+    39,
+    98
+   ],
+   "ctl": 44
+  },
+  {
+   "en": "line",
+   "x": "line",
+   "ctx": "A ___ is a narrow continuous mark, as that made by a pen, pencil, or brush. Answer:",
+   "cont": " line",
+   "demo": "A line is a narrow continuous mark, as that made by a pen, pencil, or brush. Answer: line.",
+   "demos": [
+    130,
+    83,
+    108,
+    126,
+    74
+   ],
+   "ctl": 45
+  },
+  {
+   "en": "net",
+   "x": "net",
+   "ctx": "A ___ is used in sports like volleyball and tennis to divide the playing area. Answer:",
+   "cont": " net",
+   "demo": "A net is used in sports like volleyball and tennis to divide the playing area. Answer: net.",
+   "demos": [
+    106,
+    115,
+    40,
+    20,
+    102
+   ],
+   "ctl": 46
+  },
+  {
+   "en": "flower",
+   "x": "flower",
+   "ctx": "A ___ is often given as a gift and can be found in gardens. Answer:",
+   "cont": " flower",
+   "demo": "A flower is often given as a gift and can be found in gardens. Answer: flower.",
+   "demos": [
+    52,
+    37,
+    75,
+    109,
+    11
+   ],
+   "ctl": 47
+  },
+  {
+   "en": "tea",
+   "x": "tea",
+   "ctx": "A ___ is a beverage often consumed for relaxation or warmth. Answer:",
+   "cont": " tea",
+   "demo": "A tea is a beverage often consumed for relaxation or warmth. Answer: tea.",
+   "demos": [
+    11,
+    101,
+    40,
+    78,
+    106
+   ],
+   "ctl": 48
+  },
+  {
+   "en": "foot",
+   "x": "foot",
+   "ctx": "A ___ is used for walking and running. Answer:",
+   "cont": " foot",
+   "demo": "A foot is used for walking and running. Answer: foot.",
+   "demos": [
+    24,
+    65,
+    120,
+    20,
+    12
+   ],
+   "ctl": 49
+  },
+  {
+   "en": "gold",
+   "x": "gold",
+   "ctx": "\"A ___ is a precious metal that is often used in jewelry. Answer:",
+   "cont": " gold",
+   "demo": "A gold is a precious metal that is often used in jewelry. Answer: gold.",
+   "demos": [
+    54,
+    127,
+    83,
+    62,
+    33
+   ],
+   "ctl": 50
+  },
+  {
+   "en": "door",
+   "x": "door",
+   "ctx": "A ___ is used for entering or exiting a room. Answer:",
+   "cont": " door",
+   "demo": "A door is used for entering or exiting a room. Answer: door.",
+   "demos": [
+    75,
+    111,
+    73,
+    104,
+    8
+   ],
+   "ctl": 51
+  },
+  {
+   "en": "snow",
+   "x": "snow",
+   "ctx": "\"A ___ is a form of precipitation that falls from the sky during winter. Answer:",
+   "cont": " snow",
+   "demo": "A snow is a form of precipitation that falls from the sky during winter. Answer: snow.",
+   "demos": [
+    44,
+    82,
+    78,
+    95,
+    33
+   ],
+   "ctl": 52
+  },
+  {
+   "en": "horse",
+   "x": "horse",
+   "ctx": "A ___ is a large domesticated animal with four legs, commonly used for riding and racing. Answer:",
+   "cont": " horse",
+   "demo": "A horse is a large domesticated animal with four legs, commonly used for riding and racing. Answer: horse.",
+   "demos": [
+    110,
+    108,
+    51,
+    93,
+    40
+   ],
+   "ctl": 53
+  },
+  {
+   "en": "one",
+   "x": "one",
+   "ctx": "A ___ is a number that comes after zero and before two. Answer:",
+   "cont": " one",
+   "demo": "A one is a number that comes after zero and before two. Answer: one.",
+   "demos": [
+    128,
+    106,
+    100,
+    88,
+    7
+   ],
+   "ctl": 54
+  },
+  {
+   "en": "two",
+   "x": "two",
+   "ctx": "The number ___ is the sum of one plus one. Answer:",
+   "cont": " two",
+   "demo": "The number two is the sum of one plus one. Answer: two.",
+   "demos": [
+    22,
+    96,
+    27,
+    31,
+    20
+   ],
+   "ctl": 55
+  },
+  {
+   "en": "three",
+   "x": "three",
+   "ctx": "The number that comes after two is ___. Answer:",
+   "cont": " three",
+   "demo": "The number that comes after two is three. Answer: three.",
+   "demos": [
+    26,
+    54,
+    91,
+    89,
+    121
+   ],
+   "ctl": 56
+  },
+  {
+   "en": "four",
+   "x": "four",
+   "ctx": "The number ___ is the integer that comes after three. Answer:",
+   "cont": " four",
+   "demo": "The number four is the integer that comes after three. Answer: four.",
+   "demos": [
+    103,
+    113,
+    112,
+    104,
+    20
+   ],
+   "ctl": 57
+  },
+  {
+   "en": "five",
+   "x": "five",
+   "ctx": "The number that comes after four is ___. Answer:",
+   "cont": " five",
+   "demo": "The number that comes after four is five. Answer: five.",
+   "demos": [
+    87,
+    124,
+    58,
+    8,
+    114
+   ],
+   "ctl": 58
+  },
+  {
+   "en": "six",
+   "x": "six",
+   "ctx": "The number that comes after five is ___. Answer:",
+   "cont": " six",
+   "demo": "The number that comes after five is six. Answer: six.",
+   "demos": [
+    2,
+    24,
+    64,
+    29,
+    27
+   ],
+   "ctl": 59
+  },
+  {
+   "en": "seven",
+   "x": "seven",
+   "ctx": "The number ___ comes after six. Answer:",
+   "cont": " seven",
+   "demo": "The number seven comes after six. Answer: seven.",
+   "demos": [
+    73,
+    16,
+    103,
+    57,
+    64
+   ],
+   "ctl": 60
+  },
+  {
+   "en": "eight",
+   "x": "eight",
+   "ctx": "The number ___ comes after seven. Answer:",
+   "cont": " eight",
+   "demo": "The number eight comes after seven. Answer: eight.",
+   "demos": [
+    15,
+    60,
+    97,
+    110,
+    19
+   ],
+   "ctl": 61
+  },
+  {
+   "en": "nine",
+   "x": "nine",
+   "ctx": "The number that comes after eight is ___. Answer:",
+   "cont": " nine",
+   "demo": "The number that comes after eight is nine. Answer: nine.",
+   "demos": [
+    51,
+    123,
+    11,
+    105,
+    109
+   ],
+   "ctl": 62
+  },
+  {
+   "en": "ten",
+   "x": "ten",
+   "ctx": "The number that comes after nine is ___. Answer:",
+   "cont": " ten",
+   "demo": "The number that comes after nine is ten. Answer: ten.",
+   "demos": [
+    70,
+    44,
+    41,
+    99,
+    129
+   ],
+   "ctl": 63
+  },
+  {
+   "en": "head",
+   "x": "head",
+   "ctx": "'A ___ is a part of the body that contains the brain, eyes, ears, nose, and mouth. Answer:",
+   "cont": " head",
+   "demo": "A head is a part of the body that contains the brain, eyes, ears, nose, and mouth. Answer: head.",
+   "demos": [
+    117,
+    39,
+    3,
+    20,
+    65
+   ],
+   "ctl": 64
+  },
+  {
+   "en": "shop",
+   "x": "shop",
+   "ctx": "A ___ is a place where you can buy goods or services. Answer:",
+   "cont": " shop",
+   "demo": "A shop is a place where you can buy goods or services. Answer: shop.",
+   "demos": [
+    40,
+    38,
+    60,
+    42,
+    14
+   ],
+   "ctl": 65
+  },
+  {
+   "en": "strip",
+   "x": "strip",
+   "ctx": "A ___ is a long, narrow piece of a certain material. Answer:",
+   "cont": " strip",
+   "demo": "A strip is a long, narrow piece of a certain material. Answer: strip.",
+   "demos": [
+    32,
+    29,
+    69,
+    129,
+    100
+   ],
+   "ctl": 66
+  },
+  {
+   "en": "street",
+   "x": "street",
+   "ctx": "A ___ is a public road in a city, town, or village. Answer:",
+   "cont": " street",
+   "demo": "A street is a public road in a city, town, or village. Answer: street.",
+   "demos": [
+    40,
+    57,
+    116,
+    79,
+    130
+   ],
+   "ctl": 67
+  },
+  {
+   "en": "part",
+   "x": "part",
+   "ctx": "A ___ is used to make up a whole. Answer:",
+   "cont": " part",
+   "demo": "A part is used to make up a whole. Answer: part.",
+   "demos": [
+    115,
+    75,
+    108,
+    122,
+    21
+   ],
+   "ctl": 68
+  },
+  {
+   "en": "eye",
+   "x": "eye",
+   "ctx": "A ___ is used to see everything around us. Answer:",
+   "cont": " eye",
+   "demo": "A eye is used to see everything around us. Answer: eye.",
+   "demos": [
+    20,
+    4,
+    98,
+    64,
+    93
+   ],
+   "ctl": 69
+  },
+  {
+   "en": "field",
+   "x": "field",
+   "ctx": "A ___ is a wide area of open land where crops are grown. Answer:",
+   "cont": " field",
+   "demo": "A field is a wide area of open land where crops are grown. Answer: field.",
+   "demos": [
+    18,
+    56,
+    97,
+    42,
+    92
+   ],
+   "ctl": 70
+  },
+  {
+   "en": "site",
+   "x": "site",
+   "ctx": "A ___ is a location where something is, was, or will be built. Answer:",
+   "cont": " site",
+   "demo": "A site is a location where something is, was, or will be built. Answer: site.",
+   "demos": [
+    92,
+    9,
+    72,
+    106,
+    66
+   ],
+   "ctl": 71
+  },
+  {
+   "en": "dance",
+   "x": "dance",
+   "ctx": "A ___ is a form of art that involves movement of the body, usually rhythmic and to music. Answer:",
+   "cont": " dance",
+   "demo": "A dance is a form of art that involves movement of the body, usually rhythmic and to music. Answer: dance.",
+   "demos": [
+    118,
+    57,
+    30,
+    124,
+    43
+   ],
+   "ctl": 72
+  },
+  {
+   "en": "word",
+   "x": "word",
+   "ctx": "A ___ is a single distinct meaningful element of speech or writing, used with others (or sometimes alone) to form a sentence and typically shown with a space on either side when written or printed. Answer:",
+   "cont": " word",
+   "demo": "A word is a single distinct meaningful element of speech or writing, used with others (or sometimes alone) to form a sentence and typically shown with a space on either side when written or printed. Answer: word.",
+   "demos": [
+    91,
+    71,
+    106,
+    131,
+    23
+   ],
+   "ctl": 73
+  },
+  {
+   "en": "pair",
+   "x": "pair",
+   "ctx": "\"A ___ is a set of two things used together or regarded as a unit. Answer:",
+   "cont": " pair",
+   "demo": "A pair is a set of two things used together or regarded as a unit. Answer: pair.",
+   "demos": [
+    83,
+    46,
+    116,
+    16,
+    53
+   ],
+   "ctl": 74
+  },
+  {
+   "en": "seat",
+   "x": "seat",
+   "ctx": "A ___ is used to sit and rest. Answer:",
+   "cont": " seat",
+   "demo": "A seat is used to sit and rest. Answer: seat.",
+   "demos": [
+    46,
+    128,
+    57,
+    27,
+    12
+   ],
+   "ctl": 75
+  },
+  {
+   "en": "light",
+   "x": "light",
+   "ctx": "A ___ is used to illuminate dark spaces. Answer:",
+   "cont": " light",
+   "demo": "A light is used to illuminate dark spaces. Answer: light.",
+   "demos": [
+    9,
+    38,
+    98,
+    124,
+    84
+   ],
+   "ctl": 76
+  },
+  {
+   "en": "thousand",
+   "x": "thousand",
+   "ctx": "A ___ is a numerical value that comes after nine hundred ninety-nine. Answer:",
+   "cont": " thousand",
+   "demo": "A thousand is a numerical value that comes after nine hundred ninety-nine. Answer: thousand.",
+   "demos": [
+    116,
+    31,
+    65,
+    106,
+    66
+   ],
+   "ctl": 77
+  },
+  {
+   "en": "north",
+   "x": "north",
+   "ctx": "\"The ___ is a cardinal direction often associated with cold and polar regions. Answer:",
+   "cont": " north",
+   "demo": "The north is a cardinal direction often associated with cold and polar regions. Answer: north.",
+   "demos": [
+    61,
+    24,
+    76,
+    18,
+    75
+   ],
+   "ctl": 78
+  },
+  {
+   "en": "machine",
+   "x": "machine",
+   "ctx": "A ___ is used to perform a specific task or produce something. Answer:",
+   "cont": " machine",
+   "demo": "A machine is used to perform a specific task or produce something. Answer: machine.",
+   "demos": [
+    131,
+    76,
+    65,
+    87,
+    47
+   ],
+   "ctl": 79
+  },
+  {
+   "en": "time",
+   "x": "time",
+   "ctx": "\"A \"clock\" is used to measure ___. Answer:",
+   "cont": " time",
+   "demo": "A \"clock\" is used to measure time. Answer: time.",
+   "demos": [
+    52,
+    87,
+    31,
+    68,
+    111
+   ],
+   "ctl": 80
+  },
+  {
+   "en": "benefit",
+   "x": "benefit",
+   "ctx": "A ___ is something that promotes or enhances well-being. Answer:",
+   "cont": " benefit",
+   "demo": "A benefit is something that promotes or enhances well-being. Answer: benefit.",
+   "demos": [
+    25,
+    107,
+    64,
+    43,
+    47
+   ],
+   "ctl": 81
+  },
+  {
+   "en": "position",
+   "x": "position",
+   "ctx": "A ___ is a place where someone or something is located or has been put. Answer:",
+   "cont": " position",
+   "demo": "A position is a place where someone or something is located or has been put. Answer: position.",
+   "demos": [
+    43,
+    77,
+    53,
+    15,
+    62
+   ],
+   "ctl": 82
+  },
+  {
+   "en": "province",
+   "x": "province",
+   "ctx": "A ___ is a principal administrative division of certain countries or empires. Answer:",
+   "cont": " province",
+   "demo": "A province is a principal administrative division of certain countries or empires. Answer: province.",
+   "demos": [
+    75,
+    98,
+    48,
+    118,
+    7
+   ],
+   "ctl": 83
+  },
+  {
+   "en": "exchange",
+   "x": "exchange",
+   "ctx": "An ___ is a place where stocks, bonds, or other securities are bought and sold. Answer:",
+   "cont": " exchange",
+   "demo": "An exchange is a place where stocks, bonds, or other securities are bought and sold. Answer: exchange.",
+   "demos": [
+    112,
+    45,
+    1,
+    124,
+    89
+   ],
+   "ctl": 84
+  },
+  {
+   "en": "middle",
+   "x": "middle",
+   "ctx": "\"The ___ is the point that is equally distant from the sides or outer boundaries of something. Answer:",
+   "cont": " middle",
+   "demo": "The middle is the point that is equally distant from the sides or outer boundaries of something. Answer: middle.",
+   "demos": [
+    122,
+    5,
+    30,
+    68,
+    42
+   ],
+   "ctl": 85
+  },
+  {
+   "en": "friend",
+   "x": "friend",
+   "ctx": "A ___ is someone you share a close personal relationship with. Answer:",
+   "cont": " friend",
+   "demo": "A friend is someone you share a close personal relationship with. Answer: friend.",
+   "demos": [
+    46,
+    0,
+    55,
+    71,
+    109
+   ],
+   "ctl": 86
+  },
+  {
+   "en": "color",
+   "x": "color",
+   "ctx": "\"A ___ is used to identify or describe the appearance of objects. Answer:",
+   "cont": " color",
+   "demo": "A color is used to identify or describe the appearance of objects. Answer: color.",
+   "demos": [
+    71,
+    88,
+    41,
+    53,
+    120
+   ],
+   "ctl": 87
+  },
+  {
+   "en": "kind",
+   "x": "kind",
+   "ctx": "\"A ___ is a category or type of something. Answer:",
+   "cont": " kind",
+   "demo": "A kind is a category or type of something. Answer: kind.",
+   "demos": [
+    57,
+    107,
+    26,
+    80,
+    15
+   ],
+   "ctl": 88
+  },
+  {
+   "en": "judge",
+   "x": "judge",
+   "ctx": "A ___ is a person who presides over court proceedings, either alone or as a part of a panel of judges. Answer:",
+   "cont": " judge",
+   "demo": "A judge is a person who presides over court proceedings, either alone or as a part of a panel of judges. Answer: judge.",
+   "demos": [
+    120,
+    15,
+    101,
+    111,
+    91
+   ],
+   "ctl": 89
+  },
+  {
+   "en": "school",
+   "x": "school",
+   "ctx": "A ___ is a place where students go to learn. Answer:",
+   "cont": " school",
+   "demo": "A school is a place where students go to learn. Answer: school.",
+   "demos": [
+    29,
+    22,
+    58,
+    101,
+    54
+   ],
+   "ctl": 90
+  },
+  {
+   "en": "structure",
+   "x": "structure",
+   "ctx": "A ___ is a construction that has a specific purpose or function. Answer:",
+   "cont": " structure",
+   "demo": "A structure is a construction that has a specific purpose or function. Answer: structure.",
+   "demos": [
+    2,
+    79,
+    14,
+    52,
+    47
+   ],
+   "ctl": 91
+  },
+  {
+   "en": "tie",
+   "x": "tie",
+   "ctx": "A ___ is worn around the neck as part of formal attire. Answer:",
+   "cont": " tie",
+   "demo": "A tie is worn around the neck as part of formal attire. Answer: tie.",
+   "demos": [
+    124,
+    104,
+    126,
+    79,
+    40
+   ],
+   "ctl": 92
+  },
+  {
+   "en": "example",
+   "x": "example",
+   "ctx": "An ___ is used to illustrate a point or concept. Answer:",
+   "cont": " example",
+   "demo": "An example is used to illustrate a point or concept. Answer: example.",
+   "demos": [
+    2,
+    124,
+    37,
+    34,
+    49
+   ],
+   "ctl": 93
+  },
+  {
+   "en": "face",
+   "x": "face",
+   "ctx": "A ___ is the front part of a person's head, including the forehead, eyes, nose, and mouth. Answer:",
+   "cont": " face",
+   "demo": "A face is the front part of a person's head, including the forehead, eyes, nose, and mouth. Answer: face.",
+   "demos": [
+    101,
+    104,
+    67,
+    29,
+    107
+   ],
+   "ctl": 94
+  },
+  {
+   "en": "bridge",
+   "x": "bridge",
+   "ctx": "A ___ is used to connect two areas separated by obstacles like rivers or roads. Answer:",
+   "cont": " bridge",
+   "demo": "A bridge is used to connect two areas separated by obstacles like rivers or roads. Answer: bridge.",
+   "demos": [
+    94,
+    49,
+    50,
+    44,
+    52
+   ],
+   "ctl": 95
+  },
+  {
+   "en": "item",
+   "x": "item",
+   "ctx": "An ___ is a thing that is unspecified or unidentified. Answer:",
+   "cont": " item",
+   "demo": "An item is a thing that is unspecified or unidentified. Answer: item.",
+   "demos": [
+    123,
+    51,
+    46,
+    110,
+    56
+   ],
+   "ctl": 96
+  },
+  {
+   "en": "delete",
+   "x": "delete",
+   "ctx": "A ___ is used to remove text or data. Answer:",
+   "cont": " delete",
+   "demo": "A delete is used to remove text or data. Answer: delete.",
+   "demos": [
+    68,
+    92,
+    13,
+    26,
+    23
+   ],
+   "ctl": 97
+  },
+  {
+   "en": "group",
+   "x": "group",
+   "ctx": "'A ___ is a number of people or things that are located, gathered, or classed together. Answer:",
+   "cont": " group",
+   "demo": "A group is a number of people or things that are located, gathered, or classed together. Answer: group.",
+   "demos": [
+    123,
+    67,
+    21,
+    46,
+    70
+   ],
+   "ctl": 98
+  },
+  {
+   "en": "talent",
+   "x": "talent",
+   "ctx": "A ___ is a natural aptitude or skill. Answer:",
+   "cont": " talent",
+   "demo": "A talent is a natural aptitude or skill. Answer: talent.",
+   "demos": [
+    2,
+    61,
+    115,
+    82,
+    88
+   ],
+   "ctl": 99
+  },
+  {
+   "en": "beauty",
+   "x": "beauty",
+   "ctx": "'___ is a characteristic that provides a perceptual experience of pleasure or satisfaction. Answer:",
+   "cont": " beauty",
+   "demo": "\"Beauty\" is a characteristic that provides a perceptual experience of pleasure or satisfaction. Answer: beauty.",
+   "demos": [
+    4,
+    106,
+    117,
+    85,
+    35
+   ],
+   "ctl": 100
+  },
+  {
+   "en": "platform",
+   "x": "platform",
+   "ctx": "A ___ is used to support or raise something. Answer:",
+   "cont": " platform",
+   "demo": "A platform is used to support or raise something. Answer: platform.",
+   "demos": [
+    109,
+    105,
+    9,
+    25,
+    83
+   ],
+   "ctl": 101
+  },
+  {
+   "en": "house",
+   "x": "house",
+   "ctx": "A ___ is a place where people live. Answer:",
+   "cont": " house",
+   "demo": "A house is a place where people live. Answer: house.",
+   "demos": [
+    106,
+    60,
+    123,
+    43,
+    102
+   ],
+   "ctl": 102
+  },
+  {
+   "en": "sun",
+   "x": "sun",
+   "ctx": "The ___ is a star at the center of the Solar System that provides light and heat to Earth. Answer:",
+   "cont": " sun",
+   "demo": "The sun is a star at the center of the Solar System that provides light and heat to Earth. Answer: sun.",
+   "demos": [
+    2,
+    99,
+    77,
+    59,
+    36
+   ],
+   "ctl": 103
+  },
+  {
+   "en": "meeting",
+   "x": "meeting",
+   "ctx": "A ___ is a gathering of people for a specific purpose, often for discussion or decision-making. Answer:",
+   "cont": " meeting",
+   "demo": "A meeting is a gathering of people for a specific purpose, often for discussion or decision-making. Answer: meeting.",
+   "demos": [
+    10,
+    53,
+    78,
+    32,
+    17
+   ],
+   "ctl": 104
+  },
+  {
+   "en": "history",
+   "x": "history",
+   "ctx": "\"The study of past events, particularly in human affairs\" is known as ___. Answer:",
+   "cont": " history",
+   "demo": "\"The study of past events, particularly in human affairs\" is known as history. Answer: history.",
+   "demos": [
+    27,
+    103,
+    46,
+    102,
+    123
+   ],
+   "ctl": 105
+  },
+  {
+   "en": "valley",
+   "x": "valley",
+   "ctx": "A ___ is a low area between hills or mountains typically with a river running through it. Answer:",
+   "cont": " valley",
+   "demo": "A valley is a low area between hills or mountains typically with a river running through it. Answer: valley.",
+   "demos": [
+    20,
+    2,
+    4,
+    43,
+    113
+   ],
+   "ctl": 106
+  },
+  {
+   "en": "square",
+   "x": "square",
+   "ctx": "A ___ is a shape with four equal sides and four right angles. Answer:",
+   "cont": " square",
+   "demo": "A square is a shape with four equal sides and four right angles. Answer: square.",
+   "demos": [
+    123,
+    89,
+    14,
+    126,
+    55
+   ],
+   "ctl": 107
+  },
+  {
+   "en": "generation",
+   "x": "generation",
+   "ctx": "\"A ___ is a term used to describe all of the people born and living at about the same time. Answer:",
+   "cont": " generation",
+   "demo": "A generation is a term used to describe all of the people born and living at about the same time. Answer: generation.",
+   "demos": [
+    75,
+    19,
+    67,
+    86,
+    81
+   ],
+   "ctl": 108
+  },
+  {
+   "en": "south",
+   "x": "south",
+   "ctx": "\"The ___ is a cardinal direction opposite to north. Answer:",
+   "cont": " south",
+   "demo": "The south is a cardinal direction opposite to north. Answer: south.",
+   "demos": [
+    37,
+    44,
+    121,
+    75,
+    12
+   ],
+   "ctl": 109
+  },
+  {
+   "en": "virtue",
+   "x": "virtue",
+   "ctx": "A ___ is a quality considered morally good or desirable in a person. Answer:",
+   "cont": " virtue",
+   "demo": "A virtue is a quality considered morally good or desirable in a person. Answer: virtue.",
+   "demos": [
+    101,
+    69,
+    37,
+    9,
+    78
+   ],
+   "ctl": 110
+  },
+  {
+   "en": "tribe",
+   "x": "tribe",
+   "ctx": "A ___ is a social division in a traditional society consisting of families or communities linked by social, economic, religious, or blood ties. Answer:",
+   "cont": " tribe",
+   "demo": "A tribe is a social division in a traditional society consisting of families or communities linked by social, economic, religious, or blood ties. Answer: tribe.",
+   "demos": [
+    102,
+    127,
+    57,
+    95,
+    111
+   ],
+   "ctl": 111
+  },
+  {
+   "en": "city",
+   "x": "city",
+   "ctx": "A ___ is a large human settlement where people live and work. Answer:",
+   "cont": " city",
+   "demo": "A city is a large human settlement where people live and work. Answer: city.",
+   "demos": [
+    89,
+    57,
+    43,
+    68,
+    131
+   ],
+   "ctl": 112
+  },
+  {
+   "en": "language",
+   "x": "language",
+   "ctx": "A ___ is used to communicate thoughts and ideas. Answer:",
+   "cont": " language",
+   "demo": "A language is used to communicate thoughts and ideas. Answer: language.",
+   "demos": [
+    28,
+    35,
+    12,
+    89,
+    2
+   ],
+   "ctl": 113
+  },
+  {
+   "en": "speed",
+   "x": "speed",
+   "ctx": "\"A ___ is used to measure how fast something is moving. Answer:",
+   "cont": " speed",
+   "demo": "A speed is used to measure how fast something is moving. Answer: speed.",
+   "demos": [
+    79,
+    95,
+    120,
+    72,
+    43
+   ],
+   "ctl": 114
+  },
+  {
+   "en": "ground",
+   "x": "ground",
+   "ctx": "\"A ___ is where we walk and build houses on. Answer:",
+   "cont": " ground",
+   "demo": "A ground is where we walk and build houses on. Answer: ground.",
+   "demos": [
+    10,
+    0,
+    5,
+    14,
+    68
+   ],
+   "ctl": 115
+  },
+  {
+   "en": "advance",
+   "x": "advance",
+   "ctx": "___ is a term used to describe moving forward or making progress. Answer:",
+   "cont": " advance",
+   "demo": "\"Advance\" is a term used to describe moving forward or making progress. Answer: advance.",
+   "demos": [
+    30,
+    6,
+    118,
+    35,
+    85
+   ],
+   "ctl": 116
+  },
+  {
+   "en": "attempt",
+   "x": "attempt",
+   "ctx": "An ___ is made when trying to achieve something. Answer:",
+   "cont": " attempt",
+   "demo": "An attempt is made when trying to achieve something. Answer: attempt.",
+   "demos": [
+    96,
+    109,
+    65,
+    124,
+    47
+   ],
+   "ctl": 117
+  },
+  {
+   "en": "defeat",
+   "x": "defeat",
+   "ctx": "\"A ___ is experienced when one loses a competition or battle. Answer:",
+   "cont": " defeat",
+   "demo": "A defeat is experienced when one loses a competition or battle. Answer: defeat.",
+   "demos": [
+    60,
+    65,
+    86,
+    131,
+    126
+   ],
+   "ctl": 118
+  },
+  {
+   "en": "tail",
+   "x": "tail",
+   "ctx": "A ___ is a part of an animal's body that extends from the base of the spine. Answer:",
+   "cont": " tail",
+   "demo": "A tail is a part of an animal's body that extends from the base of the spine. Answer: tail.",
+   "demos": [
+    41,
+    131,
+    66,
+    37,
+    30
+   ],
+   "ctl": 119
+  },
+  {
+   "en": "mother",
+   "x": "mother",
+   "ctx": "A ___ is a woman who has given birth to a child. Answer:",
+   "cont": " mother",
+   "demo": "A mother is a woman who has given birth to a child. Answer: mother.",
+   "demos": [
+    37,
+    102,
+    110,
+    14,
+    23
+   ],
+   "ctl": 120
+  },
+  {
+   "en": "east",
+   "x": "east",
+   "ctx": "\"The ___ is a cardinal direction opposite of west. Answer:",
+   "cont": " east",
+   "demo": "The east is a cardinal direction opposite of west. Answer: east.",
+   "demos": [
+    99,
+    44,
+    24,
+    68,
+    82
+   ],
+   "ctl": 121
+  },
+  {
+   "en": "return",
+   "x": "return",
+   "ctx": "A ___ is used to give back a purchased item. Answer:",
+   "cont": " return",
+   "demo": "A return is used to give back a purchased item. Answer: return.",
+   "demos": [
+    26,
+    83,
+    58,
+    99,
+    4
+   ],
+   "ctl": 122
+  },
+  {
+   "en": "speech",
+   "x": "speech",
+   "ctx": "\"A ___ is a formal address or discourse delivered to an audience. Answer:",
+   "cont": " speech",
+   "demo": "A speech is a formal address or discourse delivered to an audience. Answer: speech.",
+   "demos": [
+    45,
+    130,
+    97,
+    88,
+    68
+   ],
+   "ctl": 123
+  },
+  {
+   "en": "child",
+   "x": "child",
+   "ctx": "'A ___ is a young human being below the age of puberty. Answer:",
+   "cont": " child",
+   "demo": "A child is a young human being below the age of puberty. Answer: child.",
+   "demos": [
+    24,
+    97,
+    46,
+    31,
+    67
+   ],
+   "ctl": 124
+  },
+  {
+   "en": "tower",
+   "x": "tower",
+   "ctx": "A ___ is a tall structure that can be used for various purposes such as observation, communication, or storage. Answer:",
+   "cont": " tower",
+   "demo": "A tower is a tall structure that can be used for various purposes such as observation, communication, or storage. Answer: tower.",
+   "demos": [
+    97,
+    91,
+    4,
+    54,
+    36
+   ],
+   "ctl": 125
+  },
+  {
+   "en": "hair",
+   "x": "hair",
+   "ctx": "A ___ is found on the heads of humans and animals. Answer:",
+   "cont": " hair",
+   "demo": "A hair is found on the heads of humans and animals. Answer: hair.",
+   "demos": [
+    19,
+    28,
+    60,
+    23,
+    27
+   ],
+   "ctl": 126
+  },
+  {
+   "en": "household",
+   "x": "household",
+   "ctx": "A ___ is a term used to describe a residential unit where people live. Answer:",
+   "cont": " household",
+   "demo": "A household is a term used to describe a residential unit where people live. Answer: household.",
+   "demos": [
+    34,
+    108,
+    7,
+    117,
+    69
+   ],
+   "ctl": 127
+  },
+  {
+   "en": "person",
+   "x": "person",
+   "ctx": "'A ___ is a human being regarded as an individual. Answer:",
+   "cont": " person",
+   "demo": "A person is a human being regarded as an individual. Answer: person.",
+   "demos": [
+    77,
+    53,
+    54,
+    86,
+    92
+   ],
+   "ctl": 128
+  },
+  {
+   "en": "section",
+   "x": "section",
+   "ctx": "A ___ is a distinct part or subdivision of something. Answer:",
+   "cont": " section",
+   "demo": "A section is a distinct part or subdivision of something. Answer: section.",
+   "demos": [
+    35,
+    34,
+    17,
+    16,
+    113
+   ],
+   "ctl": 129
+  },
+  {
+   "en": "official",
+   "x": "official",
+   "ctx": "An ___ is a person who holds a position of authority in an organization or government. Answer:",
+   "cont": " official",
+   "demo": "An official is a person who holds a position of authority in an organization or government. Answer: official.",
+   "demos": [
+    62,
+    34,
+    54,
+    66,
+    77
+   ],
+   "ctl": 130
+  },
+  {
+   "en": "hundred",
+   "x": "hundred",
+   "ctx": "A ___ is a numerical value equal to 10 tens. Answer:",
+   "cont": " hundred",
+   "demo": "A hundred is a numerical value equal to 10 tens. Answer: hundred.",
+   "demos": [
+    45,
+    58,
+    112,
+    116,
+    73
+   ],
+   "ctl": 131
+  },
+  {
+   "en": "office",
+   "x": "office",
+   "ctx": "An ___ is a place where people usually do their job. Answer:",
+   "cont": " office",
+   "demo": "An office is a place where people usually do their job. Answer: office.",
+   "demos": [
+    27,
+    85,
+    47,
+    57,
+    102
+   ],
+   "ctl": 0
+  },
+  {
+   "en": "rock",
+   "x": "rock",
+   "ctx": "A ___ is a solid mineral material forming part of the surface of the earth. Answer:",
+   "cont": " rock",
+   "demo": "A rock is a solid mineral material forming part of the surface of the earth. Answer: rock.",
+   "demos": [
+    85,
+    112,
+    6,
+    94,
+    13
+   ],
+   "ctl": 1
+  },
+  {
+   "en": "rise",
+   "x": "rise",
+   "ctx": "\"A ___ is used to describe an increase or upward movement. Answer:",
+   "cont": " rise",
+   "demo": "A rise is used to describe an increase or upward movement. Answer: rise.",
+   "demos": [
+    41,
+    63,
+    75,
+    20,
+    21
+   ],
+   "ctl": 2
+  },
+  {
+   "en": "left",
+   "x": "left",
+   "ctx": "'A ___ is a direction opposite to right. Answer:",
+   "cont": " left",
+   "demo": "A left is a direction opposite to right. Answer: left.",
+   "demos": [
+    62,
+    64,
+    46,
+    12,
+    44
+   ],
+   "ctl": 3
+  },
+  {
+   "en": "sound",
+   "x": "sound",
+   "ctx": "A ___ is something we hear. Answer:",
+   "cont": " sound",
+   "demo": "A sound is something we hear. Answer: sound.",
+   "demos": [
+    59,
+    69,
+    126,
+    7,
+    45
+   ],
+   "ctl": 4
+  },
+  {
+   "en": "power",
+   "x": "power",
+   "ctx": "\"A ___ is used to control or influence people or things. Answer:",
+   "cont": " power",
+   "demo": "A power is used to control or influence people or things. Answer: power.",
+   "demos": [
+    121,
+    56,
+    93,
+    5,
+    17
+   ],
+   "ctl": 5
+  },
+  {
+   "en": "summer",
+   "x": "summer",
+   "ctx": "\"The ___ is a season known for its warm weather. Answer:",
+   "cont": " summer",
+   "demo": "The summer is a season known for its warm weather. Answer: summer.",
+   "demos": [
+    60,
+    127,
+    118,
+    44,
+    56
+   ],
+   "ctl": 6
+  }
+ ]
+}

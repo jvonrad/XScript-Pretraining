@@ -1,0 +1,285 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=2.4cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage[labelsep=period]{caption}
+\usepackage{parskip}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  columns=fullflexible,
+  frame=single,
+  rulecolor=\color{gray!45},
+  backgroundcolor=\color{gray!6},
+  showstringspaces=false,
+  captionpos=b,
+  xleftmargin=0.5em,
+  framexleftmargin=0.5em
+}
+
+\newcommand{\code}[1]{\texttt{\small #1}}
+
+\title{Incorrect gradients from a non power of two loss scale on the\\
+TorchNeuron Native beta}
+\author{Report for the AWS Neuron team}
+\date{5 September 2026}
+
+\begin{document}
+\maketitle
+
+\section*{Summary}
+
+On a \code{trn2.48xlarge} running the TorchNeuron Native private beta, scaling a
+scalar loss by a factor that is not a power of two before calling
+\code{backward()} produces measurably wrong gradients. The forward loss is
+unaffected and is bit identical to a CPU reference. Only the backward pass is
+wrong, and how wrong it is depends on the scale factor. Dividing by 16 is exact,
+dividing by 15 is not, and dividing by 3 sits in between. We hit this in the
+textbook gradient accumulation idiom, where the loss of each micro batch is
+divided by the number of micro batches before backpropagation. It silently
+degraded four language model pretraining runs and cost us roughly nine hours of
+wall clock time on sixteen devices before we found it. We have a workaround and
+we are not blocked, but we believe the behaviour is a defect and we would like to
+know whether it is expected on this build.
+
+\section{Environment}
+
+\begin{tabular}{@{}ll@{}}
+\toprule
+Instance & \code{trn2.48xlarge}, \code{i-077aedb8638c07784}, \code{us-east-2b} \\
+Host operating system & Ubuntu 24.04.4 LTS \\
+Driver & \code{aws-neuronx-dkms} 2.30.2.0 \\
+Runtime & \code{aws-neuronx-runtime-lib} 2.34.10.0-ac18d186d \\
+Collectives & \code{aws-neuronx-collectives} 2.34.10.0-74eaafac6 \\
+Tools & \code{aws-neuronx-tools} 2.32.28.0-526c2b7f6 \\
+Container & TorchNeuron Native private beta image, Ubuntu 24.04, Python 3.12.11 \\
+Framework & \code{torch} 2.12.1, \code{torch-neuronx} 2.12.3.0.1636+5c472775 \\
+Compiler & \code{neuronx-cc} 2.27.2878.0+8220f7ac \\
+Logical cores & LNC equal to 2, so four logical cores per device \\
+\bottomrule
+\end{tabular}
+
+\medskip
+
+The workload is pretraining of a one billion parameter decoder only transformer
+in the Llama style, with sixteen layers, model width 2048, sixteen attention
+heads, feed forward width 5632, vocabulary 65536 and sequence length 2048.
+Compute is bfloat16 with a float32 master copy of the weights, the optimizer is
+AdamW wrapped in \code{ZeroRedundancyOptimizer}, and the model is executed with
+\code{torch.compile} on the \code{neuron} backend, one compiled graph per
+transformer block plus one for the embedding lookup and one for the final norm,
+output projection and cross entropy. The full instance runs four such jobs at
+once, each holding four devices, so each job has a world size of sixteen. The
+micro batch is two sequences, gradients are accumulated over fifteen micro
+batches per rank, and one optimizer step consumes 983040 tokens.
+
+\section{What we observed in training}
+
+Four bilingual pretraining runs were launched with a warmup, stable and decay
+learning rate schedule and a target of thirty billion tokens. All four tracked
+reference runs of the identical model and data, trained earlier on NVIDIA GH200
+hardware, for about the first one and a half billion tokens. They then flattened.
+Between two billion and two point eight billion tokens the training loss stopped
+falling and in places rose slightly, while every reference run fell by about one
+tenth of a nat over the same interval. An in loop bits per byte evaluation on
+held out text showed the same picture, and by two point seven five billion tokens
+the runs were five to thirteen percent worse than the weakest reference. A
+further tell was that the gain vector of the final RMS norm grew steadily from
+about 1.3 to about 1.55 in our runs, where in every healthy reference run it
+shrinks over the same interval.
+
+There were no error messages of any kind. No compiler diagnostics, no runtime
+warnings, no allocator retries, no collective timeouts, no error correcting code
+events in \code{sysfs}, and no loss spikes. The jobs simply learned less than
+they should have.
+
+\section{What we ruled out first}
+
+Because the symptom looked like a data or hyperparameter problem, we checked the
+obvious causes before suspecting the stack. All of the following were verified
+correct and can be discounted.
+
+\begin{itemize}
+\item Learning rate schedule, optimizer betas, epsilon, weight decay and gradient
+      clipping value, all compared key by key against the reference configuration.
+\item Data mixing, per rank data disjointness, and the token budget accounting.
+\item Checkpoint save and resume, including the per rank optimizer state shards.
+\item The evaluation itself. We rescored a saved checkpoint on the host in float32
+      with an independent implementation and reproduced the on device evaluation
+      numbers, which showed the evaluation was reporting the truth about the weights.
+\item Hardware health. All sixteen devices report zero corrected and zero
+      uncorrected memory and static memory error counts, and no unhealthy components.
+\item Forward numerics. On a fixed micro batch, the loss computed through the
+      compiled training path agrees with a float32 CPU reference to four decimal
+      places, and repeating the same micro batch returns a bit identical value.
+\item Single micro batch gradients. With no loss scaling at all, gradients from the
+      compiled path agree with the float32 CPU reference to a worst case cosine
+      similarity of 0.998, which is tighter than a bfloat16 autocast CPU run
+      achieves against the same reference.
+\item The optimizer. Gradient clipping on device returns the same total norm we
+      compute on the host, and one AdamW step taken on device agrees with one taken
+      on the host from the same gradients to a cosine similarity of 1.000.
+\end{itemize}
+
+\section{The defect}
+
+The remaining difference between the healthy single micro batch case and the
+training loop was the loss scaling. The training loop calls
+\code{(loss / grad\_accum).backward()} with \code{grad\_accum} equal to fifteen,
+which is the standard way to average micro batches. We therefore measured
+gradient accuracy as a function of that scale.
+
+The experiment holds everything else fixed. One real micro batch of two sequences
+of 2048 tokens, one saved checkpoint, one forward pass through the compiled
+training path, then \code{backward()} with a scalar scale $s$ applied to the loss.
+The resulting float32 master gradients are divided by $s$ and compared, parameter
+by parameter, with a float32 CPU reference gradient of the same batch and the same
+weights. Since dividing the loss by $s$ and multiplying the gradient by $1/s$ are
+exactly inverse operations in exact arithmetic, every row of the table below
+should be identical.
+
+\begin{table}[h]
+\centering
+\caption{Gradient accuracy against a float32 CPU reference as a function of the
+scalar loss scale. Cosine similarity is the worst value over all parameter
+families. The norm ratio column is the range, over the sixteen layers, of the
+ratio of the RMS norm gain gradient norm to the reference, where a correct result
+is one.}
+\begin{tabular}{@{}lccl@{}}
+\toprule
+Loss scale before \code{backward()} & Worst cosine & RMS norm gain norm ratio & Verdict \\
+\midrule
+1 (no scaling)   & 0.9983 & 0.96 to 1.03 & correct \\
+1/2              & 0.9983 & 0.96 to 1.03 & correct \\
+1/4              & 0.9983 & 0.96 to 1.03 & correct \\
+1/16             & 0.9983 & 0.96 to 1.03 & correct \\
+1/3              & 0.9639 & 0.76 to 1.14 & wrong \\
+\textbf{1/15}    & \textbf{0.9041} & \textbf{0.53 to 1.27} & \textbf{wrong} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The error is not uniform across the network. At a scale of one fifteenth the
+worst affected parameters are the small float32 gain vectors of the RMS norm
+layers, whose gradient norms are wrong by up to a factor of two in either
+direction, and the attention value projections, whose worst cosine similarity is
+0.913. The matrices are wrong by a few percent. The output projection is barely
+affected. Because the error is direction dependent rather than a uniform rescale,
+gradient clipping and the Adam second moment do not absorb it, and it accumulates
+over training.
+
+Three further observations narrow the cause.
+
+\begin{itemize}
+\item The forward loss is unchanged and bit identical across all scales. Only the
+      backward pass differs.
+\item It makes no difference how the scale is applied. Writing \code{loss / 15},
+      writing \code{loss * (1.0/15)}, and passing the scale as the
+      \code{gradient} argument of \code{backward()} all produce the same wrong
+      numbers, to every digit we printed.
+\item Repeating the same micro batch is bit deterministic, so this is not noise
+      or a race. It is a reproducible function of the scale.
+\end{itemize}
+
+The pattern across scales is consistent with a value that is exactly
+representable being handled correctly and a value that is not being handled
+incorrectly. One half, one quarter and one sixteenth are exact in binary
+floating point. One third and one fifteenth are not.
+
+We also confirmed the practical consequence for gradient accumulation. Running the
+same micro batch three times with a scale of one third gives a result whose worst
+family cosine similarity against three times the correctly scaled single batch
+gradient is 0.868, and the RMS norm gain gradient norms are off by a factor of
+0.61 to 1.26. Accumulating two different micro batches and swapping their order
+is exact, so the accumulation machinery itself is sound. The scale alone carries
+the error.
+
+\section{Minimal reproduction}
+
+The listing below is the shape of the check we ran. It needs one device and about
+a minute once the graph is compiled. Our full diagnostic scripts, which also cover
+accumulation order, the optimizer step and the compile before load case, are
+available on request.
+
+\begin{lstlisting}[language=Python]
+import torch, torch.nn.functional as F, torch_neuronx, torch.distributed as dist
+
+dist.init_process_group(backend="neuron")
+dev = torch.device(f"neuron:{torch_neuronx.current_device()}")
+
+model  = build_model().to(dev)          # bf16 shadow weights, fp32 masters
+blocks = [b.compile(backend="neuron", dynamic=False) for b in model.layers]
+
+x, y = fixed_micro_batch()              # 2 sequences of 2048 tokens, on device
+
+def grads_at(scale):
+    zero_all_grads(model)
+    with torch.autocast("neuron", dtype=torch.bfloat16):
+        loss = forward_loss(x, y)       # scalar cross entropy
+    (loss * scale).backward()
+    return {k: p.grad.double().cpu() / scale for k, p in model.named_parameters()}
+
+ref = grads_at(1.0)                     # also matches a float32 CPU reference
+for s in (0.5, 0.25, 1/16, 1/3, 1/15):
+    g = grads_at(s)
+    worst = min(cosine(g[k], ref[k]) for k in ref)
+    print(s, worst)                     # 1.000 for the powers of two, 0.90 for 1/15
+\end{lstlisting}
+
+\section{Workaround}
+
+We removed the loss scaling from the backward pass. Each micro batch is now
+backpropagated unscaled, and the division by the accumulation count is applied to
+the float32 master gradients afterwards, before the all reduce across ranks.
+
+\begin{lstlisting}[language=Python]
+for x, y in micro_batches:
+    with torch.autocast("neuron", dtype=torch.bfloat16):
+        loss = forward_loss(x, y)
+    loss.backward()                     # unscaled
+for p in master.parameters():
+    p.grad.div_(grad_accum)             # fp32 division on the accumulated gradient
+    dist.all_reduce(p.grad, op=dist.ReduceOp.AVG)
+\end{lstlisting}
+
+With this change, accumulating fifteen copies of one micro batch and dividing by
+fifteen reproduces the single micro batch gradient to a cosine similarity of
+1.00000, and accumulating three different micro batches and dividing by three
+reproduces their mean to the same precision. The restarted runs now track the
+reference runs correctly at every budget we have reached.
+
+\section{Questions for the Neuron team}
+
+\begin{enumerate}
+\item Is a non power of two scalar multiplier on the loss, or equivalently on the
+      \code{gradient} argument of \code{backward()}, known to be unsafe on this
+      build of the native backend. If so, we would suggest documenting it, since
+      dividing the loss by the number of micro batches is the standard gradient
+      accumulation idiom and appears in most training examples.
+\item Is the error in the compiler when it lowers the seeded gradient, or in the
+      runtime. We are happy to run any instrumented build or to share the compiled
+      artifacts for the two cases.
+\item Would a diagnostic help here. A warning when a backward is seeded with a
+      value that cannot be represented exactly would have saved us the entire
+      investigation, because nothing in the logs, the counters or the loss curve
+      pointed at the backward pass.
+\item Is our workaround the recommended one, or is there a preferred way to
+      average micro batches on this stack.
+\end{enumerate}
+
+\section{Impact}
+
+The defect is silent. It does not raise, it does not warn, and it leaves a loss
+curve that looks plausible for the first half of the affected range. We lost about
+three billion tokens of training on each of four concurrent jobs, roughly nine
+hours of wall clock time on all sixteen devices, and about a day of engineering
+time. Anyone porting a standard PyTorch training loop to this backend will write
+the same line of code that we wrote.
+
+\end{document}
